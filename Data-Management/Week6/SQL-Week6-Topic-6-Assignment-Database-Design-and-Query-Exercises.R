@@ -7,6 +7,7 @@ myDB <- dbConnect(drv = RSQLite::SQLite(), dbname = "classicmodels.sqlite")
 
 
 #What is the total number of orders containing items sold at less than the MSRP?
+# Total number of orders containing items sold at less than the MSRP : 307
 dbGetQuery(conn = myDB, "
 SELECT  
 	COUNT(DISTINCT(orderNumber)) as numberOfOrdersLessThanMsrp 
@@ -18,6 +19,7 @@ WHERE
 
 
 #What is the average total for Monday orders?
+#Average total for Monday orders: $27599.57
 dbGetQuery(conn = myDB, "
 SELECT AVG(orderTotal) as avgTotalForMondayOrders FROM
   (SELECT 
@@ -32,6 +34,7 @@ SELECT AVG(orderTotal) as avgTotalForMondayOrders FROM
 );
 
 #Alternate Way -> average total for Monday orders
+#Average total for Monday orders: $27599.57
 dbGetQuery(conn = myDB, "
 SELECT 
 	Avg(orderTotal) as avgTotalForMondayOrders
@@ -50,6 +53,7 @@ FROM
 
 #What is the total quantity on hand for products listed that are included in "On Hold" orders?
 # Using Group By
+#Total quantity on hand for products listed that are included in "On Hold" orders: 202811
 dbGetQuery(conn = myDB, "
 SELECT 
 	SUM(products.quantityInStock) as totQtyOrdersOnHold 
@@ -63,6 +67,7 @@ HAVING
 ")
 
 # Using Simple where condition.
+#Total quantity on hand for products listed that are included in "On Hold" orders: 202811
 dbGetQuery(conn = myDB, "
 SELECT 
 	SUM(products.quantityInStock) as totQtyOrdersOnHold 
@@ -76,6 +81,7 @@ WHERE
 
 #List the names of customers and the corresponding order numbers where a particular order 
 #from that customer has a value greater than $25,000.
+# Total Number of customer : 213
 dbGetQuery(conn = myDB, "
 SELECT 
 	customers.customerNumber,customers.customerName, orders.orderNumber, SUM(orderdetails.quantityOrdered * orderdetails.priceEach) as totalPrice 

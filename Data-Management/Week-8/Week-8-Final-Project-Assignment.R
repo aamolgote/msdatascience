@@ -1,5 +1,6 @@
 #install.packages("Hmisc")
-
+# Import the Tidyverse
+library(tidyverse)
 library(Hmisc)
 library(readr)
 library(tibble)
@@ -132,4 +133,70 @@ posTransDupCountByDteAmtQty <- nrow(POS_TRANS_GROUP_COUNT_BY_DTE_AMT_QTY)
 cat("Number of duplicated transactions:", posTransDupCountByDteAmtQty)
 # Duplicate row count = 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY is primary key
 print("Duplicate row count = 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY is primary key")
+
+maxSellingProductsByQuantity <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%
+  group_by(PROD_NBR, PROD_DESC) %>%
+  summarise(PRODUCT_QTY_ORDER = sum(SLS_QTY)) %>%
+  arrange(desc(PRODUCT_QTY_ORDER)) %>%
+  ungroup %>%
+  slice(1:10)
+maxSellingProductsByQuantity
+write.csv(maxSellingProductsByQuantity, file = "final-project/maxsellingproducts.csv", row.names=FALSE)
+
+nonPerfProductsByQuantity <- POS_TRANS %>%
+  LEFT_join(PROD_MASTER, by = 'PROD_NBR') %>%
+  group_by(PROD_NBR, PROD_DESC) %>%
+  summarise(PRODUCT_QTY_ORDER = sum(SLS_QTY)) %>%
+  fiter(PRODUCT_QTY_ORDER < 10)
+nonPerfProductsByQuantity
+write.csv(nonPerfProductsByQuantity, file = "final-project/nonproducts.csv", row.names=FALSE)
+
+
+maxSellingProductsBySalesAmt <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%
+  group_by(PROD_NBR, PROD_DESC) %>%
+  summarise(PRODUCT_VALUE_ORDER = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(desc(PRODUCT_VALUE_ORDER)) %>%
+  ungroup %>%
+  slice(1:10)
+maxSellingProductsBySalesAmt
+write.csv(maxSellingProductsBySalesAmt, file = "final-project/maxSellingProductsBySalesAmt.csv", row.names=FALSE)
+
+
+
+
+maxSalesRevenueStores <- POS_TRANS %>%
+  inner_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
+  group_by(PHRMCY_NBR, PHRMCY_NAM) %>%
+  summarise(PHRMCY_NBR_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(desc(PHRMCY_NBR_SALES_REVENUE)) %>%
+  ungroup %>%
+  slice(1:10)
+maxSalesRevenueStores
+write.csv(maxSalesRevenueStores, file = "final-project/maxSalesRevenueStores.csv", row.names=FALSE)
+
+
+nonPerfPharmacyStores <- POS_TRANS %>%
+  inner_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
+  group_by(PHRMCY_NBR, PHRMCY_NAM) %>%
+  summarise(PHRMCY_NBR_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(PHRMCY_NBR_SALES_REVENUE) %>%
+  ungroup %>%
+  slice(1:10)
+nonPerfPharmacyStores
+write.csv(nonPerfPharmacyStores, file = "final-project/nonPerfPharmacyStores.csv", row.names=FALSE)
+
+
+statewiseSalesRevenue <- POS_TRANS %>%
+  inner_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
+  group_by(ST_CD) %>%
+  summarise(STATE_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(desc(STATE_SALES_REVENUE)) %>%
+  ungroup %>%
+  slice(1:10)
+statewiseSalesRevenue
+write.csv(statewiseSalesRevenue, file = "final-project/statewiseSalesRevenue.csv", row.names=FALSE)
+
+
 

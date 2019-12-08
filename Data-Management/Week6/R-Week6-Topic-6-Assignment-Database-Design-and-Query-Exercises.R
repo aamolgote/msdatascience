@@ -72,6 +72,7 @@ names(customers) <- c("customerNumber",
                       "creditLimit")
 
 #What is the total number of orders containing items sold at less than the MSRP?
+# Total number of orders containing items sold at less than the MSRP : 307
 numberOfOrdersLessThanMsrp <- inner_join(orderdetails, products, by = 'productCode') %>%
   filter(priceEach < MSRP) %>%
   select(orderNumber) %>% 
@@ -82,6 +83,7 @@ numberOfOrdersLessThanMsrp
 
 
 #What is the average total for Monday orders?
+#Average total for Monday orders: $27600.
 avgTotalForMondayOrders <- inner_join(orders, orderdetails, by = 'orderNumber') %>%
   group_by(orderNumber) %>%
   filter(weekdays(as.Date(orderDate)) == 'Monday') %>%
@@ -91,6 +93,7 @@ avgTotalForMondayOrders
 
 
 #What is the total quantity on hand for products listed that are included in "On Hold" orders?
+#Total quantity on hand for products listed that are included in "On Hold" orders: 202811
 totalQuantityOnHold <- orders %>%
   inner_join(orderdetails, by = 'orderNumber') %>%
   inner_join(products, by = 'productCode') %>%
@@ -100,6 +103,7 @@ totalQuantityOnHold
 
 
 #List the names of customers and the corresponding order numbers where a particular order from that customer has a value greater than $25,000.
+# Total Number of customer : 213
 customerWithHigherOrderValue <- orders %>%
   inner_join(orderdetails, by = 'orderNumber') %>%
   inner_join(customers, by = 'customerNumber') %>%
