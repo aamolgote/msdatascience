@@ -1,0 +1,226 @@
+---
+title: "Week3- Lab III"
+author: "Aamol Gote"
+date: "9/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+download.file("http://www.openintro.org/stat/data/bdims.RData", destfile = "bdims.RData")
+load("bdims.RData")
+head(bdims)
+mdims <- subset(bdims, sex == 1)
+fdims <- subset(bdims, sex == 0)
+```
+
+***Excercise 1***
+Make a histogram of men’s heights and a histogram of women’s heights. How would you compare the various aspects of the two distributions?
+
+Men's Height Histogram
+```{r}
+hist(mdims$hgt,main="Men's Height Histogram", xlab = "Men's Height")
+```
+
+Women's Height Histogramm
+```{r}
+hist(fdims$hgt,main="Women's Height Histogram", xlab = "Women's Height")
+```
+
+```{r}
+mean(mdims$hgt)
+mean(fdims$hgt)
+```
+
+  1. Men's histogram is more accurate normal distribution bell curve than women's. 
+  2. Spread for women is less than men's spread. 
+  3. The mean of women is less than men which shifts the bell curve towards left. As means are different the bell 
+    curve centers are located differently.
+
+
+```{r}
+fhgtmean <- mean(fdims$hgt)
+fhgtsd   <- sd(fdims$hgt)
+hist(fdims$hgt, probability = TRUE, main = "Women's Height Histogram", ylim = c(0, 0.06))
+x <- 140:190
+y <- dnorm(x = x, mean = fhgtmean, sd = fhgtsd)
+lines(x = x, y = y, col = "blue")
+```
+
+***Excercise 2***
+Based on the this plot, does it appear that the data follow a nearly normal distribution?
+It does follow normal distribution.
+
+```{r}
+qqnorm(fdims$hgt)
+qqline(fdims$hgt)
+```
+
+```{r}
+sim_norm <- rnorm(n = length(fdims$hgt), mean = fhgtmean, sd = fhgtsd)
+
+```
+
+***Excercise 3***
+
+Make a normal probability plot of sim_norm. Do all of the points fall on the line? How does this plot compare to the probability plot for the real data?
+
+```{r}
+qqnorm(sim_norm)
+qqline(sim_norm)
+```
+
+  1. Plot indicates that majority of the points tend to follow the line barring some at either tail ends.
+  2. Major difference comparing simulated data with actual data is that in simulated data tails are on the opposite 
+  side compared to that one with real data. Tials going in opposite direction is visible in standard deviation of 3 
+  and -3.
+  3. Real data points have shape of of like stairs which is not evident in the simulated data, this is visible between
+  standard deviation of 1 to -1 approximately.
+
+```{r}
+qqnormsim(fdims$hgt)
+```
+
+***Excercise 4***
+Does the normal probability plot for fdims$hgt look similar to the plots created for the simulated data? That is, do plots provide evidence that the female heights are nearly normal?
+
+
+1.The qq plot for normal and simulated are smilar which proves that female heights are nearly normal. 
+  
+2. One common theme across both simulated and real are the deviations of the points at the tails.
+
+3. Stepped data points is evident in one of simulated data plot which exists in real data as well.
+  
+  
+
+
+***Excercise 5***
+Using the same technique, determine whether or not female weights appear to come from a normal distribution.
+
+```{r}
+  qqnorm(fdims$wgt)
+  qqline(fdims$wgt)
+```
+
+```{r}
+  qqnormsim(fdims$wgt)
+```
+
+```{r}
+  hist(fdims$wgt)
+```
+
+
+  1. Female weights distribution follows normal distribution.
+  
+  2. If you look at the actual data, mahority of the points are near the line with exception of tails which is 
+  expected. Point distribution is slightly right skewed based on the QQ plot for actual data which can be evident 
+  from the histogram as well.
+  
+  
+
+***Excercise 6***
+
+Write out two probability questions that you would like to answer; one regarding female heights and one regarding female weights. Calculate the those probabilities using both the theoretical normal distribution as well as the empirical distribution (four probabilities in all). Which variable, height or weight, had a closer agreement between the two methods?
+
+  1. First Probability question - What's the probablity that someone is less than 150 cm in height for females?
+    
+    a. Theoretical Normal distribution
+    
+```{r}
+  pnorm(q = 150, mean = fhgtmean, sd = fhgtsd)
+```
+    
+    b. Empirical distribution
+
+```{r}
+  sum(fdims$hgt < 150) / length(fdims$hgt)
+```
+
+    Both theoretical and empirical distribution probability values are almost same.
+    
+  Women's Height Histogram
+```{r}
+  fwgtmean <- mean(fdims$wgt)
+  fwgtsd   <- sd(fdims$wgt)
+  hist(fdims$wgt, probability = TRUE, main = "Women's Weight Histogram")
+  x <- 40:110
+  y <- dnorm(x = x, mean = fwgtmean, sd = fwgtsd)
+  lines(x = x, y = y, col = "blue")
+```  
+  
+  2. Second Probability question - What's the probablity that someone is greater than 70 KG in weight for females?
+    
+    a. Theoretical Normal distribution
+    
+```{r}
+  1 - pnorm(q = 70, mean = fwgtmean, sd = fwgtsd)
+```
+    
+    b. Empirical distribution
+
+```{r}
+  sum(fdims$wgt > 70) / length(fdims$wgt)
+```
+
+  Both Values are closer but not closer compared to height.
+  
+  3. Height number is in closer agreement than weight. Overall weight numbers for other probablities do not match 
+  much across 2 methods compared to height. 
+  
+  
+***On Your Own***
+
+  1. Now let’s consider some of the other variables in the body dimensions data set. Using the figures at the end of 
+  the exercises, match the histogram to its normal probability plot. All of the variables have been standardized 
+  (first subtract the mean, then divide by the standard deviation), so the units won’t be of any help. If you are 
+  uncertain based on these figures, generate the plots in R to check.
+      a. The histogram for female biiliac (pelvic) diameter (bii.di) belongs to normal probability plot letter **b**
+```{r}
+  qqnorm(fdims$bii.di)
+  qqline(fdims$bii.di)
+```      
+      b. The histogram for female elbow diameter (elb.di) belongs to normal probability plot letter **c**
+```{r}
+  qqnorm(fdims$elb.di)
+  qqline(fdims$elb.di)
+```
+
+      c. The histogram for general age (age) belongs to normal probability plot letter **d**
+```{r}
+  qqnorm(fdims$age)
+  qqline(fdims$age)
+```
+
+      d. The histogram for female chest depth (che.de) belongs to normal probability plot letter **a**
+```{r}
+  qqnorm(fdims$che.de)
+  qqline(fdims$che.de)
+```
+
+  2. Note that normal probability plots C and D have a slight stepwise pattern.Why do you think this is the case?
+    
+    Stepwise patterns is obseved when data is discrete. Data type associated with C and D are different, elbow 
+    diameter is in decimals while age is whole number (integer). 
+    
+    
+  3. As you can see, normal probability plots can be used both to assess normality and visualize skewness. Make a
+  normal probability plot for female knee diameter (kne.di). Based on this normal probability plot, is this variable
+  left skewed, symmetric, or right skewed? Use a histogram to confirm your findings.
+  
+```{r}
+  qqnorm(fdims$kne.di)
+  qqline(fdims$kne.di)
+```
+  
+    
+    This variable is **right skewed**, which is evident from the below histogram.
+      
+      
+```{r}
+  hist(fdims$kne.di)
+```
+  

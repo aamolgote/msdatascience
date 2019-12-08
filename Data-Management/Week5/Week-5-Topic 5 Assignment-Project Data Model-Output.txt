@@ -1,0 +1,396 @@
+> library(Hmisc)
+Loading required package: lattice
+Loading required package: survival
+Loading required package: Formula
+Loading required package: ggplot2
+
+Attaching package: ‘Hmisc’
+
+The following objects are masked from ‘package:base’:
+
+    format.pval, units
+
+> library(readr)
+> library(tibble)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:Hmisc’:
+
+    src, summarize
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> 
+> main_dir <- "~/ABCPharmacy/CSV"
+> setwd(main_dir)
+> sub_dir <- "analytical-files"
+> output_dir <- file.path(main_dir, sub_dir)
+> 
+> if (!dir.exists(output_dir)){
++   dir.create(output_dir)
++ } else {
++   print("Dir already exists!")
++ }
+[1] "Dir already exists!"
+> 
+> MAJOR_PROD_CAT <- read_csv(file = "MAJOR PROD CAT.csv", col_names = TRUE, col_types = "ccc")
+Warning message:
+Missing column names filled in: 'X3' [3] 
+> # get rid of empty column in MAJOR_PROD_CAT
+> MAJOR_PROD_CAT <- MAJOR_PROD_CAT[, -3]
+> write.csv(MAJOR_PROD_CAT, file = "analytical-files/MAJOR_PROD_CAT.csv", row.names=FALSE)
+> describe(MAJOR_PROD_CAT)
+MAJOR_PROD_CAT 
+
+ 2  Variables      14  Observations
+-------------------------------------------------------------------------------------------------------------------------
+MAJOR_CAT_CD 
+       n  missing distinct 
+      14        0       14 
+
+lowest : 1079 1941 2343 3391 4371, highest: 7020 7392 9687 9710 Z   
+                                                                                              
+Value       1079  1941  2343  3391  4371  5068  5162  5228  6137  7020  7392  9687  9710     Z
+Frequency      1     1     1     1     1     1     1     1     1     1     1     1     1     1
+Proportion 0.071 0.071 0.071 0.071 0.071 0.071 0.071 0.071 0.071 0.071 0.071 0.071 0.071 0.071
+-------------------------------------------------------------------------------------------------------------------------
+MAJOR_CAT_DESC 
+       n  missing distinct 
+      14        0       14 
+
+lowest : *UNDEFINED*         BEAUTY              DIABETES            EDIBLES             GENERAL MERCHANDISE
+highest: MISC                PERSONAL CARE       PHOTO               RX                  SPECIAL POS SCANS  
+
+*UNDEFINED* (1, 0.071), BEAUTY (1, 0.071), DIABETES (1, 0.071), EDIBLES (1, 0.071), GENERAL MERCHANDISE (1, 0.071),
+GREETING CARDS (1, 0.071), HEALTH CARE (1, 0.071), HOME HEALTH CARE (1, 0.071), MANUAL OVERRIDE (1, 0.071), MISC (1,
+0.071), PERSONAL CARE (1, 0.071), PHOTO (1, 0.071), RX (1, 0.071), SPECIAL POS SCANS (1, 0.071)
+-------------------------------------------------------------------------------------------------------------------------
+> 
+> PROD_CAT <- read_csv(file = "PROD CAT.csv", col_names = TRUE, col_types = "ccc")
+> write.csv(PROD_CAT, file = "analytical-files/PROD_CAT.csv", row.names=FALSE)
+> describe(PROD_CAT)
+PROD_CAT 
+
+ 3  Variables      62  Observations
+-------------------------------------------------------------------------------------------------------------------------
+CAT_CD 
+       n  missing distinct 
+      62        0       62 
+
+lowest : 0100 0300 0500 0700 0900, highest: 9400 9500 9600 RX   Z   
+-------------------------------------------------------------------------------------------------------------------------
+CAT_DESC 
+       n  missing distinct 
+      62        0       59 
+
+lowest : *UNDEFINED*                           ALTERNATIVE THERAPY                   BABY CARE                             COLD & ALLERGY                        COMPRESSION SUPPORT                  
+highest: TOYS                                  TRIAL/TRAVEL SIZES                    VITAMINS/DIETARY SUPPLEMENTS          WEIGHT MANAGEMENT & NUTRITIONAL FOODS WETS & DRYS                          
+-------------------------------------------------------------------------------------------------------------------------
+MAJOR_CAT_CD 
+       n  missing distinct 
+      62        0       12 
+
+lowest : 1079 1941 2343 3391 4371, highest: 6137 7020 7392 9687 Z   
+                                                                                  
+Value       1079  1941  2343  3391  4371  5068  5228  6137  7020  7392  9687     Z
+Frequency      3     1     1     9     2     1    15    14     8     6     1     1
+Proportion 0.048 0.016 0.016 0.145 0.032 0.016 0.242 0.226 0.129 0.097 0.016 0.016
+-------------------------------------------------------------------------------------------------------------------------
+> 
+> 
+> 
+> PROD_SUB_CAT <- read_csv(file = "PROD SUB CAT.csv", col_names = TRUE, col_types = "ccc")
+> write.csv(PROD_SUB_CAT, file = "analytical-files/PROD_SUB_CAT.csv", row.names=FALSE)
+> describe(PROD_SUB_CAT)
+PROD_SUB_CAT 
+
+ 3  Variables      245  Observations
+-------------------------------------------------------------------------------------------------------------------------
+SUB_CAT_CD 
+       n  missing distinct 
+     245        0      245 
+
+lowest : 01000110 01000120 01000130 01000140 03000310, highest: 95009510 95009520 96009610 96009620 Z       
+-------------------------------------------------------------------------------------------------------------------------
+SUB_CAT_DESC 
+       n  missing distinct 
+     245        0      244 
+
+lowest : *UNDEFINED*                              ABDOMINAL SUPPORTS & RIB BELTS           ACID CONTROLLERS                         ACUPRESSURE                              AFTER SUN & SUN ACCESSORIES             
+highest: WHEELCHAIR ACCESSORIES                   WHEELCHAIRS                              WOMEN'S DEODORANTS                       WOMEN'S SHAVING, HAIR REMOVAL & BLEACHES WRITING INSTRUMENTS & RELATED SUPPLIES  
+-------------------------------------------------------------------------------------------------------------------------
+CAT_CD 
+       n  missing distinct 
+     245        0       61 
+
+lowest : 0100 0300 0500 0700 0900, highest: 9300 9400 9500 9600 Z   
+-------------------------------------------------------------------------------------------------------------------------
+> 
+> 
+> 
+> PROD_SEG <- read_csv(file = "PROD SEG.csv", col_names = TRUE, col_types = "ccc")
+> write.csv(PROD_SEG, file = "analytical-files/PROD_SEG.csv", row.names=FALSE)
+> describe(PROD_SEG)
+PROD_SEG 
+
+ 3  Variables      1004  Observations
+-------------------------------------------------------------------------------------------------------------------------
+SEG_CD 
+       n  missing distinct 
+    1004        0     1004 
+
+lowest : 010001100111 010001100112 010001100113 010001100114 010001100115
+highest: 960096209626 960096209627 960096209628 960096209629 Z           
+-------------------------------------------------------------------------------------------------------------------------
+SEG_DESC 
+       n  missing distinct 
+    1004        0      984 
+
+lowest : *UNDEFINED*                               35MM FILM (100-400 SPEED)                 35MM FILM (800+ SPEED)                    ABDOMINAL SUPPORTS                        ACCESSORIES & IMPLEMENTS                 
+highest: WOMEN'S SUPPORT HOSE - KNEE HIGH          WOMEN'S SUPPORT HOSE - THIGH HIGH         WORKBOOKS, EDUCATIONAL SOFTWARE & BOOKS   WOUND CLEANSERS                           WOUND CLEANSERS, TREATMENTS & ACCESSORIES
+-------------------------------------------------------------------------------------------------------------------------
+SUB_CAT_CD 
+       n  missing distinct 
+    1004        0      245 
+
+lowest : 01000110 01000120 01000130 01000140 03000310, highest: 95009510 95009520 96009610 96009620 Z       
+-------------------------------------------------------------------------------------------------------------------------
+> 
+> PROD_MASTER <- read_csv(file = "PROD MASTER.csv", col_names = TRUE, col_types = "cccccc")
+> prod_master_columns <- c("PROD_NBR","PROD_DESC", "SEGMENT_CD")
+> PROD_MASTER = PROD_MASTER[prod_master_columns]
+> write.csv(PROD_MASTER, file = "analytical-files/PROD_MASTER.csv", row.names=FALSE)
+> describe(PROD_MASTER)
+PROD_MASTER 
+
+ 3  Variables      189052  Observations
+-------------------------------------------------------------------------------------------------------------------------
+PROD_NBR 
+       n  missing distinct 
+  189052        0   189052 
+
+lowest : -72047354447    -72047354589    -72047357938    -73588210013    -73588247103   
+highest: 998012024       999010000000015 9995            9997000105      99999900015    
+-------------------------------------------------------------------------------------------------------------------------
+PROD_DESC 
+       n  missing distinct 
+  189052        0    98359 
+
+lowest : -GRANDCHILD GRT-GRANDSON                 -IN-LAW GENERAL                          ""LITT. CARDIOLOGY III-BLACK 22""""""    ""TO MY BEAUTIFUL DAUGHTER, I LOVE YOU"" "BIRTHDAY WISHES FOR..."                
+highest: ZZZQUIL LIQUIGEL 12CT                    ZZZQUIL LIQUIGEL 24CT                    ZZZQUIL MANGO BERRY SYRUP 12OZ           ZZZQUIL MIXED 24PC DISPLAY               ZZZQUIL NIGHTTIME SLEEP-AID 48CT        
+-------------------------------------------------------------------------------------------------------------------------
+SEGMENT_CD 
+       n  missing distinct 
+  189052        0      999 
+
+lowest : 010001100111 010001100112 010001100113 010001100114 010001100115
+highest: 960096209625 960096209626 960096209627 960096209628 960096209629
+-------------------------------------------------------------------------------------------------------------------------
+> 
+> 
+> PHRMCY_MASTER <- read_csv(file = "PHRMCY MASTER.csv",col_names = TRUE, col_types = "cccc")
+> # Get rid of ZIP_3_CD
+> PHRMCY_MASTER <- PHRMCY_MASTER[, -4]
+> write.csv(PHRMCY_MASTER, file = "analytical-files/PHRMCY_MASTER.csv", row.names=FALSE)
+> describe(PHRMCY_MASTER)
+PHRMCY_MASTER 
+
+ 3  Variables      1097  Observations
+-------------------------------------------------------------------------------------------------------------------------
+PHRMCY_NBR 
+       n  missing distinct 
+    1097        0     1097 
+
+lowest : 1017330163607345979 1041420479647471411 1048827871928328746 1057348283119436343 1058510257734865632
+highest: 947189461765894563  965742798214222655  96716371275840588   968692567324061969  974183214077120941 
+-------------------------------------------------------------------------------------------------------------------------
+PHRMCY_NAM 
+       n  missing distinct 
+    1097        0     1097 
+
+lowest : GNP PHARMACY #1    GNP PHARMACY #10   GNP PHARMACY #100  GNP PHARMACY #1000 GNP PHARMACY #1001
+highest: GNP PHARMACY #995  GNP PHARMACY #996  GNP PHARMACY #997  GNP PHARMACY #998  GNP PHARMACY #999 
+-------------------------------------------------------------------------------------------------------------------------
+ST_CD 
+       n  missing distinct 
+    1097        0       13 
+
+lowest : CT DE MA ME NH, highest: PR RI VI VT Z 
+                                                                                        
+Value         CT    DE    MA    ME    NH    NJ    NY    PA    PR    RI    VI    VT     Z
+Frequency     42     4    51    21     2   288   390   196    97     3     1     1     1
+Proportion 0.038 0.004 0.046 0.019 0.002 0.263 0.356 0.179 0.088 0.003 0.001 0.001 0.001
+-------------------------------------------------------------------------------------------------------------------------
+> 
+> 
+> POS_TRANS <- read_csv(file = "POS Transactions.csv",col_names = TRUE, col_types = "ccccdi")
+|==========================================================================================================| 100%   64 MB
+> POS_TRANS$SLS_DTE_NBR <- paste(substr(POS_TRANS$SLS_DTE_NBR, 1, 4), substr(POS_TRANS$SLS_DTE_NBR, 5, 6), substr(POS_TRANS$SLS_DTE_NBR, 7, 8), sep="-")    
+> POS_TRANS$SLS_DTE_NBR <- strftime(POS_TRANS$SLS_DTE_NBR, format = "%Y-%m-%d %H:%M:%S")
+> colnames(POS_TRANS)[4] <- "SLS_DTE"
+> write.csv(POS_TRANS, file = "analytical-files/POS_TRANS.csv", row.names=FALSE)
+> describe(POS_TRANS)
+POS_TRANS 
+
+ 6  Variables      915744  Observations
+-------------------------------------------------------------------------------------------------------------------------
+BSKT_ID 
+       n  missing distinct 
+  915744        0   620717 
+
+lowest : 100002002195001969172            100002002195001975655            100002002195001975657            100002002195001975659            100002002195001975660           
+highest: 90000000000009445203195167160630 90000000000009445703195167160630 90000000000009446903195167160630 90000000000009448603195167160630 90000000000009448803195167160630
+-------------------------------------------------------------------------------------------------------------------------
+PHRMCY_NBR 
+       n  missing distinct 
+  915744        0      106 
+
+lowest : 1086060348872350015 1089389175785588555 113751725732539219  1174450154022548624 1360787588063411417
+highest: 8878731394084111849 8928776363931148827 8932873020424827010 9201518331233084207 943521724712761855 
+-------------------------------------------------------------------------------------------------------------------------
+PROD_NBR 
+       n  missing distinct 
+  915744        0    43428 
+
+lowest : -72047354589            -72047357938            -73588210013            1                       1002918960             
+highest: 99400000000000000000007 99400000000000000000008 99400000000000000000010 9955506520              999010000000015        
+-------------------------------------------------------------------------------------------------------------------------
+SLS_DTE 
+       n  missing distinct 
+  915744        0      182 
+
+lowest : 2016-01-01 00:00:00 2016-01-02 00:00:00 2016-01-03 00:00:00 2016-01-04 00:00:00 2016-01-05 00:00:00
+highest: 2016-06-26 00:00:00 2016-06-27 00:00:00 2016-06-28 00:00:00 2016-06-29 00:00:00 2016-06-30 00:00:00
+-------------------------------------------------------------------------------------------------------------------------
+EXT_SLS_AMT 
+       n  missing distinct     Info     Mean      Gmd      .05      .10      .25      .50      .75      .90      .95 
+  915744        0     9978        1    9.473    11.65     0.99     1.19     2.49     4.99     9.32    16.39    24.86 
+
+lowest : -2065.95  -909.14  -674.94  -564.96  -374.50, highest: 15997.33 16750.04 19829.42 23339.91 75000.00
+                                                                                                                   
+Value       -2000  -1000      0   1000   2000   3000   4000   5000   7000   8000  16000  17000  20000  23000  75000
+Frequency       1      3 915019    646     41     11      7      4      6      1      1      1      1      1      1
+Proportion  0.000  0.000  0.999  0.001  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000
+
+For the frequency table, variable is rounded to the nearest 1000
+-------------------------------------------------------------------------------------------------------------------------
+SLS_QTY 
+       n  missing distinct     Info     Mean      Gmd      .05      .10      .25      .50      .75      .90      .95 
+  915744        0       98     0.33    1.236   0.4842        1        1        1        1        1        2        2 
+
+lowest : -36 -25 -24 -20 -17, highest: 172 206 215 300 320
+-------------------------------------------------------------------------------------------------------------------------
+> 
+> 
+> 
+> 
+> 
+> # Check Duplicate by primary key MAJOR_CAT_CD
+> DUP_MAJOR_PROD_CAT <- MAJOR_PROD_CAT %>% 
++   group_by(MAJOR_CAT_CD)%>% 
++   count(MAJOR_CAT_CD)%>% 
++   filter ( n > 1)%>%
++   arrange(desc(n))
+> nrow(DUP_MAJOR_PROD_CAT)
+[1] 0
+> 
+> # Check Duplicate by primary key CAT_CD
+> PROD_CAT %>% 
++   group_by(CAT_CD)%>% 
++   count(CAT_CD)%>% 
++   filter ( n > 1)%>%
++   arrange(desc(n))
+# A tibble: 0 x 2
+# Groups:   CAT_CD [0]
+# ... with 2 variables: CAT_CD <chr>, n <int>
+> nrow(DUP_MAJOR_PROD_CAT)
+[1] 0
+> 
+> # Check Duplicate by primary key SUB_CAT_CD
+> DUP_PROD_SUB_CAT <- PROD_SUB_CAT %>% 
++   group_by(SUB_CAT_CD)%>% 
++   count(SUB_CAT_CD)%>% 
++   filter ( n > 1)%>%
++   arrange(desc(n))
+> nrow(DUP_PROD_SUB_CAT)
+[1] 0
+> 
+> # Check Duplicate by primary key SEG_CD
+> DUP_PROD_SEG <- PROD_SEG %>% 
++   group_by(SEG_CD)%>% 
++   count(SEG_CD)%>% 
++   filter ( n > 1)%>%
++   arrange(desc(n))
+> nrow(DUP_PROD_SEG)
+[1] 0
+> 
+> # Check Duplicate by primary key PROD_NBR
+> DUP_PROD_MASTER <- PROD_MASTER %>% 
++   group_by(PROD_NBR)%>% 
++   count(PROD_NBR)%>% 
++   filter ( n > 1)%>%
++   arrange(desc(n))
+> nrow(DUP_PROD_MASTER)
+[1] 0
+> 
+> # Check Duplicate by primary key PHRMCY_NBR
+> DUP_PHRMCY_MASTER <- PHRMCY_MASTER %>% 
++   group_by(PHRMCY_NBR)%>% 
++   count(PHRMCY_NBR)%>% 
++   filter ( n > 1)%>%
++   arrange(desc(n))
+> nrow(DUP_PHRMCY_MASTER)
+[1] 0
+> 
+> 
+> # Check duplicates by BSKT_ID, PROD_NBR, PHRMCY_NBR
+> POS_TRANS_GROUP_COUNT <- POS_TRANS %>% 
++   group_by(BSKT_ID, PROD_NBR, PHRMCY_NBR)%>% 
++   count(BSKT_ID, PROD_NBR, PHRMCY_NBR)%>%
++   filter(n > 1)
+> posTransDupCount <- nrow(POS_TRANS_GROUP_COUNT)
+> cat("Number of duplicated transactions:", posTransDupCount)
+Number of duplicated transactions: 29> POS_TRANS_DISTINCT <- POS_TRANS %>% select(BSKT_ID, PHRMCY_NBR, PROD_NBR) %>% distinct()
+> cat("Number of duplicated transactions:", nrow(POS_TRANS) - nrow(POS_TRANS_DISTINCT))
+Number of duplicated transactions: 29> 
+> POS_TRANS %>%
++   filter(BSKT_ID == "100002002195001978261" | BSKT_ID == "200002244325000247930" | BSKT_ID == "200003389586000353747" | BSKT_ID == "200003389586000355543") %>%
++   arrange(desc(BSKT_ID, PROD_NBR, PHRMCY_NBR))
+# A tibble: 10 x 6
+   BSKT_ID               PHRMCY_NBR          PROD_NBR                SLS_DTE             EXT_SLS_AMT SLS_QTY
+   <chr>                 <chr>               <chr>                   <chr>                     <dbl>   <int>
+ 1 200003389586000355543 8406638142603383888 99400000000000000000010 2016-06-08 00:00:00      170          2
+ 2 200003389586000355543 8406638142603383888 99400000000000000000010 2016-06-08 00:00:00        9.99       1
+ 3 200003389586000353747 8406638142603383888 8770111896              2016-05-13 00:00:00        0.01       1
+ 4 200003389586000353747 8406638142603383888 8770111896              2016-05-13 00:00:00       11.0        2
+ 5 200002244325000247930 5574324683520357059 64786510001             2016-03-02 00:00:00        7.13       1
+ 6 200002244325000247930 5574324683520357059 8770142580              2016-03-02 00:00:00        0.86       2
+ 7 200002244325000247930 5574324683520357059 8770142580              2016-03-02 00:00:00        0.43       1
+ 8 200002244325000247930 5574324683520357059 35789620101             2016-03-02 00:00:00        1.89       1
+ 9 100002002195001978261 5618981026642252409 7560210102              2016-01-16 00:00:00        0.89       1
+10 100002002195001978261 5618981026642252409 7560210102              2016-01-16 00:00:00        0.61       1
+> 
+> # Duplicate row count > 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR cannot be primary key
+> print("Duplicate row count > 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR cannot be primary key")
+[1] "Duplicate row count > 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR cannot be primary key"
+> 
+> 
+> # Check duplicates by BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY
+> POS_TRANS_GROUP_COUNT_BY_DTE_AMT_QTY <- POS_TRANS %>% 
++   group_by(BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY)%>% 
++   count(BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY)%>%
++   filter(n > 1)
+> posTransDupCountByDteAmtQty <- nrow(POS_TRANS_GROUP_COUNT_BY_DTE_AMT_QTY)
+> cat("Number of duplicated transactions:", posTransDupCountByDteAmtQty)
+Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY is primary key
+> print("Duplicate row count = 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY is primary key")
+[1] "Duplicate row count = 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY is primary key"
+> 

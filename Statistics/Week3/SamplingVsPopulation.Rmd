@@ -1,0 +1,50 @@
+---
+title: "SamplingVsPopulation"
+author: "Amol Gote"
+date: "9/22/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+sd<-1000
+mean<-9000
+se <- sd / sqrt(15)
+
+norm <- seq(mean - (4 * sd), mean + (4 * sd), length=30)
+random<- seq(mean - (4 * se), mean + (4 * se), length=30)
+population <- dnorm(norm, mean, sd)
+sampling <- dnorm(random, mean, se)
+
+plot(norm, population, type="l",col="red",
+  xlab="Lifespan of light bulbs", ylab = "",
+  main="Two distributions Population and Sampling", ylim=c(0,0.0018))
+lines(random, sampling, col="blue")
+legend(1, 95, legend=c("Line 1", "Line 2"),
+       col=c("red", "blue"), lty=1:2, cex=0.8)
+
+
+```

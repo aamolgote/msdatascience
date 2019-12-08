@@ -1,0 +1,267 @@
+---
+title: "Week2-Lab2"
+author: "Amol Gote"
+date: "9/7/2019"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("http://www.openintro.org/stat/data/cdc.R")
+```
+
+View the names of the variables
+```{r}
+names(cdc)
+```
+
+
+**Excercise 1**
+How many cases are there in this data set? How many variables? For each variable, identify its data type (e.g. categorical, discrete).
+
+**Number of cases from the cdc dataset = 20000**
+```{r}
+nrow(cdc)
+```
+
+
+**Number of Variables = 9**
+```{r}
+ncol(cdc)
+```
+
+For each variable, identify its data type.
+genhlth  - Categorical
+
+exerany  - Categorical 
+
+hlthplan - Categorical
+
+smoke100 - Categorical
+
+height   - Discrete
+
+weight   - Discrete
+
+wtdesire - Discrete
+
+age      - Discrete
+
+gender   - Categorical
+
+
+**Exercise 2**
+Create a numerical summary for height and age, and compute the interquartile range for each. Compute the relative frequency distribution for gender and exerany. How many males are in the sample? What proportion of the sample reports being in excellent health?
+
+**Numerical Summary for height**
+```{r}
+summary(cdc$height)
+```
+
+**Numerical summary for age** 
+```{r}
+summary(cdc$age)
+```
+
+Interquartile Range = Q3 - Q1
+Interquatile range for height: **6**
+```{r}
+70.00 - 64.00
+```
+
+Interquatile range for age : **26**
+```{r}
+57.00 -31.00
+```
+
+**Relative frequency distribution for gender**
+```{r}
+barplot(table(cdc$gender))
+```
+
+Relative frequency distribution for exerany
+```{r}
+barplot(table(cdc$exerany))
+```
+
+NUmber of males in the sample: **9569**
+```{r}
+table(cdc$gender)
+```
+
+Proportion of the sample which report being in excellent health : **0.23** or **23%**
+```{r}
+table(cdc$genhlth)/nrow(cdc)
+```
+
+**Excercise 3**
+
+What does the mosaic plot reveal about smoking habits and gender?
+
+```{r}
+mosaicplot(table(cdc$smoke100, cdc$gender))
+```
+
+Mosaic plot reveals that there are more females who have **not** smoked 100 cigarettes in thier lifetime. Males who have smoked 100 cigrattes outnumber females.
+
+
+**Excercise 4**
+Create a new object called under23_and_smoke that contains all observations of respondents under the age of 23 that have smoked 100 cigarettes in their lifetime. Write the command you used to create the new object as the answer to this exercise.
+
+```{r}
+under23_and_smoke <- subset(cdc, age < 23 & smoke100 == 1)
+```
+
+
+**Excercise 5**
+
+What does this box plot show? Pick another categorical variable from the data set and see how it relates to BMI. List the variable you chose, why you might think it would have a relationship to BMI, and indicate what the figure seems to suggest.
+
+
+```{r}
+bmi <- (cdc$weight / cdc$height^2) * 703
+boxplot(bmi ~ cdc$genhlth)
+```
+
+
+```{r}
+summary(bmi)
+```
+
+Box plot indicates
+
+1. The median BMI across all genhlth categories increases from excellent to poor
+2. Difference between upper and lower whisker keeps on increasing bewtween excellent to poor.
+3. IQR increases from excellent to poor.
+
+Another Categorical variable that might be linked to BMI is **exerany**. Reason for the same is that peope who excercise tend have to have good BMI. Below box plot does prove that theory as well.
+```{r}
+boxplot(bmi ~ cdc$exerany)
+```
+
+
+Observations from the box plot.
+
+1. Median of BMI of people who have excercised in last 1 month is lower that that who have not excercised in last 1 month.
+
+2. Upper Whiskers for people who have execrcised seems to ne lower than those who have not in last 1 month.
+
+**Activities 1–6 of Lab 2**
+
+1. Make a scatterplot of weight versus desired weight. Describe the relationship between these two variables.
+```{r}
+plot(cdc$weight, cdc$wtdesire)
+```
+
+
+  a. Weight and desired weight appear to be linearly positively associated with each other.
+
+  b. Majority of the population between 100 to 200 pounds seem to have weight and desired weight nearly same.
+
+
+2. Let’s consider a new variable: the difference between desired weight (wtdesire) and current weight (weight). Create this new variable by subtracting the two columns in the data frame and assigning them to a new object called wdiff.
+
+```{r}
+wdiff = cdc$wtdesire - cdc$weight
+```
+
+3 What type of data is wdiff? If an observation wdiff is 0, what does this mean about the person’s weight and desired weight. What if wdiff is positive or negative?
+
+  a. wdiff is numerical (integer) discrete data type.
+```{r}
+typeof(wdiff)
+```
+
+  b. if wdiff = 0 then weight and desired weight are equal and the person has a perfect BMI.
+
+  c. wdiff is positive that means that person is overweight and has to loose weight to achieve near perfect BMI and if wdiff is negative then person is underweight and has to gain weight to achieve near perfect BMI.
+
+
+4. Describe the distribution of wdiff in terms of its center, shape, and spread, including any plots you use. What does this tell us about how people feel about their current weight?
+
+```{r}
+boxplot(wdiff)
+```
+
+```{r}
+hist(wdiff, breaks=20)
+```
+
+```{r}
+plot(wdiff)
+```
+
+```{r}
+summary(wdiff)
+```
+
+
+Average/mean of wdiff is -10 and median is -14.59, both are negative which indicates most of the people (males/female) need to loose weight around 10 to 15 pounds.
+
+Histogram - It is right skewed slightly and unimodal with single peak. This again proves the theory that people need to loose weight and there are far fewer who need to gain weight.
+
+IQR = 0.00 - (-21) = 21. So looking at box plot there are many outliers but most outliers fall in category of loosing weight and less in the category of gaining weight.
+
+
+
+5. Using numerical summaries and a side-by-side box plot, determine if men tend to view their weight differently than women.
+
+```{r}
+boxplot(cdc$wtdesire-cdc$weight ~ cdc$gender)
+```
+
+
+```{r}
+genderWeightDifference <- data.frame(wdiff, cdc$gender)
+summary(subset(genderWeightDifference, cdc$gender == "m"))
+summary(subset(genderWeightDifference, cdc$gender == "f"))
+```
+
+  Median and mean for   men  -5.00 and -10.71
+  Median and mean for women -10.00 and -18.15
+
+  Based on median indicator more women (-10) need to loose few more pounds than men (-5).
+
+  IQR   MEN = 0.00 - (-20) = 20
+  IQR WOMEN = 0.00 - (-27) = 27
+  Based on above IQR number, women have large range than men.
+
+  Based on the box plot looking at outliers it is evident that more men need to gain weight than women.
+
+
+6. Now it’s time to get creative. Find the mean and standard deviation of weight and determine what proportion of the weights are within one standard deviation of the mean.
+
+```{r}
+mean_wt = mean(cdc$weight)
+sd_wt = sd(cdc$weight)
+mean_wt
+sd_wt
+```
+
+```{r}
+cdc_one_standard_deviation = subset(cdc, cdc$weight < (mean_wt +sd_wt) & cdc$weight > (mean_wt - sd_wt))
+nrow(cdc_one_standard_deviation)
+nrow(cdc)
+(nrow(cdc_one_standard_deviation)/ nrow(cdc) ) * 100
+```
+
+  70.76% of the population weights fall within one standard deviation of the mean weight.
+
+
+
+
+
+
+
+
+
+
+
+
+

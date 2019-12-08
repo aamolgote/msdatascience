@@ -1,0 +1,159 @@
+---
+title: "Week 1- Lab I"
+author: "Amol Gote"
+date: "09/06/2019"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("http://www.openintro.org/stat/data/arbuthnot.R")
+arbuthnot
+```
+**Excercise 1**
+
+What command would you use to extract just the counts of girls baptized? 
+```{r}
+arbuthnot$girls
+```
+
+**Excercise 2**
+
+Is there an apparent trend in the number of girls baptized over the years?
+How would you describe it?
+```{r}
+plot(x = arbuthnot$year, y = arbuthnot$girls, type = "l")
+```
+
+Answer: 
+
+1. Number of girls baptized and years are associated with each other.
+
+2. There has been steady increase in the number of girls baptized as years have progressed, barring the time period of 140 to 1660 where there was steep decline, in the number of girls baptized.
+
+
+
+**Excercise 3**
+
+Now, make a plot of the proportion of boys over time. What do you see?
+```{r}
+plot(x = arbuthnot$year, y = arbuthnot$boys/(arbuthnot$boys + arbuthnot$girls), type = "l")
+```
+
+
+
+
+
+**Activities 1-4 from the On Your Own section of Lab 1 (Introduction to R & RStudio lab)**
+
+```{r}
+source("http://www.openintro.org/stat/data/present.R")
+present
+```
+
+
+1. What years are included in this data set? What are the dimensions of the data frame and what are the variable or column names?
+
+Years included in the dataset
+```{r}
+present$year
+```
+
+Dimensions on the data frame
+```{r}
+dim(present)
+```
+
+Variable or Column Names
+```{r}
+names(present)
+```
+
+2. How do these counts compare to Arbuthnot’s? Are they on a similar scale?
+
+Total number of boys and girls in Present datset = **231809422**
+
+Total number of boys and girls in Arbuthnot datset = **938223**
+
+Arbuthnot's datset's average boys to girls ratio = **1.070748**
+
+Present datset's average boys to girls ratio = **1.051353**
+
+Boys to girl ratio seem to be constant, there is common theme across both data sets which is number of boys is greater than the number of girls. From below calculation it clearly indicates the average ratio of boys to girls is almost constant across 2 dataset (Arbuthnot and Present), difference of 0.02 in average.
+
+As far as scale is concerned the Present data set is in millions, where as the Arbuthnot's data is in thousands that too less than 10,000. Total count of number of girls and boys in Present dataset is *247** time that of the total number bos and girls in Arbuthnot's dataset.
+
+arbuthnot boys to girls ratio
+```{r}
+arbuthnot$boys / arbuthnot$girls
+```
+
+
+Average of arbuthnot boys to girls ratio
+```{r}
+mean(arbuthnot$boys / arbuthnot$girls)
+```
+
+
+present boys to girl ratio
+```{r}
+present$boys / present$girls
+```
+
+Average of present boys to girl ratio
+```{r}
+mean(present$boys / present$girls)
+```
+
+Total number of girls and boys for arbuthnot
+```{r}
+sum(arbuthnot$boys) + sum(arbuthnot$girls)
+```
+
+Total number of girls and boys for present
+```{r}
+sum(present$boys) + sum(present$girls)
+```
+
+Scale ratio in total boys and girls count between arbuthnot and present
+```{r}
+(sum(present$boys) + sum(present$girls))/(sum(arbuthnot$boys) + sum(arbuthnot$girls))
+```
+
+3. Make a plot that displays the boy-to-girl ratio for every year in the data set. What do you see? Does Arbuthnot’s observation about boys being born in greater proportion than girls hold up in the U.S.? Include the plot in your response.
+
+Plot that displays the boy-to-girl ratio for every year in the data set
+```{r}
+plot(x=present$year, y=present$boys/present$girls, type="l")
+```
+
+Boys to girl ratio almost remains constant.
+
+```{r}
+present$boys > present$girls
+```
+
+```{r}
+arbuthnot$boys > arbuthnot$girls
+```
+As you can see in both data sets number of boys is greater than number of girls. So Arbuthnot’s observation about boys being born in greater proportion than girls hold up in the U.S.
+ 
+
+Plot that displays the boy-to-girl ratio for every year in the Arbuthnot data set
+```{r}
+plot(x=arbuthnot$year, y=arbuthnot$boys/arbuthnot$girls, type="l")
+```
+
+In what year did we see the most total number of births in the U.S.?
+```{r}
+present[which.max(present$boys + present$girls),]$year
+```
+
+
+

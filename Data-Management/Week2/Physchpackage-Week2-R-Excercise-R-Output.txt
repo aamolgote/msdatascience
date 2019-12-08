@@ -1,0 +1,184 @@
+
+R version 3.6.1 (2019-07-05) -- "Action of the Toes"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Workspace loaded from ~/.RData]
+
+
+R version 3.6.1 (2019-07-05) -- "Action of the Toes"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Workspace loaded from ~/.RData]
+
+> library(psych)
+> setwd("C:/Users/Shravani/Box/MS-Data-Science/Data-Management/Week2/ABCPharmacy/CSV")
+> prod_master <- read.csv(file = "PROD MASTER.csv",
++                  header = TRUE,
++                  stringsAsFactors = FALSE,
++                  na.strings = "")
+> 
+> describe(prod_master)
+             vars      n         mean           sd       median      trimmed          mad           min          max        range  skew kurtosis
+PROD_NBR        1 189052 2.343916e+21 1.501569e+22  71683785430 4.642210e+10 2.508947e+10 -7.358825e+10 9.950000e+22 9.950000e+22  6.25    37.06
+PROD_DESC*      2 189052 2.408055e+40 1.458614e+42  72047352804 6.986849e+10 2.218118e+04  9.900000e-01 8.835155e+43 8.835155e+43 60.52  3662.00
+MAJOR_CAT_CD    3 189052 7.820470e+03 2.406090e+03         9687 8.158060e+03 0.000000e+00  1.941000e+03 9.687000e+03 7.746000e+03 -0.78    -0.97
+CAT_CD          4 189052 4.998070e+03 2.159950e+03         5800 5.084790e+03 0.000000e+00  1.000000e+02 9.600000e+03 9.500000e+03 -0.49     0.16
+SUB_CAT_CD      5 189052 4.998570e+07 2.160164e+07     58005850 5.085299e+07 5.930000e+01  1.000110e+06 9.600962e+07 9.500951e+07 -0.49     0.16
+SEGMENT_CD      6 189052 4.998570e+11 2.160164e+11 580058505857 5.085299e+11 5.930993e+05  1.000110e+10 9.600962e+11 9.500951e+11 -0.49     0.16
+                       se
+PROD_NBR     3.453461e+19
+PROD_DESC*   3.354669e+39
+MAJOR_CAT_CD 5.530000e+00
+CAT_CD       4.970000e+00
+SUB_CAT_CD   4.968166e+04
+SEGMENT_CD   4.968166e+08
+Warning message:
+In describe(prod_master) : NAs introduced by coercion
+> 
+> pharmacy_master <- read.csv(file = "PHRMCY MASTER.csv",
++                         header = TRUE,
++                         stringsAsFactors = FALSE,
++                         na.strings = "")
+> 
+> describe(pharmacy_master)
+            vars    n         mean           sd       median      trimmed          mad          min          max        range skew kurtosis
+PHRMCY_NBR     1 1097 4.628591e+18 2.671784e+18 4.612892e+18 4.630036e+18 3.381818e+18 6.051683e+15 9.219101e+18 9.213049e+18 0.01    -1.20
+PHRMCY_NAM*    2 1097          NaN           NA           NA          NaN           NA          Inf         -Inf         -Inf   NA       NA
+ST_CD*         3 1097          NaN           NA           NA          NaN           NA          Inf         -Inf         -Inf   NA       NA
+ZIP_3_CD       4 1097 9.807000e+01 5.202000e+01 1.000000e+02 9.765000e+01 3.706000e+01 6.000000e+00 1.990000e+02 1.930000e+02 0.14    -0.39
+                      se
+PHRMCY_NBR  8.066739e+16
+PHRMCY_NAM*           NA
+ST_CD*                NA
+ZIP_3_CD    1.570000e+00
+Warning messages:
+1: In describe(pharmacy_master) : NAs introduced by coercion
+2: In describe(pharmacy_master) : NAs introduced by coercion
+3: In FUN(newX[, i], ...) : no non-missing arguments to min; returning Inf
+4: In FUN(newX[, i], ...) : no non-missing arguments to min; returning Inf
+5: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+6: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+> 
+> 
+> major_prod_catg <- read.csv(file = "MAJOR PROD CAT.csv",
++                             header = TRUE,
++                             stringsAsFactors = FALSE,
++                             na.strings = "")
+> 
+> describe(major_prod_catg)
+                vars  n    mean      sd median trimmed     mad  min  max range skew kurtosis     se
+MAJOR_CAT_CD*      1 14 5271.46 2725.61   5162 5249.09 2754.67 1079 9710  8631 0.17    -1.16 728.45
+MAJOR_CAT_DESC*    2 14     NaN      NA     NA     NaN      NA  Inf -Inf  -Inf   NA       NA     NA
+Warning messages:
+1: In describe(major_prod_catg) : NAs introduced by coercion
+2: In describe(major_prod_catg) : NAs introduced by coercion
+3: In FUN(newX[, i], ...) : no non-missing arguments to min; returning Inf
+4: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+> 
+> prod_catg <- read.csv(file = "PROD CAT.csv",
++                             header = TRUE,
++                             stringsAsFactors = FALSE,
++                             na.strings = "")
+> 
+> describe(prod_catg)
+              vars  n    mean      sd median trimmed     mad  min  max range  skew kurtosis     se
+CAT_CD*          1 62 5006.67 2800.60   5550 5014.58 3335.85  100 9600  9500 -0.06    -1.22 355.68
+CAT_DESC*        2 62     NaN      NA     NA     NaN      NA  Inf -Inf  -Inf    NA       NA     NA
+MAJOR_CAT_CD*    3 62 5350.61 1765.21   5228 5486.29 1347.68 1079 9687  8608 -0.58     0.17 224.18
+Warning messages:
+1: In describe(prod_catg) : NAs introduced by coercion
+2: In describe(prod_catg) : NAs introduced by coercion
+3: In describe(prod_catg) : NAs introduced by coercion
+4: In FUN(newX[, i], ...) : no non-missing arguments to min; returning Inf
+5: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+> 
+> prod_sub_catg <- read.csv(file = "PROD SUB CAT.csv",
++                       header = TRUE,
++                       stringsAsFactors = FALSE,
++                       na.strings = "")
+> 
+> describe(prod_sub_catg)
+              vars   n        mean          sd   median     trimmed         mad     min      max    range skew kurtosis         se
+SUB_CAT_CD*      1 245 45779203.81 28064657.61 41004165 45091279.03 32620535.85 1000110 96009620 95009510 0.14    -1.09 1792985.20
+SUB_CAT_DESC*    2 245         NaN          NA       NA         NaN          NA     Inf     -Inf     -Inf   NA       NA         NA
+CAT_CD*          3 245     4577.46     2806.19     4100     4508.67     3261.72     100     9600     9500 0.14    -1.09     179.28
+Warning messages:
+1: In describe(prod_sub_catg) : NAs introduced by coercion
+2: In describe(prod_sub_catg) : NAs introduced by coercion
+3: In describe(prod_sub_catg) : NAs introduced by coercion
+4: In FUN(newX[, i], ...) : no non-missing arguments to min; returning Inf
+5: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+> 
+> prod_seg <- read.csv(file = "PROD SEG.csv",
++                           header = TRUE,
++                           stringsAsFactors = FALSE,
++                           na.strings = "")
+> 
+> describe(prod_seg)
+            vars    n         mean           sd       median      trimmed          mad         min          max        range skew kurtosis
+SEG_CD*        1 1004 428178776107 305366680697 370037303735 414338192976 341032696315 10001100111 960096209629 950095109518 0.42    -1.12
+SEG_DESC*      2 1004          NaN           NA           NA          NaN           NA         Inf         -Inf         -Inf   NA       NA
+SUB_CAT_CD*    3 1004     42817877     30536668     37003730     41433819     34103269     1000110     96009620     95009510 0.42    -1.12
+                      se
+SEG_CD*     9637286987.4
+SEG_DESC*             NA
+SUB_CAT_CD*     963728.7
+Warning messages:
+1: In describe(prod_seg) : NAs introduced by coercion
+2: In describe(prod_seg) : NAs introduced by coercion
+3: In describe(prod_seg) : NAs introduced by coercion
+4: In FUN(newX[, i], ...) : no non-missing arguments to min; returning Inf
+5: In FUN(newX[, i], ...) :
+  no non-missing arguments to max; returning -Inf
+> 
+> pos_trans <- read.csv(file = "POS Transactions.csv",
++                      header = TRUE,
++                      stringsAsFactors = FALSE,
++                      na.strings = "")
+> 
+> describe(pos_trans)
+            vars      n         mean           sd       median      trimmed          mad           min          max        range   skew  kurtosis
+BSKT_ID        1 915744 7.287803e+30 2.146232e+31 5.222770e+23 3.096915e+29 7.738830e+23  1.000020e+20 9.000000e+31 9.000000e+31   2.61      4.85
+PHRMCY_NBR     2 915744 4.218913e+18 2.755666e+18 3.269396e+18 4.139947e+18 3.417287e+18  6.152055e+16 9.201518e+18 9.139998e+18   0.21     -1.22
+PROD_NBR       3 915744 5.090220e+21 2.186137e+22 3.003187e+10 3.107353e+10 3.903950e+10 -7.358821e+10 9.940000e+22 9.940000e+22   4.06     14.50
+SLS_DTE_NBR    4 915744 2.016037e+07 1.697100e+02 2.016040e+07 2.016037e+07 1.927400e+02  2.016010e+07 2.016063e+07 5.290000e+02  -0.01     -1.25
+EXT_SLS_AMT    5 915744 9.470000e+00 9.700000e+01 4.990000e+00 5.900000e+00 4.450000e+00 -2.065950e+03 7.500000e+04 7.706595e+04 544.88 397759.28
+SLS_QTY        6 915744 1.240000e+00 1.540000e+00 1.000000e+00 1.030000e+00 0.000000e+00 -3.600000e+01 3.200000e+02 3.560000e+02  51.94   7018.96
+                      se
+BSKT_ID     2.242795e+28
+PHRMCY_NBR  2.879649e+15
+PROD_NBR    2.284496e+19
+SLS_DTE_NBR 1.800000e-01
+EXT_SLS_AMT 1.000000e-01
+SLS_QTY     0.000000e+00

@@ -1,0 +1,176 @@
+---
+title: "Week5-Lab V"
+author: "Aamol Gote"
+date: "10/3/2019"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r}
+download.file("http://www.openintro.org/stat/data/nc.RData", destfile = "nc.RData")
+load("nc.RData")
+```
+```{r}
+names(nc)
+```
+
+```{r}
+dim(nc)
+```
+
+**Excercise 1**
+
+What are the cases in this data set? How many cases are there in our sample?
+
+Dataset contains cases for the birth records of the children born in state of North Carolina. There are 1000 sample cases. Dataset contains 13 variables. 
+
+
+```{r}
+summary(nc)
+```
+
+**Excercise 2**
+
+Make a side-by-side boxplot of habit and weight. What does the plot highlight about the relationship between these two variables?
+
+```{r}
+boxplot(nc$weight~nc$habit, main="weight vs habits for expecting mother", xlab = "Mother's habit(Smoker/Non Smoker)", ylab = "Weight of Child")
+```
+
+
+Based on the side by side box plot, it is clearly evident that
+
+
+1. Median weight of the child of the smoking mother is less than that of non smoking mother.
+
+2. Non smokers data has lot of outliars compared that to smoking mother's. It has more outliars across both whiskers.
+
+3. There is high degree of variance in the non smoking category than that of smoking category. 
+
+
+
+
+```{r}
+by(nc$weight, nc$habit,  mean)
+```
+
+**Excercise 3**
+
+Check if the conditions necessary for inference are satisfied. Note that you will need to obtain sample sizes to check the conditions. You can compute the group size using the same by command above but replacing mean with length.
+
+```{r}
+by(nc$weight, nc$habit,  length)
+
+```
+
+Conditions for inferences: Independence and Sample Size
+
+Sampling is random. 
+
+Sample size is 1000, so it can be safely assumed that it is less than 10% of the overall population.
+
+**Excercise 4**
+
+Write the hypotheses for testing if the average weights of babies born to smoking and non-smoking mothers are different.
+
+Null Hypothesis : There is **no difference** in the average weights of babies born to smoking and non-smoking mothers
+
+
+Alternative Hypothesis : There is **difference** in the average weights of babies born to smoking and non-smoking mothers
+
+
+======================================================================
+
+
+weight => Response variables
+
+habit => explantory variable
+
+
+```{r}
+inference(y = nc$weight, x = nc$habit, est = "mean", type = "ht", null = 0, alternative = "twosided", method = "theoretical")
+```
+ 
+**Excercise 5**
+
+Change the type argument to "ci" to construct and record a confidence interval for the difference between the weights of babies born to smoking and non-smoking mothers.
+
+```{r}
+inference(y = nc$weight, x = nc$habit, est = "mean", type = "ci", null = 0, alternative = "twosided", method = "theoretical")
+```
+```{r}
+inference(y = nc$weight, x = nc$habit, est = "mean", type = "ci", null = 0, 
+          alternative = "twosided", method = "theoretical", 
+          order = c("smoker","nonsmoker"))
+```
+
+
+Confidence interval for the difference between the weights of babies born to smoking and non-smoking mothers is between -0.5777 and -0.0534
+
+
+**On your own**
+
+1. Calculate a 95% confidence interval for the average length of pregnancies (weeks) and interpret it in context. Note that since you’re doing inference on a single population parameter, there is no explanatory variable, so you can omit the x variable from the function.
+
+```{r}
+inference(y = nc$weeks, est = "mean", type = "ci", method = "theoretical")
+```
+
+So we are 95% confidence that average length of pregnancies in weeks falls between 38.1528 and 38.5165
+
+
+2. Calculate a new confidence interval for the same parameter at the 90% confidence level. You can change the confidence level by adding a new argument to the function: conflevel = 0.90.
+```{r}
+inference(y = nc$weeks, est = "mean", type = "ci", method = "theoretical", conflevel = 0.90)
+```
+
+So we are 90% confidence that average length of pregnancies in weeks falls between 38.182 and 38.4873 
+
+
+3. Conduct a hypothesis test evaluating whether the average weight gained by younger mothers is different than the average weight gained by mature mothers.
+
+
+Ho: There **is no difference** in the average weight gained by young mothers and mature mothers
+
+Ho: There **is difference** in the average weight gained by young mothers and mature mothers
+
+```{r}
+inference(y = nc$weight, x = nc$mature, est = "mean", type = "ht", null = 0, alternative = "twosided", method = "theoretical")
+```
+
+P-value (0.8526) is higher than significance level of 0.05 so **fail to reject NULL hypothesis**. So there is not much evidence to prove that average weight gained by younger mothers is different than the average weight gained by mature mothers.
+
+
+4. Now, a non-inference task: Determine the age cutoff for younger and mature mothers. Use a method of your choice, and explain how your method works.
+
+```{r}
+by(nc$mage, nc$mature, summary)
+```
+
+Max age of younger mothers is: 34
+
+Min age of mature mothers is: 35
+
+So mother with age > 34 which is 35 are considered to be mature and age <=34 are considered young mothers. So the age cutoff for younger and mature mothers is **35**
+
+
+5. Pick a pair of numerical and categorical variables and come up with a research question evaluating the relationship between these variables. Formulate the question in a way that it can be answered using a hypothesis test and/or a confidence interval. Answer your question using the inference function, report the statistical results, and also provide an explanation in plain language.
+
+Numerical variable : Length of pregnancy in weeks
+Categorical Variable: habit (Smoking/Non Smoking)
+
+Question: Is there a difference in length of preganacy in week for smoking and non smoking mothers?
+
+Ho: There **is no difference** in average length of preganacy in weeks for smoking and non smoking mothers
+
+Ha: There **is difference** in average length of preganacy in weeks for smoking and non smoking mothers
+
+```{r}
+inference(y = nc$weeks, x = nc$habit, est = "mean", type = "ht", null = 0, alternative = "twosided", method = "theoretical",order = c("smoker","nonsmoker"))
+```
+
+
+In this case p-value(0.6038) is greater than 0.05 (significance level), so we fail to reject Null hypothesis. So there is not sufficient evidence to provie that there is a difference in length of preganacy in week for smoking and non smoking mothers.
+
+We affirm the null hypothesis. 
