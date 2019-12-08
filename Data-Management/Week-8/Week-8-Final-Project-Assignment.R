@@ -189,7 +189,7 @@ write.csv(nonPerfPharmacyStores, file = "final-project/nonPerfPharmacyStores.csv
 
 
 statewiseSalesRevenue <- POS_TRANS %>%
-  inner_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
+  left_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
   group_by(ST_CD) %>%
   summarise(STATE_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
   arrange(desc(STATE_SALES_REVENUE)) %>%
@@ -197,6 +197,12 @@ statewiseSalesRevenue <- POS_TRANS %>%
   slice(1:10)
 statewiseSalesRevenue
 write.csv(statewiseSalesRevenue, file = "final-project/statewiseSalesRevenue.csv", row.names=FALSE)
+
+monthwiseSales <- POS_TRANS %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT))
+monthwiseSales
 
 
 
