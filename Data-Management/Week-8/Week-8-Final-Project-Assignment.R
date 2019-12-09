@@ -5,6 +5,7 @@ library(Hmisc)
 library(readr)
 library(tibble)
 library(dplyr)
+library(ggplot2)
 
 main_dir <- "~/ABCPharmacy/CSV"
 setwd(main_dir)
@@ -199,10 +200,14 @@ statewiseSalesRevenue
 write.csv(statewiseSalesRevenue, file = "final-project/statewiseSalesRevenue.csv", row.names=FALSE)
 
 monthwiseSales <- POS_TRANS %>%
-  mutate(saleMonth = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
-  group_by(saleYear, saleMonth) %>%
-  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT))
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(saleMonthNum)
+
+monthwiseSales <- unite(monthwiseSales, monthAndYear, c(saleMonth, saleYear), sep="-", remove=FALSE)
 monthwiseSales
+write.csv(monthwiseSales, file = "final-project/monthwiseSales.csv", row.names=FALSE)
 
 
 

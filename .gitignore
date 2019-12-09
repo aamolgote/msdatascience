@@ -1236,3 +1236,4 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 /.vs/slnx.sqlite
 /.vs/msdatascience/v15/.suo
 /.vs/VSWorkspaceState.json
+/.vs/msdatascience/v16/.suo
