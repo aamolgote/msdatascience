@@ -210,4 +210,61 @@ monthwiseSales
 write.csv(monthwiseSales, file = "final-project/monthwiseSales.csv", row.names=FALSE)
 
 
+#*monthwiseSalesByProductSegments <- POS_TRANS %>%
+#  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%
+#  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+#  group_by(saleYear, saleMonth, saleMonthNum, PROD_NBR, PROD_DESC) %>%
+#  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+#  filter(monthlySaleValue >= max(monthlySaleValue)) %>%
+#  arrange(saleMonthNum)
+#monthwiseSalesByProducts
+#write.csv(monthwiseSalesByProducts, file = "final-project/monthwiseSalesByProducts.csv", row.names=FALSE)
 
+
+
+monthwiseSalesByProductSegments <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum, SEGMENT_CD, SEG_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(saleMonthNum, desc(monthlySaleValue))
+monthwiseSalesByProductSegments
+
+
+monthwiseSalesByProductSubCat <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum, SUB_CAT_CD, SUB_CAT_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(saleMonthNum, desc(monthlySaleValue))
+monthwiseSalesByProductSubCat
+
+
+
+monthwiseSalesByProductCat <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
+  inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum, CAT_CD, CAT_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(saleMonthNum, desc(monthlySaleValue))
+monthwiseSalesByProductCat
+
+
+monthwiseSalesByProductMajorCat <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
+  inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
+  inner_join(MAJOR_PROD_CAT, by = c("MAJOR_CAT_CD" = "MAJOR_CAT_CD")) %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum, MAJOR_CAT_CD, MAJOR_CAT_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(saleMonthNum, desc(monthlySaleValue))
+monthwiseSalesByProductMajorCat
+write.csv(monthwiseSalesByProductMajorCat, file = "final-project/monthwiseSalesByProductMajorCat.csv", row.names=FALSE)
