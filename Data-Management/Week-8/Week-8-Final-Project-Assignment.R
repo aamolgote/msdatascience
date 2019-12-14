@@ -211,8 +211,65 @@ monthwiseSalesByProductMajorCat <- POS_TRANS %>%
 monthwiseSalesByProductMajorCat
 write.csv(monthwiseSalesByProductMajorCat, file = "final-project/monthwiseSalesByProductMajorCat.csv", row.names=FALSE)
 
+highsellingProductInHealthCareCategoryInMarch <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
+  inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
+  inner_join(MAJOR_PROD_CAT, by = c("MAJOR_CAT_CD" = "MAJOR_CAT_CD")) %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  filter(saleMonthNum == '03') %>%
+  filter(MAJOR_CAT_CD == '5228') %>%
+  group_by(PROD_NBR, PROD_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(desc(monthlySaleValue))
+highsellingProductInHealthCareCategoryInMarch
+write.csv(highsellingProductInHealthCareCategoryInMarch, file = "final-project/highsellingProductInHealthCareCategoryInMarch.csv", row.names=FALSE)
 
 
+highsellingProductInHealthCareCategoryInMarch <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
+  inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
+  inner_join(MAJOR_PROD_CAT, by = c("MAJOR_CAT_CD" = "MAJOR_CAT_CD")) %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  filter(saleMonthNum == '03') %>%
+  filter(MAJOR_CAT_CD == '5228') %>%
+  group_by(PROD_NBR, PROD_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(desc(monthlySaleValue))
+highsellingProductInHealthCareCategoryInMarch
+write.csv(highsellingProductInHealthCareCategoryInMarch, file = "final-project/highsellingProductInHealthCareCategoryInMarch.csv", row.names=FALSE)
+
+#What are the average number of products sold per transaction, per order, per month?
+#Per Order
+averageNumberOfProductsAndValuePerOrder <- POS_TRANS %>%
+  group_by(BSKT_ID) %>%
+  summarise(numberOfProducts = sum(SLS_QTY), orderValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  summarise(averageNumberOfProductsPerOrder = mean(numberOfProducts), averageOrderValue = mean(orderValue))
+averageNumberOfProductsAndValuePerOrder
+
+#Per Month
+averageNumberOfProductsAndValueMonthly <- POS_TRANS %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum) %>%
+  summarise(numberOfProducts = sum(SLS_QTY), orderValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  ungroup %>%
+  summarise(averageNumberOfProducts = mean(numberOfProducts), averageOrderValue = mean(orderValue))
+
+#What's state wise sales revenue?
+statewiseSalesRevenue <- POS_TRANS %>%
+  left_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
+  group_by(ST_CD) %>%
+  summarise(STATE_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(desc(STATE_SALES_REVENUE)) %>%
+  ungroup %>%
+  slice(1:10)
+statewiseSalesRevenue
+write.csv(statewiseSalesRevenue, file = "final-project/statewiseSalesRevenue.csv", row.names=FALSE)
+
+#	Which store has maximum performance based on sales revenue?
 maxSalesRevenueStores <- POS_TRANS %>%
   inner_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
   group_by(PHRMCY_NBR, PHRMCY_NAM) %>%
@@ -223,16 +280,49 @@ maxSalesRevenueStores <- POS_TRANS %>%
 maxSalesRevenueStores
 write.csv(maxSalesRevenueStores, file = "final-project/maxSalesRevenueStores.csv", row.names=FALSE)
 
+# What's average sale per store?
+averageSalePerStore <- POS_TRANS %>%
+  left_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
+  group_by(PHRMCY_NBR) %>%
+  summarise(SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  summarise(averageSalePerStore = mean(SALES_REVENUE))
+averageSalePerStore
 
-nonPerfPharmacyStores <- POS_TRANS %>%
-  inner_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
-  group_by(PHRMCY_NBR, PHRMCY_NAM) %>%
+
+#What are number of stores state wise?
+statewiseNUmberOfStores <- PHRMCY_MASTER %>%
+  group_by(ST_CD) %>%
+  summarise(NUMBER_OF_STORES = n()) %>%
+  arrange(desc(NUMBER_OF_STORES))
+statewiseNUmberOfStores
+write.csv(statewiseNUmberOfStores, file = "final-project/statewiseNUmberOfStores.csv", row.names=FALSE)
+
+#11.	Non Performing stores - If there is need to minimize the losses, then which stores ABC pharmacy should be closing? 
+#(Note: Stores with least sales revenue can be closed)
+nonPerfPharmacyStores <- PHRMCY_MASTER %>%
+  left_join(POS_TRANS, by = 'PHRMCY_NBR') %>%
+  group_by(PHRMCY_NBR, PHRMCY_NAM, ST_CD) %>%
   summarise(PHRMCY_NBR_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
-  arrange(PHRMCY_NBR_SALES_REVENUE) %>%
-  ungroup %>%
-  slice(1:10)
+  filter(is.na(PHRMCY_NBR_SALES_REVENUE))
 nonPerfPharmacyStores
 write.csv(nonPerfPharmacyStores, file = "final-project/nonPerfPharmacyStores.csv", row.names=FALSE)
+
+nonPerfPharmacyStoresStatewise <- nonPerfPharmacyStores  %>%
+  group_by(ST_CD) %>%
+  summarise(NON_PERF_PHARMACY_COUNT = n())%>%
+  arrange(ST_CD)
+nonPerfPharmacyStoresStatewise
+write.csv(nonPerfPharmacyStoresStatewise, file = "final-project/nonPerfPharmacyStoresStatewise.csv", row.names=FALSE)
+
+nonPerfPharmacyStoresByMinRev <- PHRMCY_MASTER %>%
+  left_join(POS_TRANS, by = 'PHRMCY_NBR') %>%
+  group_by(PHRMCY_NBR, PHRMCY_NAM) %>%
+  summarise(PHRMCY_NBR_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(PHRMCY_NBR_SALES_REVENUE)
+nonPerfPharmacyStoresByMinRev
+write.csv(nonPerfPharmacyStoresByMinRev, file = "final-project/nonPerfPharmacyStoresByMinRev.csv", row.names=FALSE)
+
+
 
 
 statewiseSalesRevenue <- POS_TRANS %>%
@@ -245,18 +335,6 @@ statewiseSalesRevenue <- POS_TRANS %>%
 statewiseSalesRevenue
 write.csv(statewiseSalesRevenue, file = "final-project/statewiseSalesRevenue.csv", row.names=FALSE)
 
-
-
-
-#*monthwiseSalesByProductSegments <- POS_TRANS %>%
-#  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%
-#  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
-#  group_by(saleYear, saleMonth, saleMonthNum, PROD_NBR, PROD_DESC) %>%
-#  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
-#  filter(monthlySaleValue >= max(monthlySaleValue)) %>%
-#  arrange(saleMonthNum)
-#monthwiseSalesByProducts
-#write.csv(monthwiseSalesByProducts, file = "final-project/monthwiseSalesByProducts.csv", row.names=FALSE)
 
 
 
