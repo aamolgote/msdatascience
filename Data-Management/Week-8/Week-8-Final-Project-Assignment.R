@@ -135,6 +135,25 @@ cat("Number of duplicated transactions:", posTransDupCountByDteAmtQty)
 # Duplicate row count = 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY is primary key
 print("Duplicate row count = 0, so BSKT_ID, PROD_NBR, PHRMCY_NBR, SLS_DTE, EXT_SLS_AMT, SLS_QTY is primary key")
 
+
+#What's total sales revenue for ABC Pharmacy for Jan 2016 to June 2016?
+totalSalesRevenue <- POS_TRANS %>%
+  summarise(TOTAL_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT))
+totalSalesRevenue
+
+#What's percentage gain/loss in sales revenue every month for Jan 2016 to June 2016?
+monthwiseSales <- POS_TRANS %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(saleMonthNum)
+monthwiseSales <- unite(monthwiseSales, monthAndYear, c(saleMonth, saleYear), sep="-", remove=FALSE)
+monthwiseSales
+write.csv(monthwiseSales, file = "final-project/monthwiseSales.csv", row.names=FALSE)
+
+
+# Which are the best-selling product?
+# By Quantity
 maxSellingProductsByQuantity <- POS_TRANS %>%
   inner_join(PROD_MASTER, by = 'PROD_NBR') %>%
   group_by(PROD_NBR, PROD_DESC) %>%
@@ -145,15 +164,7 @@ maxSellingProductsByQuantity <- POS_TRANS %>%
 maxSellingProductsByQuantity
 write.csv(maxSellingProductsByQuantity, file = "final-project/maxsellingproducts.csv", row.names=FALSE)
 
-nonPerfProductsByQuantity <- POS_TRANS %>%
-  LEFT_join(PROD_MASTER, by = 'PROD_NBR') %>%
-  group_by(PROD_NBR, PROD_DESC) %>%
-  summarise(PRODUCT_QTY_ORDER = sum(SLS_QTY)) %>%
-  fiter(PRODUCT_QTY_ORDER < 10)
-nonPerfProductsByQuantity
-write.csv(nonPerfProductsByQuantity, file = "final-project/nonproducts.csv", row.names=FALSE)
-
-
+# By Sales Revenue
 maxSellingProductsBySalesAmt <- POS_TRANS %>%
   inner_join(PROD_MASTER, by = 'PROD_NBR') %>%
   group_by(PROD_NBR, PROD_DESC) %>%
@@ -164,6 +175,41 @@ maxSellingProductsBySalesAmt <- POS_TRANS %>%
 maxSellingProductsBySalesAmt
 write.csv(maxSellingProductsBySalesAmt, file = "final-project/maxSellingProductsBySalesAmt.csv", row.names=FALSE)
 
+
+nonPerfProductsByQuantity <- POS_TRANS %>%
+  LEFT_join(PROD_MASTER, by = 'PROD_NBR') %>%
+  group_by(PROD_NBR, PROD_DESC) %>%
+  summarise(PRODUCT_QTY_ORDER = sum(SLS_QTY)) %>%
+  fiter(PRODUCT_QTY_ORDER < 10)
+nonPerfProductsByQuantity
+write.csv(nonPerfProductsByQuantity, file = "final-project/nonproducts.csv", row.names=FALSE)
+
+#Which major product categories perform better?
+majorProductCatgPerformance <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
+  inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
+  inner_join(MAJOR_PROD_CAT, by = c("MAJOR_CAT_CD" = "MAJOR_CAT_CD")) %>%
+  group_by(MAJOR_CAT_CD, MAJOR_CAT_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(desc(monthlySaleValue))
+majorProductCatgPerformance
+write.csv(majorProductCatgPerformance, file = "final-project/majorProductCatgPerformance.csv", row.names=FALSE)
+
+#Are some products categories getting sold in greater quantities based on seasonality? 
+monthwiseSalesByProductMajorCat <- POS_TRANS %>%
+  inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
+  inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
+  inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
+  inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
+  inner_join(MAJOR_PROD_CAT, by = c("MAJOR_CAT_CD" = "MAJOR_CAT_CD")) %>%
+  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
+  group_by(saleYear, saleMonth, saleMonthNum, MAJOR_CAT_CD, MAJOR_CAT_DESC) %>%
+  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
+  arrange(saleMonthNum, desc(monthlySaleValue))
+monthwiseSalesByProductMajorCat
+write.csv(monthwiseSalesByProductMajorCat, file = "final-project/monthwiseSalesByProductMajorCat.csv", row.names=FALSE)
 
 
 
@@ -199,15 +245,7 @@ statewiseSalesRevenue <- POS_TRANS %>%
 statewiseSalesRevenue
 write.csv(statewiseSalesRevenue, file = "final-project/statewiseSalesRevenue.csv", row.names=FALSE)
 
-monthwiseSales <- POS_TRANS %>%
-  mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
-  group_by(saleYear, saleMonth, saleMonthNum) %>%
-  summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
-  arrange(saleMonthNum)
 
-monthwiseSales <- unite(monthwiseSales, monthAndYear, c(saleMonth, saleYear), sep="-", remove=FALSE)
-monthwiseSales
-write.csv(monthwiseSales, file = "final-project/monthwiseSales.csv", row.names=FALSE)
 
 
 #*monthwiseSalesByProductSegments <- POS_TRANS %>%
