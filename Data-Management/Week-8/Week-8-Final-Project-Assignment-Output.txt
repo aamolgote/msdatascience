@@ -1,7 +1,29 @@
-> #install.packages("Hmisc")
+ #install.packages("Hmisc")
 > # Import the Tidyverse
 > library(tidyverse)
+-- Attaching packages --------------------------------------- tidyverse 1.2.1 --
+v ggplot2 3.2.1     v purrr   0.3.3
+v tibble  2.1.3     v dplyr   0.8.3
+v tidyr   1.0.0     v stringr 1.4.0
+v readr   1.3.1     v forcats 0.4.0
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()
 > library(Hmisc)
+Loading required package: lattice
+Loading required package: survival
+Loading required package: Formula
+
+Attaching package: ‘Hmisc’
+
+The following objects are masked from ‘package:dplyr’:
+
+    src, summarize
+
+The following objects are masked from ‘package:base’:
+
+    format.pval, units
+
 > library(readr)
 > library(tibble)
 > library(dplyr)
@@ -144,6 +166,7 @@ lowest : 01000110 01000120 01000130 01000140 03000310, highest: 95009510 9500952
 ------------------------------------------------------------------------------------------------------------------------------------------
 > 
 > PROD_MASTER <- read_csv(file = "PROD MASTER.csv", col_names = TRUE, col_types = "cccccc")
+|===========================================================================================================================| 100%   12 MB
 > prod_master_columns <- c("PROD_NBR","PROD_DESC", "SEGMENT_CD")
 > PROD_MASTER = PROD_MASTER[prod_master_columns]
 > describe(PROD_MASTER)
@@ -208,6 +231,7 @@ Proportion 0.038 0.004 0.046 0.019 0.002 0.263 0.356 0.179 0.088 0.003 0.001 0.0
 > 
 > 
 > POS_TRANS <- read_csv(file = "POS Transactions.csv",col_names = TRUE, col_types = "ccccdi")
+|===========================================================================================================================| 100%   64 MB
 > POS_TRANS$SLS_DTE_NBR <- paste(substr(POS_TRANS$SLS_DTE_NBR, 1, 4), substr(POS_TRANS$SLS_DTE_NBR, 5, 6), substr(POS_TRANS$SLS_DTE_NBR, 7, 8), sep="-")    
 > # Adjust date column
 > POS_TRANS$SLS_DTE_NBR <- strftime(POS_TRANS$SLS_DTE_NBR, format = "%Y-%m-%d %H:%M:%S")
@@ -368,18 +392,18 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 > 
 > #What's total sales revenue for ABC Pharmacy for Jan 2016 to June 2016?
 > totalSalesRevenue <- POS_TRANS %>%
-+   summarise(TOTAL_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT))
++   summarise(TOTAL_SALES_REVENUE = sum(EXT_SLS_AMT))
 > totalSalesRevenue
 # A tibble: 1 x 1
   TOTAL_SALES_REVENUE
                 <dbl>
-1           17283853.
+1            8674939.
 > 
 > #What's percentage gain/loss in sales revenue every month for Jan 2016 to June 2016?
 > monthwiseSales <- POS_TRANS %>%
 +   mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
 +   group_by(saleYear, saleMonth, saleMonthNum) %>%
-+   summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(monthlySaleValue = sum(EXT_SLS_AMT)) %>%
 +   arrange(saleMonthNum)
 > monthwiseSales <- unite(monthwiseSales, monthAndYear, c(saleMonth, saleYear), sep="-", remove=FALSE)
 > monthwiseSales
@@ -387,12 +411,12 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 # Groups:   saleYear, saleMonth [6]
   monthAndYear saleYear saleMonth saleMonthNum monthlySaleValue
   <chr>        <chr>    <chr>     <chr>                   <dbl>
-1 Jan-2016     2016     Jan       01                   3026924.
-2 Feb-2016     2016     Feb       02                   2900312.
-3 Mar-2016     2016     Mar       03                   3707182.
-4 Apr-2016     2016     Apr       04                   2304948.
-5 May-2016     2016     May       05                   2523209.
-6 Jun-2016     2016     Jun       06                   2821278.
+1 Jan-2016     2016     Jan       01                   1421788.
+2 Feb-2016     2016     Feb       02                   1451625.
+3 Mar-2016     2016     Mar       03                   1545905.
+4 Apr-2016     2016     Apr       04                   1308422.
+5 May-2016     2016     May       05                   1378816.
+6 Jun-2016     2016     Jun       06                   1568381.
 > write.csv(monthwiseSales, file = "final-project/monthwiseSales.csv", row.names=FALSE)
 > 
 > # Which are the best-selling product?
@@ -424,7 +448,7 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 > maxSellingProductsBySalesAmt <- POS_TRANS %>%
 +   inner_join(PROD_MASTER, by = 'PROD_NBR') %>%
 +   group_by(PROD_NBR, PROD_DESC) %>%
-+   summarise(PRODUCT_VALUE_ORDER = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(PRODUCT_VALUE_ORDER = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(PRODUCT_VALUE_ORDER)) %>%
 +   ungroup %>%
 +   slice(1:10)
@@ -432,16 +456,16 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 # A tibble: 10 x 3
    PROD_NBR                PROD_DESC               PRODUCT_VALUE_ORDER
    <chr>                   <chr>                                 <dbl>
- 1 99100000770330000000003 MONEY ORDER                        1662010.
- 2 90800000000             VITAMINS/SUPPLEMENTS                756300.
- 3 98650000000000185441572 STRUTZ PRO                          745805.
- 4 91000000000             LOTTO                               480598.
- 5 98650000000000944904150 WHEELED WALKER BRA/SEAT             474030.
- 6 90400000000             DME SALES                           472319.
- 7 79936677762             GIFT CARD VISA $20-$500             426615.
- 8 92000000000             GENERICQS1ITEM                      378585.
- 9 90600000000             CARDS                               357964 
-10 90300000000             DME                                 288135.
+ 1 99100000770330000000003 MONEY ORDER                         783415.
+ 2 99100000234116000000009 MONEYGRAM                           256944.
+ 3 90400000000             DME SALES                           234125.
+ 4 91000000000             LOTTO                               221579.
+ 5 90800000000             VITAMINS/SUPPLEMENTS                182751.
+ 6 90300000000             DME                                 171306.
+ 7 90600000000             CARDS                               136317.
+ 8 98650000000000944904150 WHEELED WALKER BRA/SEAT             135200.
+ 9 99100000066590000000006 CANDY OPEN DEPARTMENT                81239.
+10 98650000000000185441572 STRUTZ PRO                           59452.
 > write.csv(maxSellingProductsBySalesAmt, file = "final-project/maxSellingProductsBySalesAmt.csv", row.names=FALSE)
 > 
 > # Non Perfroming products 
@@ -467,50 +491,55 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
 +   inner_join(MAJOR_PROD_CAT, by = c("MAJOR_CAT_CD" = "MAJOR_CAT_CD")) %>%
 +   group_by(MAJOR_CAT_CD, MAJOR_CAT_DESC) %>%
-+   summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(monthlySaleValue = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(monthlySaleValue))
 > majorProductCatgPerformance
 # A tibble: 10 x 3
 # Groups:   MAJOR_CAT_CD [10]
    MAJOR_CAT_CD MAJOR_CAT_DESC      monthlySaleValue
    <chr>        <chr>                          <dbl>
- 1 5228         HEALTH CARE                 6311437.
- 2 6137         GENERAL MERCHANDISE         5380539.
- 3 3391         HOME HEALTH CARE            2071468.
- 4 9687         GREETING CARDS              1115705.
- 5 4371         EDIBLES                      973702.
- 6 7392         PERSONAL CARE                641857.
- 7 7020         BEAUTY                       378115.
- 8 1941         PHOTO                        211493.
- 9 2343         DIABETES                     172144.
-10 5068         MISC                          27392.
+ 1 5228         HEALTH CARE                 3543518.
+ 2 6137         GENERAL MERCHANDISE         2125004.
+ 3 3391         HOME HEALTH CARE            1122959.
+ 4 9687         GREETING CARDS               574274.
+ 5 7392         PERSONAL CARE                465215.
+ 6 4371         EDIBLES                      345417.
+ 7 7020         BEAUTY                       319911.
+ 8 2343         DIABETES                      98873.
+ 9 1941         PHOTO                         58444.
+10 5068         MISC                          21324.
 > write.csv(majorProductCatgPerformance, file = "final-project/majorProductCatgPerformance.csv", row.names=FALSE)
 > 
 > #What are the average number of products sold per transaction, per order, per month?
 > #Per Order
 > averageNumberOfProductsAndValuePerOrder <- POS_TRANS %>%
 +   group_by(BSKT_ID) %>%
-+   summarise(numberOfProducts = sum(SLS_QTY), orderValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(numberOfProducts = sum(SLS_QTY), orderValue = sum(EXT_SLS_AMT)) %>%
 +   summarise(averageNumberOfProductsPerOrder = mean(numberOfProducts), averageOrderValue = mean(orderValue))
 > averageNumberOfProductsAndValuePerOrder
 # A tibble: 1 x 2
   averageNumberOfProductsPerOrder averageOrderValue
                             <dbl>             <dbl>
-1                            1.82              27.8
+1                            1.82              14.0
 > 
 > #Per Month
 > averageNumberOfProductsAndValueMonthly <- POS_TRANS %>%
 +   mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
 +   group_by(saleYear, saleMonth, saleMonthNum) %>%
-+   summarise(numberOfProducts = sum(SLS_QTY), orderValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(numberOfProducts = sum(SLS_QTY), orderValue = sum(EXT_SLS_AMT)) %>%
 +   ungroup %>%
 +   summarise(averageNumberOfProducts = mean(numberOfProducts), averageOrderValue = mean(orderValue))
+> averageNumberOfProductsAndValueMonthly
+# A tibble: 1 x 2
+  averageNumberOfProducts averageOrderValue
+                    <dbl>             <dbl>
+1                 188661.          1445823.
 > 
 > #What's state wise sales revenue?
 > statewiseSalesRevenue <- POS_TRANS %>%
 +   left_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
 +   group_by(ST_CD) %>%
-+   summarise(STATE_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(STATE_SALES_REVENUE = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(STATE_SALES_REVENUE)) %>%
 +   ungroup %>%
 +   slice(1:10)
@@ -518,50 +547,50 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 # A tibble: 7 x 2
   ST_CD STATE_SALES_REVENUE
   <chr>               <dbl>
-1 NJ               6413468.
-2 PA               4277292.
-3 NY               2733152.
-4 CT               2665387.
-5 MA                798851.
-6 ME                388652.
-7 DE                  7050.
+1 NJ               3366115.
+2 PA               2018783.
+3 CT               1416246.
+4 NY               1004425.
+5 MA                580192.
+6 ME                282872.
+7 DE                  6306.
 > write.csv(statewiseSalesRevenue, file = "final-project/statewiseSalesRevenue.csv", row.names=FALSE)
 > 
 > #	Which store has maximum performance based on sales revenue?
 > maxSalesRevenueStores <- POS_TRANS %>%
 +   inner_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
 +   group_by(PHRMCY_NBR, PHRMCY_NAM) %>%
-+   summarise(PHRMCY_NBR_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(PHRMCY_NBR_SALES_REVENUE = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(PHRMCY_NBR_SALES_REVENUE)) %>%
 +   ungroup %>%
 +   slice(1:10)
 > maxSalesRevenueStores
 # A tibble: 10 x 3
-   PHRMCY_NBR          PHRMCY_NAM        PHRMCY_NBR_SALES_REVENUE
-   <chr>               <chr>                                <dbl>
- 1 4416100399456673861 GNP PHARMACY #453                 2116067.
- 2 2487426938853675539 GNP PHARMACY #200                 1743901.
- 3 61520549788616420   GNP PHARMACY #680                 1701263.
- 4 3009693108150153253 GNP PHARMACY #269                 1437317.
- 5 2759406693434064370 GNP PHARMACY #232                  574578.
- 6 1174450154022548624 GNP PHARMACY #18                   522080.
- 7 6991356705459241502 GNP PHARMACY #795                  519509.
- 8 657046048504326744  GNP PHARMACY #739                  471033.
- 9 7003025686214903268 GNP PHARMACY #798                  412827.
-10 8506230257184703229 GNP PHARMACY #990                  397611.
+   PHRMCY_NBR          PHRMCY_NAM         PHRMCY_NBR_SALES_REVENUE
+   <chr>               <chr>                                 <dbl>
+ 1 4416100399456673861 GNP PHARMACY #453                  1131364.
+ 2 61520549788616420   GNP PHARMACY #680                   434792.
+ 3 6991356705459241502 GNP PHARMACY #795                   381646.
+ 4 1174450154022548624 GNP PHARMACY #18                    380015.
+ 5 2487426938853675539 GNP PHARMACY #200                   372104.
+ 6 3009693108150153253 GNP PHARMACY #269                   370537.
+ 7 2759406693434064370 GNP PHARMACY #232                   326267.
+ 8 8506230257184703229 GNP PHARMACY #990                   307931.
+ 9 9201518331233084207 GNP PHARMACY #1090                  216062.
+10 2230913098736515247 GNP PHARMACY #166                   205123.
 > write.csv(maxSalesRevenueStores, file = "final-project/maxSalesRevenueStores.csv", row.names=FALSE)
 > 
 > # What's average sale per store?
 > averageSalePerStore <- POS_TRANS %>%
 +   left_join(PHRMCY_MASTER, by = 'PHRMCY_NBR') %>%
 +   group_by(PHRMCY_NBR) %>%
-+   summarise(SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(SALES_REVENUE = sum(EXT_SLS_AMT)) %>%
 +   summarise(averageSalePerStore = mean(SALES_REVENUE))
 > averageSalePerStore
 # A tibble: 1 x 1
   averageSalePerStore
                 <dbl>
-1             163055.
+1              81839.
 > 
 > 
 > #What are number of stores state wise?
@@ -594,7 +623,7 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 > nonPerfPharmacyStores <- PHRMCY_MASTER %>%
 +   left_join(POS_TRANS, by = 'PHRMCY_NBR') %>%
 +   group_by(PHRMCY_NBR, PHRMCY_NAM, ST_CD) %>%
-+   summarise(PHRMCY_NBR_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(PHRMCY_NBR_SALES_REVENUE = sum(EXT_SLS_AMT)) %>%
 +   filter(is.na(PHRMCY_NBR_SALES_REVENUE))
 > nonPerfPharmacyStores
 # A tibble: 991 x 4
@@ -642,7 +671,7 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 > nonPerfPharmacyStoresByMinRev <- PHRMCY_MASTER %>%
 +   left_join(POS_TRANS, by = 'PHRMCY_NBR') %>%
 +   group_by(PHRMCY_NBR, PHRMCY_NAM) %>%
-+   summarise(PHRMCY_NBR_SALES_REVENUE = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(PHRMCY_NBR_SALES_REVENUE = sum(EXT_SLS_AMT)) %>%
 +   arrange(PHRMCY_NBR_SALES_REVENUE)
 > nonPerfPharmacyStoresByMinRev
 # A tibble: 1,097 x 3
@@ -651,14 +680,14 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
    <chr>               <chr>                                 <dbl>
  1 2109913237959930897 GNP PHARMACY #150                      100 
  2 1864727887909581358 GNP PHARMACY #116                      152.
- 3 2557779967183367219 GNP PHARMACY #211                      261.
- 4 7352666603740569574 GNP PHARMACY #835                      611.
- 5 767790889581973829  GNP PHARMACY #881                     1075.
- 6 4474219946559825502 GNP PHARMACY #458                     2101.
- 7 7020056645499029586 GNP PHARMACY #800                     2421.
- 8 8932873020424827010 GNP PHARMACY #1053                    3325.
- 9 6456621789121903095 GNP PHARMACY #725                     4921.
-10 8146743720163240233 GNP PHARMACY #942                     6316.
+ 3 2557779967183367219 GNP PHARMACY #211                      224.
+ 4 7352666603740569574 GNP PHARMACY #835                      498.
+ 5 767790889581973829  GNP PHARMACY #881                     1034.
+ 6 7020056645499029586 GNP PHARMACY #800                     1663.
+ 7 4474219946559825502 GNP PHARMACY #458                     1908.
+ 8 8932873020424827010 GNP PHARMACY #1053                    2491.
+ 9 6456621789121903095 GNP PHARMACY #725                     3814.
+10 8146743720163240233 GNP PHARMACY #942                     4014.
 # ... with 1,087 more rows
 > write.csv(nonPerfPharmacyStoresByMinRev, file = "final-project/nonPerfPharmacyStoresByMinRev.csv", row.names=FALSE)
 > 
@@ -670,23 +699,23 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
 +   filter(PHRMCY_NBR == '4416100399456673861') %>%
 +   group_by(PROD_NBR, PROD_DESC) %>%
-+   summarise(salesRevenueBYProduct = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(salesRevenueBYProduct = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(salesRevenueBYProduct))
 > maxRevenueGeneratorProductForStore  
 # A tibble: 1,577 x 3
 # Groups:   PROD_NBR [1,577]
-   PROD_NBR                PROD_DESC              salesRevenueBYProduct
-   <chr>                   <chr>                                  <dbl>
- 1 99100000770330000000003 MONEY ORDER                         1662010.
- 2 99100000234116000000009 MONEYGRAM                            263872.
- 3 1820025008              01820025008                           34315.
- 4 99100000081989000000040 STAMPS                                18392.
- 5 99100000179742000000050 SYRINGE & NEEDLE                      13510.
- 6 30087510191             TYROS 1 INFANT FORMULA                11050 
- 7 99100000120141000000010 CANDY & BEVERAGE                      10921.
- 8 2610000573              NEWPORT 100'S                         10624.
- 9 1820025002              NAT LT 15PK 25OZ CAN                   7480.
-10 99100000643311000000027 CELL CARDS                             6295.
+   PROD_NBR                PROD_DESC            salesRevenueBYProduct
+   <chr>                   <chr>                                <dbl>
+ 1 99100000770330000000003 MONEY ORDER                        783415.
+ 2 99100000234116000000009 MONEYGRAM                          256944.
+ 3 1820025008              01820025008                         13054.
+ 4 2610000573              NEWPORT 100'S                        9650.
+ 5 99100000643311000000027 CELL CARDS                           5715.
+ 6 8085322022              DUBRA VODKA 200                      4619.
+ 7 8085322021              DUBRA VODKA 375                      3113.
+ 8 99100000179742000000050 SYRINGE & NEEDLE                     2541.
+ 9 1820025002              NAT LT 15PK 25OZ CAN                 2348.
+10 99100000081989000000040 STAMPS                               2224.
 # ... with 1,567 more rows
 > write.csv(maxRevenueGeneratorProductForStore, file = "final-project/maxRevenueGeneratorProductForStore.csv", row.names=FALSE)
 > 
@@ -695,7 +724,7 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
 +   filter(PHRMCY_NBR == '4416100399456673861') %>%
 +   group_by(PROD_NBR, PROD_DESC) %>%
-+   summarise(salesRevenueBYProduct = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(salesRevenueBYProduct = sum(EXT_SLS_AMT)) %>%
 +   filter(salesRevenueBYProduct < 10) %>% 
 +   ungroup() %>%
 +   summarise(productCount = n()) 
@@ -703,27 +732,27 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 # A tibble: 1 x 1
   productCount
          <int>
-1          822
-> #write.csv(worstRevenueGeneratorProductForStore, file = "final-project/worstRevenueGeneratorProductForStore.csv", row.names=FALSE)
+1          860
+> write.csv(worstRevenueGeneratorProductForStore, file = "final-project/worstRevenueGeneratorProductForStore.csv", row.names=FALSE)
 > 
 > # Month on Month sales revenue for the store
 > monthOnMonthSalesRevenueForStore <- POS_TRANS %>%
 +   filter(PHRMCY_NBR == '4416100399456673861') %>%
 +   mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
 +   group_by(saleYear, saleMonth, saleMonthNum) %>%
-+   summarise(salesRevenue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(salesRevenue = sum(EXT_SLS_AMT)) %>%
 +   arrange(saleYear, saleMonthNum)
 > monthOnMonthSalesRevenueForStore  
 # A tibble: 6 x 4
 # Groups:   saleYear, saleMonth [6]
   saleYear saleMonth saleMonthNum salesRevenue
   <chr>    <chr>     <chr>               <dbl>
-1 2016     Jan       01                351803.
-2 2016     Feb       02                370287.
-3 2016     Mar       03                413443.
-4 2016     Apr       04                361776.
-5 2016     May       05                306808.
-6 2016     Jun       06                311950.
+1 2016     Jan       01                184063.
+2 2016     Feb       02                205516.
+3 2016     Mar       03                203584.
+4 2016     Apr       04                193990.
+5 2016     May       05                173027.
+6 2016     Jun       06                171184.
 > write.csv(monthOnMonthSalesRevenueForStore, file = "final-project/monthOnMonthSalesRevenueForStore.csv", row.names=FALSE)
 > 
 > 
@@ -732,23 +761,23 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(PROD_MASTER, by = 'PROD_NBR') %>%  
 +   inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
 +   group_by(SEGMENT_CD, SEG_DESC) %>%
-+   summarise(salesRevenue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(salesRevenue = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(salesRevenue))
 > salesRevenueByProductSegments
 # A tibble: 808 x 3
 # Groups:   SEGMENT_CD [808]
    SEGMENT_CD   SEG_DESC                                    salesRevenue
    <chr>        <chr>                                              <dbl>
- 1 630063406341 MONEY ORDERS & WESTERN UNION                    1931231.
- 2 630063206321 LOTTERY                                         1576608.
- 3 930093909391 MISC HOME HEALTH CARE                            806452.
- 4 410041704171 MISC VITAMINS                                    771143.
- 5 270027102711 HEEL & ARCH                                      755943.
- 6 630063506351 GIFT CARDS                                       563275.
- 7 710071107111 BRAND                                            561298.
- 8 930093309335 WALKERS & ROLLATORS                              487506.
- 9 530053105311 CANDY                                            398110.
-10 580058505859 ALL OTHER GREETING CARD LINES MISCELLANEOUS      385823.
+ 1 630063406341 MONEY ORDERS & WESTERN UNION                    1045707.
+ 2 930093909391 MISC HOME HEALTH CARE                            429917.
+ 3 630063206321 LOTTERY                                          373222.
+ 4 580058505857 OTHER CARDS                                      347380.
+ 5 710071107111 BRAND                                            255826.
+ 6 070007300732 ALLERGY TABS & CAPS                              200213.
+ 7 410041704171 MISC VITAMINS                                    194456.
+ 8 530053105311 CANDY                                            189881.
+ 9 580058505859 ALL OTHER GREETING CARD LINES MISCELLANEOUS      153618.
+10 930093309335 WALKERS & ROLLATORS                              144813.
 # ... with 798 more rows
 > write.csv(salesRevenueByProductSegments, file = "final-project/salesRevenueByProductSegments.csv", row.names=FALSE)
 > 
@@ -758,23 +787,23 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(PROD_SEG, by = c("SEGMENT_CD" = "SEG_CD")) %>%
 +   inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
 +   group_by(SUB_CAT_CD, SUB_CAT_DESC) %>%
-+   summarise(salesRevenue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(salesRevenue = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(salesRevenue))
 > salesRevenueByProductSubCat 
 # A tibble: 218 x 3
 # Groups:   SUB_CAT_CD [218]
    SUB_CAT_CD SUB_CAT_DESC                  salesRevenue
    <chr>      <chr>                                <dbl>
- 1 63006340   MONEY ORDERS & WESTERN UNION      1931231.
- 2 63006320   LOTTERY                           1576608.
- 3 58005850   ALL OTHER GREETING CARD LINES     1013996.
- 4 93009390   MISC HOME HEALTH CARE              806452.
- 5 41004170   MISC VITAMINS                      771143.
- 6 27002710   SHOE INSOLES & INSERTS             771129.
- 7 71007110   CIGARETTES                         677874.
- 8 63006350   GIFT CARDS                         563275.
- 9 93009330   WALKING AIDS                       520048.
-10 53005310   CANDY, MINTS & GUM                 420930.
+ 1 63006340   MONEY ORDERS & WESTERN UNION      1045707.
+ 2 58005850   ALL OTHER GREETING CARD LINES      511882.
+ 3 93009390   MISC HOME HEALTH CARE              429917.
+ 4 63006320   LOTTERY                            373222.
+ 5 07000730   ALLERGY                            330774.
+ 6 71007110   CIGARETTES                         300932.
+ 7 07000710   COUGH, COLD, FLU & SINUS           284683.
+ 8 01000110   PAIN RELIEF                        279696.
+ 9 53005310   CANDY, MINTS & GUM                 205036.
+10 41004170   MISC VITAMINS                      194456.
 # ... with 208 more rows
 > write.csv(salesRevenueByProductSubCat, file = "final-project/salesRevenueByProductSubCat.csv", row.names=FALSE)
 > 
@@ -785,23 +814,23 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(PROD_SUB_CAT, by = c("SUB_CAT_CD" = "SUB_CAT_CD")) %>%
 +   inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
 +   group_by(CAT_CD, CAT_DESC) %>%
-+   summarise(salesRevenue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(salesRevenue = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(salesRevenue))
 > salesRevenueByProductCat
 # A tibble: 57 x 3
 # Groups:   CAT_CD [57]
    CAT_CD CAT_DESC                                             salesRevenue
    <chr>  <chr>                                                       <dbl>
- 1 6300   MISC GENERAL MERCHANDISE                                 4217513.
- 2 4100   VITAMINS/DIETARY SUPPLEMENTS                             1471810.
- 3 9300   HOME HEALTH CARE                                         1404232.
- 4 0700   COLD & ALLERGY                                           1190806.
- 5 5800   GREETING CARDS & OTHER ASSOCIATED MANUFACTURER ITEMS     1115705.
- 6 2700   FOOT CARE                                                 849666.
- 7 0300   DIGESTIVE HEALTH                                          812347.
- 8 7100   TOBACCO                                                   679205.
- 9 2500   FIRST AID                                                 666279.
-10 0100   PAIN RELIEF                                               569156.
+ 1 6300   MISC GENERAL MERCHANDISE                                 1604741.
+ 2 0700   COLD & ALLERGY                                            978816.
+ 3 4100   VITAMINS/DIETARY SUPPLEMENTS                              708398.
+ 4 9300   HOME HEALTH CARE                                          632689.
+ 5 5800   GREETING CARDS & OTHER ASSOCIATED MANUFACTURER ITEMS      574274.
+ 6 0300   DIGESTIVE HEALTH                                          529698.
+ 7 0100   PAIN RELIEF                                               449221.
+ 8 7100   TOBACCO                                                   301918.
+ 9 2500   FIRST AID                                                 289442.
+10 5300   CONFECTIONS                                               209902.
 # ... with 47 more rows
 > write.csv(salesRevenueByProductCat, file = "final-project/salesRevenueByProductCat.csv", row.names=FALSE)
 > 
@@ -814,23 +843,23 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(PROD_CAT, by = c("CAT_CD" = "CAT_CD")) %>%
 +   filter(CAT_CD == '6300') %>%
 +   group_by(PROD_NBR, PROD_DESC) %>%
-+   summarise(salesRevenue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(salesRevenue = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(salesRevenue))
 > topPerfromingProductsInGMCatg
 # A tibble: 56 x 3
 # Groups:   PROD_NBR [56]
    PROD_NBR                PROD_DESC                      salesRevenue
    <chr>                   <chr>                                 <dbl>
- 1 99100000770330000000003 MONEY ORDER                        1662010.
- 2 91000000000             LOTTO                               480598.
- 3 79936677762             GIFT CARD VISA $20-$500             426615.
- 4 99100000234116000000009 MONEYGRAM                           263872.
- 5 81460502007             INST LOTTERY 100X THE CASH $20      196360 
- 6 81460502027             INST LOTTERY 50X THE CASH $10       157070 
- 7 81460502031             INST LOTTERY CASH EXTRA $30         146970 
- 8 118                     INST LOTTERY WIN FOR LIFE $1        137796 
- 9 40015008683             INST LOTTERY $2.500 FRENZY $10      113030 
-10 81460502017             INST LOTTERY ALL CASH MILL $20      108280 
+ 1 99100000770330000000003 MONEY ORDER                         783415.
+ 2 99100000234116000000009 MONEYGRAM                           256944.
+ 3 91000000000             LOTTO                               221579.
+ 4 90900000000             STAMPS                               36012.
+ 5 81460502007             INST LOTTERY 100X THE CASH $20       20680 
+ 6 79936677762             GIFT CARD VISA $20-$500              20356.
+ 7 81460502031             INST LOTTERY CASH EXTRA $30          19350 
+ 8 99100000561909000000920 GIFT CERTIFICATE                     17760.
+ 9 118                     INST LOTTERY WIN FOR LIFE $1         15669 
+10 81460502017             INST LOTTERY ALL CASH MILL $20       13760 
 # ... with 46 more rows
 > write.csv(topPerfromingProductsInGMCatg, file = "final-project/topPerfromingProductsInGMCatg.csv", row.names=FALSE)
 >  
@@ -844,23 +873,23 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   inner_join(MAJOR_PROD_CAT, by = c("MAJOR_CAT_CD" = "MAJOR_CAT_CD")) %>%
 +   mutate(saleMonth = format(as.Date(SLS_DTE), "%b"),saleMonthNum = format(as.Date(SLS_DTE), "%m"), saleYear = format(as.Date(SLS_DTE), "%Y")) %>%
 +   group_by(saleYear, saleMonth, saleMonthNum, MAJOR_CAT_CD, MAJOR_CAT_DESC) %>%
-+   summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(monthlySaleValue = sum(EXT_SLS_AMT)) %>%
 +   arrange(saleMonthNum, desc(monthlySaleValue))
 > monthwiseSalesByProductMajorCat
 # A tibble: 60 x 6
 # Groups:   saleYear, saleMonth, saleMonthNum, MAJOR_CAT_CD [60]
    saleYear saleMonth saleMonthNum MAJOR_CAT_CD MAJOR_CAT_DESC      monthlySaleValue
    <chr>    <chr>     <chr>        <chr>        <chr>                          <dbl>
- 1 2016     Jan       01           5228         HEALTH CARE                 1174734.
- 2 2016     Jan       01           6137         GENERAL MERCHANDISE          978465.
- 3 2016     Jan       01           3391         HOME HEALTH CARE             333261.
- 4 2016     Jan       01           9687         GREETING CARDS               188172.
- 5 2016     Jan       01           4371         EDIBLES                      127928.
- 6 2016     Jan       01           7392         PERSONAL CARE                 97257.
- 7 2016     Jan       01           7020         BEAUTY                        53762.
- 8 2016     Jan       01           1941         PHOTO                         45177.
- 9 2016     Jan       01           2343         DIABETES                      24997.
-10 2016     Jan       01           5068         MISC                           3171.
+ 1 2016     Jan       01           5228         HEALTH CARE                  596365.
+ 2 2016     Jan       01           6137         GENERAL MERCHANDISE          401065.
+ 3 2016     Jan       01           3391         HOME HEALTH CARE             168706.
+ 4 2016     Jan       01           9687         GREETING CARDS                80618.
+ 5 2016     Jan       01           7392         PERSONAL CARE                 67638.
+ 6 2016     Jan       01           7020         BEAUTY                        44165.
+ 7 2016     Jan       01           4371         EDIBLES                       36334.
+ 8 2016     Jan       01           2343         DIABETES                      13655.
+ 9 2016     Jan       01           1941         PHOTO                         11091.
+10 2016     Jan       01           5068         MISC                           2152.
 # ... with 50 more rows
 > write.csv(monthwiseSalesByProductMajorCat, file = "final-project/monthwiseSalesByProductMajorCat.csv", row.names=FALSE)
 > 
@@ -876,23 +905,22 @@ Number of duplicated transactions: 0> # Duplicate row count = 0, so BSKT_ID, PRO
 +   filter(saleMonthNum == '03') %>%
 +   filter(MAJOR_CAT_CD == '5228') %>%
 +   group_by(PROD_NBR, PROD_DESC) %>%
-+   summarise(monthlySaleValue = sum(SLS_QTY * EXT_SLS_AMT)) %>%
++   summarise(monthlySaleValue = sum(EXT_SLS_AMT)) %>%
 +   arrange(desc(monthlySaleValue))
 > highsellingProductInHealthCareCategoryInMarch
 # A tibble: 5,648 x 3
 # Groups:   PROD_NBR [5,648]
-   PROD_NBR                PROD_DESC                                monthlySaleValue
-   <chr>                   <chr>                                               <dbl>
- 1 98650000000000185441572 STRUTZ PRO                                        486104.
- 2 90800000000             VITAMINS/SUPPLEMENTS                              241267.
- 3 1626                    TEGADERM 4X4 3/4 1626                             137635.
- 4 3504600117              ACIDOPHILUS SUPER PROBIO 5BILLN CAP 60CT           54625.
- 5 8770140446              GNP U/PAD SPR 30X36 PAD 4X10                       22785.
- 6 64193220212             GLOVE VINYL P/F L/F MD GLV 100                     22020.
- 7 34658170001             SALONPAS PATCH HOT CAPSICUM UNS 50X1CT              7035.
- 8 70414200007             FLORASTOR 250MG CAPSULE 50CT                        5980.
- 9 64193220213             GLOVE VINYL P/F L/F LG GLV 100                      5932.
-10 30132070336             FLEET ENEMA BISACODYL 10MG/30ML 37ML                4898.
+   PROD_NBR                PROD_DESC                               monthlySaleValue
+   <chr>                   <chr>                                              <dbl>
+ 1 90800000000             VITAMINS/SUPPLEMENTS                              61922.
+ 2 98650000000000185441572 STRUTZ PRO                                        20525.
+ 3 35310020010             FLONASE OTC 60 SPRAYS .34 OZ                       4537.
+ 4 1626                    TEGADERM 4X4 3/4 1626                              3823.
+ 5 30045044909             TYLENOL EXTRA STR CAPLET 100CT                     3548.
+ 6 70414200007             FLORASTOR 250MG CAPSULE 50CT                       3384.
+ 7 32420869762             PRESERVISION AREDS 2 FORM SOFTGEL 120CT            2995.
+ 8 30766080100             ABREVA CREAM 2GM                                   2568.
+ 9 35310020020             FLONASE OTC 120 SPRAYS .54OZ                       2551.
+10 36382407214             MUCINEX DM MAX STRENGTH TABLET 14CT                2327.
 # ... with 5,638 more rows
 > write.csv(highsellingProductInHealthCareCategoryInMarch, file = "final-project/highsellingProductInHealthCareCategoryInMarch.csv", row.names=FALSE)
-> 
