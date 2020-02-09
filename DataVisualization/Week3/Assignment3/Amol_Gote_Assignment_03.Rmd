@@ -122,7 +122,7 @@ ggplot(dataset4, aes(x = category, y = value)) +
 Method that has been chosen over here is geom_boxplot, alternative method could have been geom_jitter() or geom_violin.  
 Pros and Cons for geom_boxplot()  
 **Pros**    
-  1. Simple scatter plot leads to over plotting around the categorical variable, box_plot helps in simplifying over plotting.  
+  1. Simple scatter plot leads to over plotting around the categorical variable, geom_boxplot helps in simplifying over plotting.  
   2. It nicely summarizes the shape of the distribution with a handful of summary statistics. geom_jitter creates unnecessary noise and while geom_violin is hard to interpret.  
   3. Box plot statistics includes min, max, quartile 1, quartile 2 and median, these statistics numbers are sufficient to gauge what the data says about that category.   
   4. Box plot highlights outliers, which can be discarded for analysis.   
