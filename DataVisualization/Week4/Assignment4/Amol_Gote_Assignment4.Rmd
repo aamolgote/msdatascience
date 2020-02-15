@@ -152,7 +152,15 @@ mergedZipShapeData <- merge(zipcodeShapeData,averagePriceByZipcode,by.x=c("ZCTA5
 
 ```{r}
 zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
-averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = median(price, na.rm = TRUE))
+filteredData <- zipcodeShapeData %>%
+  filter(zipcodeShapeData$ZCTA5CE10 == '98001')
+
+describe(filteredData)
+```
+
+```{r}
+zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
+averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price, na.rm = TRUE))
 mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
 ggplot(mergedShapeAndAvgZipCodeData) + geom_sf(data=counties_wa_king) + geom_sf(aes(fill=averagePrice)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") 
 ```
