@@ -23,7 +23,7 @@ What is happening to price over time (yr_built)
 houses <- read_csv("data/KING COUNTY House Data.csv")
 averagePriceEachYear <- houses %>%
   group_by(yr_built) %>%
-  summarise(averagePrice = mean(price), medianPrice = median(price))
+  summarise(averagePrice = mean(price))
 
 averagePriceEachYear %>%
   ggplot() +
@@ -132,4 +132,78 @@ counties_wa_king %>%
 ```
 
 
-# Question 3
+# Question 4
+(Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes
+
+```{r}
+zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
+averagePriceByZipcode <- houses %>%
+  group_by(zipcode) %>%
+  summarise(averagePrice = mean(price), medianPrice = median(price, na.rm = TRUE))
+
+mergedZipShapeData <- merge(zipcodeShapeData,averagePriceByZipcode,by.x=c("ZCTA5CE10"),by.y=c("zipcode")) 
+
+
+
+
+
+
+```
+
+```{r}
+zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
+averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = median(price, na.rm = TRUE))
+mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
+ggplot(mergedShapeAndAvgZipCodeData) + geom_sf(data=counties_wa_king) + geom_sf(aes(fill=averagePrice)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") 
+```
+
+
+```{r , message=FALSE}
+us_zipcode_shp <- st_read('data/tl_2019_us_zcta510.shp')
+houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
+
+us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
+
+ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_wa_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + facet_wrap( ~ decade, ncol=2)
+
+```
+
+```{r , message=FALSE}
+# counties_king <- counties_wa %>% 
+#   filter(str_detect(ID, "king")) 
+# 
+# us_zipcode_shp <- st_read('data/tl_2019_us_zcta510.shp')
+# houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
+# 
+# us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
+# 
+# ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + facet_wrap( ~ decade, ncol=2)
+
+```
+
+
+
+```{r}
+counties_king <- counties_wa %>% 
+  filter(str_detect(ID, "king")) 
+
+us_zipcode_shp <- st_read('data/tl_2019_us_zcta510.shp')
+
+houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
+
+us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
+
+ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + #facet_wrap( ~ decade, ncol=2)
+
+# mergedZipShapeData %>%
+#   ggplot() 
+#   + geom_sf() 
+#   #+ geom_sf(aes(fill=averagePrice)) 
+#   #+ scale_fill_viridis_c(option = "plasma", trans = "sqrt") 
+#   #+ facet_wrap( ~ decade, ncol=2)
+
+
+#houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
+#us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode")) 
+#ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + #facet_wrap( ~ decade, ncol=2)
+```
