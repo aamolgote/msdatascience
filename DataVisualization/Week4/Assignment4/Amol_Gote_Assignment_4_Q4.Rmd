@@ -1,0 +1,58 @@
+---
+title: "Assignment 04"
+author: "Amol Gote"
+date: "2/10/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(maps)
+library(scales)
+library(sf)
+```
+
+# Question 4
+(Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes
+```{r, message=FALSE}
+zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp', quiet = TRUE)
+houses <- read_csv("data/KING COUNTY House Data.csv")
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties_wa <-counties %>% 
+  filter(str_detect(ID, 'washington,'))
+
+counties_wa_king <- counties_wa %>% 
+  filter(str_detect(ID, "king"))
+
+averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price))
+mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
+sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
+```
+
+```{r, message=FALSE}
+mergedShapeAndAvgZipCodeData %>%
+  ggplot() + 
+  geom_sf(data=counties_wa_king) + 
+  geom_sf(aes(fill=averagePrice)) + 
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, vjust = -1.0) +
+  scale_fill_viridis_c("Average Price by zip code", labels = dollar) +
+  labs(x = "Longitude", y = "Latitude",
+  title = "King County house prices by zip codes") +
+  theme_minimal()
+  
+```
+  
+a. Mapped mean of price by zip code.  
+b. Around Seattle metro area, average house price hovers around 1M.  
+c. Interesting facts  
+  1. Zipcode highlighted in yellow is 98039, it	has an average house price of $2,161,300.0.   
+  2. This zip code is where world's 2 richest people have their home Bill Gates and Jeff Bezos.   
+  3. 98039 ZIP code ranks the top in Washington state in Forbes magazine’s list of the most expensive ZIP codes in the country.    

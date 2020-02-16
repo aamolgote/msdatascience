@@ -36,11 +36,11 @@ averagePriceEachYear %>%
 ```
 
 
-1. For Comparing price year on year have taken mean house prices for each year built.   
-2. Average price had peaked in early 1900's, have been dropping then till 1950's. Prior to 1950 it had dipped to its minimum number, reason for the same could be World War 2.  
-3. Post World war 2 it has started rising gradually with a dip around 1970.   
-4. Post 1970 it has gradually went up with peaking in 2000 and then again dropping back due to economic depression in 2009.   
-5. Post that that avarage price has recovered have hit peak, the peak numbers post 2009 are same that of peak number is early 1900's.  
+1. For comparing price year on year, have taken mean house prices for each built year.  
+2. Average price had peaked in early 1900's, have been dropping then till late 1950's. Prior to 1950 there are points below the smooth line which is the lowest prices in the span of the 20th century, reason for the same could be World War 2.  
+3. Post 1960 it has started rising gradually till 2010.  
+4. There are points dropping below the smooth line after 2000, around 2009 this is due to economic depression in 2009.   
+5. Post 2009 average price has recovered and have hit peak, the peak numbers post 2009 are same that of peak number is early 1900's.  
 
 # Question 2
 What is happening to price over geographic space (Can be lat / long, zipcode, etc)
@@ -67,10 +67,14 @@ counties_wa_king %>%
   y = "Latitude",
   title = "King County house prices over geographic space")
 ```
-1. North west side of the King county have lot of houses which are above 500K, that's reason there are lot of points with green to yellow color.
-2. Reason for the higher price in the north west side is proximity to Seattle metro area. 
-3. Locations around Seattle have higher prices
-4. As we move away from seattle towards east or towards south prices are dropping, especially south most of the houses are below 500k or less.
+
+Note: Have added limit 100,000 to 1,000,000, so that all outliers will have same color.  
+
+1. North West side of the King county have lot of houses which are above 500K, that's reason there are lot of points with green to yellow color.  
+2. Reason for the higher price in the North West side is proximity to Seattle metro area.  
+3. Locations around Seattle have higher prices.  
+4. As we move away from Seattle towards east or towards south prices are dropping, especially in south, most of the houses are below 500k or less.  
+5. Outliers are getting highlighted by brown shade, there are shades of brown just beside east of Seatle (slight North East), those areas have highest average home prices and belong to richest people on earth, Jeff Bezos and Bill Gates. 
 
 # Question 3
 What is happening to price over time and space?
@@ -88,17 +92,17 @@ counties_wa_king %>%
   y = "Latitude",
   title = "King County house prices over time and geographic space")
 ```
-Note: Have added limit 100,000 1,000,000, so that all outliars will have same color.  
+Note: Have added limit 100,000 to 1,000,000, so that all outliers will have same color.  
 
 1. Over the time of 20th Century (1901 - 2000), the density of points have grown, which indicates that more number of houses have been built.  
-2. Till 1950 desntiy of houses around Seattle area is less, there are houses with price ranging from 500k to 1 Million, but number is less.  
-3. Post 1950 density of points has increased which indicates that more number of houses were built around Seattle metro area as well as towrds south as well.  
-5. Post 1950 more and more number of points are getting from green to yellow which is clear indicator that prices of the houses have increased.  
+2. Till 1950 density of houses around Seattle area is less, there are houses with price ranging from 500k to 1 Million, but number is less.  
+3. Post 1950 density of points has increased which indicates that more number of houses were built around Seattle metro area as well as towards south as well.  
+5. Post 1950 more and more number of points are getting from green to yellow which is clear indicator that pricing of the houses has increased.  
 6. From 1990 to 2010 there are more prominent green to yellow points which could be because technology giants like Amazon, Microsoft expanding.     
 
 # Question 4
 (Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes  
-**Note** - Have uploaded the seperate PDF for the same, had to solve this problem locally on my desktop machine as I was unable to upload the zipcode shape file to RStudio cloud.  
+**Note** - Have uploaded the seperate PDF (Amol_Gote_Assignment_4_Q4.pdf) for the same, had to solve this problem locally on my desktop machine as I was unable to upload the zipcode shape file to RStudio cloud.  
 
 
 
@@ -118,9 +122,10 @@ ggplot(averagePriceDecadeGrade, aes(x = grade, y = averagePrice)) +
     title = "Impact of grade on price across time") +
     theme_minimal()
 ```
-a. Based on the above visualization it is pretty evident that grade does impact pricing and overall general trend across time remains the same for grade 1 to 10.  
-b. Above grade 10 over the period of time there has steep rise in the prices, especially decade of 1990 and 2000. Also post 1970 houses built post 1970 were grade 5 and above.
-c. In genral if consider all the data points instead of average it is evident that increase in grade does increase the price. for e.g below visualization shows overall trend of price and grade.
+a. Based on the above visualization it is pretty evident that **grade does impact pricing** and overall general trend across time remains the **same for grade 1 to 10**.  
+b. **Above grade 10** over the period of time there has been **steep rise in the prices**, especially decade of **1990 and 2000**. Also houses built post 1970 were grade 5 and above.  
+c. In general if we consider all the data points instead of average it is evident that increase in grade does increase the price. For e.g. below visualization shows overall trend of price and grade.  
+
 ```{r question_6c_code, message=FALSE}
 ggplot(houses, aes(x = grade, y = price)) +
   geom_point(color='steelblue') +
@@ -130,7 +135,9 @@ ggplot(houses, aes(x = grade, y = price)) +
   title = "Impact of grade on price") +
   theme_minimal()
 ```
-d. Similar trend can be observed as time has passed by for 20th century
+
+d. Similar trend can be observed as time has passed by for 20th century  
+
 ```{r question_6d_code, message=FALSE}
 ggplot(houses, aes(x = grade, y = price)) +
   geom_point(color='steelblue') +
@@ -158,9 +165,9 @@ ggplot(averagePriceDecadeCondition, aes(x = condition, y = averagePrice)) +
     title = "Impact of condition on price across time") +
     theme_minimal()
 ```
-a. In general across time condition does impact the house price, better the condition higher the price.
-b. Post 1970 all houses that were built were with condition 2 and above.
-c. In general if consider all the data points instead of average it is evident condition 3 is where maximum number of houses are and some of the house prices of condition 3 are higher than condition 4 and 5. Below visualization shows overall trend of price and condition.
+a. In general across time frame of 20th century **condition** **does impact** the house **price**, better the condition higher the price.  
+b. Post 1970 all houses that were built were with condition 2 and above.  
+c. In general if consider all the data points instead of average it is evident condition 3 is where maximum number of houses are and some of the house prices of condition 3 are higher than condition 4 and 5. Below visualization shows overall trend of price and condition.  
 ```{r question_5c_code, message=FALSE}
 ggplot(houses, aes(x = condition, y = price)) +
   geom_point(color='steelblue') +
@@ -169,7 +176,8 @@ ggplot(houses, aes(x = condition, y = price)) +
   title = "Impact of condition on price") +
   theme_minimal()
 ```
-d. Oveall there is increase in price from 1 to 3, but with condition 3, 4, 5 there is no significant impact on price. Infact in decade of 2000 there are more nouber of houses in condition 3 with higher prices than in 4 and 5.  
+
+d. Oveall there is increase in price from 1 to 3, but with condition 3, 4, 5 there is no significant impact on price. Infact in decade of 2000 there are more nouber of houses in condition 3 with higher prices than in 4 and 5.    
 ```{r question_5d_code, message=FALSE}
 ggplot(houses, aes(x = condition, y = price)) +
   geom_point(color='steelblue') +
