@@ -1,0 +1,130 @@
+---
+title: "Assignment 04"
+author: "Amol Gote"
+date: "2/10/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(maps)
+library(scales)
+library(sf)
+```
+
+# Question 1
+What is happening to price over time (yr_built)
+```{r question_1_code, message=FALSE}
+houses <- read_csv("data/KING COUNTY House Data.csv")
+averagePriceEachYear <- houses %>%
+  group_by(yr_built) %>%
+  summarise(averagePrice = mean(price))
+
+averagePriceEachYear %>%
+  ggplot() +
+  geom_point(aes(x = yr_built, y = averagePrice)) +
+  geom_smooth(aes(yr_built, averagePrice)) +
+  scale_y_continuous(labels = dollar) + 
+  labs(x = "Year", y = "Average Price",
+  title = "Average price Year on Year",
+  subtitle = "Created for Data Visulization Class - Assignment 4 - Question 1",
+  caption = "Source: Data Visualization assignment 4") +
+  theme_minimal()
+```
+
+
+1. For Comparing price year on year have taken mean house prices for each year built.   
+2. Average price had peaked in early 1900's, have been dropping then till 1950's. Prior to 1950 it had dipped to its minimum number, reason for the same could be World War 2.  
+3. Post World war 2 it has started rising gradually with a dip around 1970.   
+4. Post 1970 it has gradually went up with peaking in 2000 and then again dropping back due to economic depression in 2009.   
+5. Post that that avarage price has recovered have hit peak, the peak numbers post 2009 are same that of peak number is early 1900's.  
+
+# Question 2
+What is happening to price over geographic space (Can be lat / long, zipcode, etc)
+```{r question_2_code, message=FALSE}
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties_wa <-counties %>% 
+  filter(str_detect(ID, 'washington,'))
+
+counties_wa_king <- counties_wa %>% 
+  filter(str_detect(ID, "king")) 
+
+sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
+counties_wa_king %>% 
+  ggplot() + 
+  geom_sf() +
+  geom_point(data = houses, aes(x = long, y = lat, color = price), alpha= .05) +
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, vjust = -1.0) +
+  scale_colour_viridis_c("Sale Price", limits = c(100000, 1000000), labels = dollar) +
+  theme_minimal() + 
+  labs(x = "Longitude",
+  y = "Latitude",
+  title = "King County house prices over geographic space")
+```
+1. North west side of the King county have lot of houses which are above 500K, that's reason there are lot of points with green to yellow color.
+2. Reason for the higher price in the north west side is proximity to Seattle metro area. 
+3. Locations around Seattle have higher prices
+4. As we move away from seattle towards east or towards south prices are dropping, especially south most of the houses are below 500k or less.
+
+# Question 3
+What is happening to price over time and space?
+```{r question_3_code, message=FALSE}
+counties_wa_king %>% 
+  ggplot() + 
+  geom_sf() +
+  geom_point(data = houses, aes(x = long, y = lat, color = price ), alpha= .05) +
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 2, 
+        shape = 23, fill = "red") +
+  scale_colour_viridis_c("Sale Price", limits = c(100000, 1000000), labels = dollar) +
+  facet_wrap(~decade) +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))+ 
+  labs(x = "Longitude",
+  y = "Latitude",
+  title = "King County house prices over time and geographic space")
+```
+Note: Have added limit 100,000 1,000,000, so that all outliars will have same color.  
+
+1. Over the time of 20th Century (1901 - 2000), the density of points have grown, which indicates that more number of houses have been built.  
+2. Till 1950 desntiy of houses around Seattle area is less, there are houses with price ranging from 500k to 1 Million, but number is less.  
+3. Post 1950 density of points has increased which indicates that more number of houses were built around Seattle metro area as well as towrds south as well.  
+5. Post 1950 more and more number of points are getting from green to yellow which is clear indicator that prices of the houses have increased.  
+6. From 1990 to 2010 there are more prominent green to yellow points which could be because technology giants like Amazon, Microsoft expanding.     
+
+# Question 4
+(Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes  
+**Note** - Have uploaded the seperate PDF for the same, had to solve this problem locally on my desktop machine as I was unable to upload the zipcode shape file to RStudio cloud.  
+
+
+# Question 5:
+Does condition impact prices across time?
+```{r question_5_code, message=FALSE}
+ggplot(houses, aes(x = condition, y = price)) +
+  geom_point() +
+  facet_wrap(~decade)
+```
+
+Does grade impact prices across time?
+```{r question_6_code, message=FALSE}
+#ggplot(houses, aes(x = grade, y = price)) +
+#  geom_point() +
+  #geom_smooth() +
+#  facet_wrap(~decade)
+
+# ggplot(data = houses, aes(x= decade, y = price, color = grade)) +
+#   geom_line() +
+#   scale_y_continuous(labels = dollar)
+ggplot(houses, aes(x = grade, y = price)) +
+  geom_point() +
+  geom_smooth(aes(grade, price)) +
+  facet_wrap(~decade)
+
+```
+

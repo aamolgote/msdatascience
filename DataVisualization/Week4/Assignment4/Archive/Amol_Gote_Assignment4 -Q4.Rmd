@@ -1,0 +1,42 @@
+---
+title: "Assignment 04"
+author: "Amol Gote"
+date: "2/10/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(maps)
+library(scales)
+library(sf)
+```
+
+# Question 4
+(Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes
+```{r, message=FALSE}
+zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
+houses <- read_csv("data/KING COUNTY House Data.csv")
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties_wa <-counties %>% 
+  filter(str_detect(ID, 'washington,'))
+
+counties_wa_king <- counties_wa %>% 
+  filter(str_detect(ID, "king"))
+
+averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price, na.rm = TRUE))
+mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
+```
+```{r, message=FALSE}
+mergedShapeAndAvgZipCodeData %>%
+  ggplot() + 
+  geom_sf(data=counties_wa_king) + 
+  geom_sf(aes(fill=averagePrice)) + 
+  scale_fill_viridis_c(option = "plasma", trans = "sqrt") 
+```
+
