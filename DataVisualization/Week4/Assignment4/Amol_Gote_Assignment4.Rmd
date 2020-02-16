@@ -34,37 +34,14 @@ averagePriceEachYear %>%
   subtitle = "Created for Data Visulization Class - Assignment 4 - Question 1",
   caption = "Source: Data Visualization assignment 4") +
   theme_minimal()
-
-
-# ggplot(data = houses, aes(x = yr_built, y = price)) +
-#   stat_summary(fun.y=mean,size=1,geom='line', aes(colour="Mean")) +
-#   stat_summary(fun.y=median,size=1,geom='line', aes(colour="Median")) +
-#   theme_minimal() +
-#   scale_y_continuous(labels = dollar) +
-#   labs(x = "Year",
-#   y = "Price",
-#   title = "Average price Year on Year",
-#   subtitle = "Created for Data Visulization Class - Assignment 4 - Question 1",
-#   caption = "Source: Data Visualization assignment 4")
-  
-```
-```{r}
-#ggplot(data = houses, aes(x = yr_built, y = price)) +
-#  stat_summary(fun.y=mean,size=1,geom='line', aes(colour="Mean")) +
-#  stat_summary(fun.y=median,size=1,geom='line', aes(colour="Median")) +
-#  theme_minimal() +
-#  scale_y_continuous(labels = dollar) +
-#  labs(x = "Year",
-#  y = "Price",
-#  title = "Average price Year on Year",
-#  subtitle = "Created for Data Visulization Class - Assignment 4 - Question 1",
-#  caption = "Source: Data Visualization assignment 4")
 ```
 
-1. For Comparing price year on year have taken mean and median of house prices for each year built.    
-2. Mean and median seems to be following the same pattern. Average price had peaked in early 1900's, have been dropping then till 1950's. Prior to 1950 it had dipped to its minimum number, reason for the same could be World War 2.
-3. Post World war 2 it has started rising gradually with a dip around 1970. 
-4. Post 1970 it has gradually went up with peaking in 2000 and then again dropping back due to economic depression in 2009. Post that that avarage price has recovered have hit peak, the peak numbers post 2009 are same that of peak number is early 1900's.
+
+1. For Comparing price year on year have taken mean house prices for each year built.   
+2. Average price had peaked in early 1900's, have been dropping then till 1950's. Prior to 1950 it had dipped to its minimum number, reason for the same could be World War 2.  
+3. Post World war 2 it has started rising gradually with a dip around 1970.   
+4. Post 1970 it has gradually went up with peaking in 2000 and then again dropping back due to economic depression in 2009.   
+5. Post that that avarage price has recovered have hit peak, the peak numbers post 2009 are same that of peak number is early 1900's.  
 
 # Question 2
 What is happening to price over geographic space (Can be lat / long, zipcode, etc)
@@ -76,45 +53,25 @@ counties_wa <-counties %>%
 counties_wa_king <- counties_wa %>% 
   filter(str_detect(ID, "king")) 
 
+sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
 counties_wa_king %>% 
   ggplot() + 
   geom_sf() +
   geom_point(data = houses, aes(x = long, y = lat, color = price), alpha= .05) +
-  #geom_density_2d(data = houses, aes(x = long, y = lat )) +
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, vjust = -1.0) +
   scale_colour_viridis_c("Sale Price", limits = c(100000, 1000000), labels = dollar) +
   theme_minimal() + 
   labs(x = "Latitude",
   y = "Longitude",
   title = "King County house prices over geographic space")
 ```
-
-```{r}
-# zipcodeData <- st_read('data/tl_2019_us_zcta510.shp')
-# class(zipcodeData)
-# head(zipcodeData)
-# zipcodeData %>% 
-#   ggplot() + 
-#   geom_sf() +
-#   geom_point(data = houses, aes(x = long, y = lat, color = price), alpha= .05) +
-#   scale_colour_viridis_c("Sale Price", labels = dollar) +
-#   theme_minimal()
-```
-
-
-```{r}
-# counties_wa_king %>% 
-#   ggplot() + 
-#   geom_sf() +
-#   geom_point(data = houses, aes(x = long, y = lat, color = price), alpha= .05) +
-#   geom_point(data = zipcodeData, aes(x = long, y = lat, color = price), alpha= .05) +
-#   scale_colour_viridis_c("Sale Price", labels = dollar) +
-#   theme_minimal() + 
-#   labs(x = "Latitude",
-#   y = "Longitude",
-#   title = "King County house prices over geographic space")
-```
-
-
+1. North west side of the King county have lot of houses which are above 500K, that's reason there are lot of points with green to yellow color.
+2. Reason for the higher price in the north west side is proximity to Seattle metro area. 
+3. Locations around Seattle have higher prices
+4. As we move away from seattle towards east or towards south prices are dropping, especially south most of the houses are below 500k or less.
 
 # Question 3
 What is happening to price over time and space?
@@ -123,6 +80,8 @@ counties_wa_king %>%
   ggplot() + 
   geom_sf() +
   geom_point(data = houses, aes(x = long, y = lat, color = price ), alpha= .05) +
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 2, 
+        shape = 23, fill = "red") +
   scale_colour_viridis_c("Sale Price", limits = c(100000, 1000000), labels = dollar) +
   facet_wrap(~decade) +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))+ 
@@ -130,88 +89,11 @@ counties_wa_king %>%
   y = "Longitude",
   title = "King County house prices over time and geographic space")
 ```
+Note: Have added limit 100,000 1,000,000, so that all outliars will have same color.  
 
+1. Over the time of 20th Century (1901 - 2000), the density of points have grown, which indicates that more number of houses have been built.  
+2. Till 1950 desntiy of houses around Seattle area is less, there are houses with price ranging from 500k to 1 Million, but number is less.  
+3. Post 1950 density of points has increased which indicates that more number of houses were built around Seattle metro area as well as towrds south as well.  
+5. Post 1950 more and more number of points are getting from green to yellow which is clear indicator that prices of the houses have increased.  
+6. From 1990 to 2010 there are more prominent green to yellow points which could be because technology giants like Amazon, Microsoft expanding.     
 
-# Question 4
-(Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes
-
-```{r}
-zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
-averagePriceByZipcode <- houses %>%
-  group_by(zipcode) %>%
-  summarise(averagePrice = mean(price), medianPrice = median(price, na.rm = TRUE))
-
-mergedZipShapeData <- merge(zipcodeShapeData,averagePriceByZipcode,by.x=c("ZCTA5CE10"),by.y=c("zipcode")) 
-
-
-
-
-
-
-```
-
-```{r}
-zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
-filteredData <- zipcodeShapeData %>%
-  filter(zipcodeShapeData$ZCTA5CE10 == '98001')
-
-describe(filteredData)
-```
-
-```{r}
-zipcodeShapeData <- st_read('data/tl_2019_us_zcta510.shp')
-averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price, na.rm = TRUE))
-mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
-ggplot(mergedShapeAndAvgZipCodeData) + geom_sf(data=counties_wa_king) + geom_sf(aes(fill=averagePrice)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") 
-```
-
-
-```{r , message=FALSE}
-us_zipcode_shp <- st_read('data/tl_2019_us_zcta510.shp')
-houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
-
-us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
-
-ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_wa_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + facet_wrap( ~ decade, ncol=2)
-
-```
-
-```{r , message=FALSE}
-# counties_king <- counties_wa %>% 
-#   filter(str_detect(ID, "king")) 
-# 
-# us_zipcode_shp <- st_read('data/tl_2019_us_zcta510.shp')
-# houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
-# 
-# us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
-# 
-# ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + facet_wrap( ~ decade, ncol=2)
-
-```
-
-
-
-```{r}
-counties_king <- counties_wa %>% 
-  filter(str_detect(ID, "king")) 
-
-us_zipcode_shp <- st_read('data/tl_2019_us_zcta510.shp')
-
-houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
-
-us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode"))
-
-ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + #facet_wrap( ~ decade, ncol=2)
-
-# mergedZipShapeData %>%
-#   ggplot() 
-#   + geom_sf() 
-#   #+ geom_sf(aes(fill=averagePrice)) 
-#   #+ scale_fill_viridis_c(option = "plasma", trans = "sqrt") 
-#   #+ facet_wrap( ~ decade, ncol=2)
-
-
-#houses_zipcode_decade_median <- houses %>% group_by(zipcode,decade) %>% summarize(price_median = median(price, na.rm = TRUE))
-#us_zipcode_decade_median_price <- merge(us_zipcode_shp,houses_zipcode_decade_median,by.x=c("ZCTA5CE10"),by.y=c("zipcode")) 
-#ggplot(us_zipcode_decade_median_price) + geom_sf(data=counties_king) + geom_sf(aes(fill=price_median)) + scale_fill_viridis_c(option = "plasma", trans = "sqrt") + #facet_wrap( ~ decade, ncol=2)
-```
