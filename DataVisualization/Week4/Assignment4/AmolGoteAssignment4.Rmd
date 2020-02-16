@@ -31,9 +31,7 @@ averagePriceEachYear %>%
   geom_smooth(aes(yr_built, averagePrice)) +
   scale_y_continuous(labels = dollar) + 
   labs(x = "Year", y = "Average Price",
-  title = "Average price Year on Year",
-  subtitle = "Created for Data Visulization Class - Assignment 4 - Question 1",
-  caption = "Source: Data Visualization assignment 4") +
+  title = "Average price Year on Year") +
   theme_minimal()
 ```
 
@@ -63,7 +61,7 @@ counties_wa_king %>%
         shape = 23, fill = "red") +
   geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
               position_dodge(width = 0.8), size = 3, vjust = -1.0) +
-  scale_colour_viridis_c("Sale Price", limits = c(100000, 1000000), labels = dollar) +
+  scale_colour_viridis_c("Price", limits = c(100000, 1000000), labels = dollar) +
   theme_minimal() + 
   labs(x = "Longitude",
   y = "Latitude",
@@ -83,7 +81,7 @@ counties_wa_king %>%
   geom_point(data = houses, aes(x = long, y = lat, color = price ), alpha= .05) +
   geom_point(data = sites, aes(x = longitude, y = latitude), size = 2, 
         shape = 23, fill = "red") +
-  scale_colour_viridis_c("Sale Price", limits = c(100000, 1000000), labels = dollar) +
+  scale_colour_viridis_c("Price", limits = c(100000, 1000000), labels = dollar) +
   facet_wrap(~decade) +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))+ 
   labs(x = "Longitude",
@@ -103,28 +101,82 @@ Note: Have added limit 100,000 1,000,000, so that all outliars will have same co
 **Note** - Have uploaded the seperate PDF for the same, had to solve this problem locally on my desktop machine as I was unable to upload the zipcode shape file to RStudio cloud.  
 
 
-# Question 5:
-Does condition impact prices across time?
-```{r question_5_code, message=FALSE}
-ggplot(houses, aes(x = condition, y = price)) +
-  geom_point() +
-  scale_y_continuous(labels = dollar) + 
-  facet_wrap(~decade) +
-  labs(x = "Condition", y = "Price",
-  title = "Impact of house condition (1 to 5) on price across time") +
-  theme_minimal()
-```
 
 # Question 6:
 Does grade impact prices across time?
-```{r question_6_code, message=FALSE}
+```{r question_6, message=FALSE}
+averagePriceDecadeGrade <- houses %>%
+  group_by(decade, grade) %>%
+  summarise(averagePrice = mean(price))
+
+ggplot(averagePriceDecadeGrade, aes(x = grade, y = averagePrice)) +
+    geom_point(color='steelblue') +
+    geom_smooth(aes(grade, averagePrice)) +
+    scale_y_continuous(labels = dollar, limits = c(0, 8000000)) + 
+    facet_wrap(~decade) +
+    labs(x = "Grade", y = "Average Price",
+    title = "Impact of grade on price across time") +
+    theme_minimal()
+```
+a. Based on the above visualization it is pretty evident that grade does impact pricing and overall general trend across time remains the same for grade 1 to 10.  
+b. Above grade 10 over the period of time there has steep rise in the prices, especially decade of 1990 and 2000. Also post 1970 houses built post 1970 were grade 5 and above.
+c. In genral if consider all the data points instead of average it is evident that increase in grade does increase the price. for e.g below visualization shows overall trend of price and grade.
+```{r question_6c_code, message=FALSE}
 ggplot(houses, aes(x = grade, y = price)) +
-  geom_point() +
-  #geom_smooth(aes(grade, price)) +
+  geom_point(color='steelblue') +
   scale_y_continuous(labels = dollar) + 
-  facet_wrap(~decade) +
+  geom_smooth(aes(grade, price)) +
   labs(x = "Grade", y = "Price",
-  title = "Impact of grade on price across time") +
+  title = "Impact of grade on price") +
+  theme_minimal()
+```
+d. Similar trend can be observed as time has passed by for 20th century
+```{r question_6d_code, message=FALSE}
+ggplot(houses, aes(x = grade, y = price)) +
+  geom_point(color='steelblue') +
+  scale_y_continuous(labels = dollar) + 
+  labs(x = "Grade", y = "Price",
+  title = "Impact of grade on price over time") +
+  facet_wrap(~decade) +
+  theme_minimal()
+```
+
+
+# Question 5:
+Does condition impact prices across time?
+```{r question_5, message=FALSE}
+averagePriceDecadeCondition <- houses %>%
+  group_by(decade, condition) %>%
+  summarise(averagePrice = mean(price))
+
+ggplot(averagePriceDecadeCondition, aes(x = condition, y = averagePrice)) +
+    geom_line(color='steelblue') +
+    #geom_smooth(aes(condition, averagePrice)) +
+    scale_y_continuous(labels = dollar) + 
+    facet_wrap(~decade) +
+    labs(x = "Condition", y = "Average Price",
+    title = "Impact of condition on price across time") +
+    theme_minimal()
+```
+a. In general across time condition does impact the house price, better the condition higher the price.
+b. Post 1970 all houses that were built were with condition 2 and above.
+c. In general if consider all the data points instead of average it is evident condition 3 is where maximum number of houses are and some of the house prices of condition 3 are higher than condition 4 and 5. Below visualization shows overall trend of price and condition.
+```{r question_5c_code, message=FALSE}
+ggplot(houses, aes(x = condition, y = price)) +
+  geom_point(color='steelblue') +
+  scale_y_continuous(labels = dollar) + 
+  labs(x = "Grade", y = "Price",
+  title = "Impact of condition on price") +
+  theme_minimal()
+```
+d. Oveall there is increase in price from 1 to 3, but with condition 3, 4, 5 there is no significant impact on price. Infact in decade of 2000 there are more nouber of houses in condition 3 with higher prices than in 4 and 5.  
+```{r question_5d_code, message=FALSE}
+ggplot(houses, aes(x = condition, y = price)) +
+  geom_point(color='steelblue') +
+  scale_y_continuous(labels = dollar) + 
+   facet_wrap(~decade) +
+  labs(x = "Grade", y = "Price",
+  title = "Impact of condition on price") +
   theme_minimal()
 ```
 
