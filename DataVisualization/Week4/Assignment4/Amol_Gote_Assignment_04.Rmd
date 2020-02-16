@@ -101,8 +101,45 @@ Note: Have added limit 100,000 to 1,000,000, so that all outliers will have same
 6. From 1990 to 2010 there are more prominent green to yellow points which could be because technology giants like Amazon, Microsoft expanding.     
 
 # Question 4
-(Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes  
-**Note** - Have uploaded the seperate PDF (Amol_Gote_Assignment_4_Q4.pdf) for the same, had to solve this problem locally on my desktop machine as I was unable to upload the zipcode shape file to RStudio cloud.  
+(Extra credit) Try to think about how you can use the zip code data for location information and map price to zipcodes
+```{r, message=FALSE}
+zipcodeShapeData <- st_read('data/Zipcodes_for_King_County/Zipcodes_for_King_County_and_Surrounding_Area_Shorelines__zipcode_shore_area.shp', quiet = TRUE)
+
+houses <- read_csv("data/KING COUNTY House Data.csv")
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties_wa <-counties %>% 
+  filter(str_detect(ID, 'washington,'))
+
+counties_wa_king <- counties_wa %>% 
+  filter(str_detect(ID, "king"))
+
+averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price))
+mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZIPCODE"),by.y=c("zipcode"))
+sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
+```
+
+```{r, message=FALSE}
+mergedShapeAndAvgZipCodeData %>%
+  ggplot() + 
+  geom_sf(data=counties_wa_king) + 
+  geom_sf(aes(fill=averagePrice)) + 
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, vjust = -1.0) +
+  scale_fill_viridis_c("Average Price by zip code", labels = dollar) +
+  labs(x = "Longitude", y = "Latitude",
+  title = "King County house prices by zip codes") +
+  theme_minimal()
+  
+```
+  
+a. Mapped mean of price by zip code.  
+b. Around Seattle metro area, average house price hovers around 1M.  
+c. Interesting facts  
+  1. Zipcode highlighted in yellow is 98039, it	has an average house price of $2,161,300.0.   
+  2. This zip code is where world's 2 richest people have their home Bill Gates and Jeff Bezos.   
+  3. 98039 ZIP code ranks the top in Washington state in Forbes magazine’s list of the most expensive ZIP codes in the country.  
 
 
 
