@@ -108,23 +108,23 @@ Does condition impact prices across time?
 ```{r question_5_code, message=FALSE}
 ggplot(houses, aes(x = condition, y = price)) +
   geom_point() +
-  facet_wrap(~decade)
+  scale_y_continuous(labels = dollar) + 
+  facet_wrap(~decade) +
+  labs(x = "Condition", y = "Price",
+  title = "Impact of house condition (1 to 5) on price across time") +
+  theme_minimal()
 ```
 
+# Question 6:
 Does grade impact prices across time?
 ```{r question_6_code, message=FALSE}
-#ggplot(houses, aes(x = grade, y = price)) +
-#  geom_point() +
-  #geom_smooth() +
-#  facet_wrap(~decade)
-
-# ggplot(data = houses, aes(x= decade, y = price, color = grade)) +
-#   geom_line() +
-#   scale_y_continuous(labels = dollar)
 ggplot(houses, aes(x = grade, y = price)) +
   geom_point() +
-  geom_smooth(aes(grade, price)) +
-  facet_wrap(~decade)
-
+  #geom_smooth(aes(grade, price)) +
+  scale_y_continuous(labels = dollar) + 
+  facet_wrap(~decade) +
+  labs(x = "Grade", y = "Price",
+  title = "Impact of grade on price across time") +
+  theme_minimal()
 ```
 
