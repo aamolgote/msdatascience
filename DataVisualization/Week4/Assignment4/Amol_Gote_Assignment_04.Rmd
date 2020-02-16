@@ -193,7 +193,6 @@ averagePriceDecadeCondition <- houses %>%
 
 ggplot(averagePriceDecadeCondition, aes(x = condition, y = averagePrice)) +
     geom_line(color='steelblue') +
-    #geom_smooth(aes(condition, averagePrice)) +
     scale_y_continuous(labels = dollar) + 
     facet_wrap(~decade) +
     labs(x = "Condition", y = "Average Price",
