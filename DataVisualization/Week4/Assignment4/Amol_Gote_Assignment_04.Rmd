@@ -105,15 +105,7 @@ Note: Have added limit 100,000 to 1,000,000, so that all outliers will have same
 ```{r, message=FALSE}
 zipcodeShapeData <- st_read('data/Zipcodes_for_King_County/Zipcodes_for_King_County_and_Surrounding_Area_Shorelines__zipcode_shore_area.shp', quiet = TRUE)
 
-houses <- read_csv("data/KING COUNTY House Data.csv")
-counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
-counties_wa <-counties %>% 
-  filter(str_detect(ID, 'washington,'))
-
-counties_wa_king <- counties_wa %>% 
-  filter(str_detect(ID, "king"))
-
-averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price))
+averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price), averageGrade = mean(grade))
 mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZIPCODE"),by.y=c("zipcode"))
 sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
 ```
@@ -159,7 +151,7 @@ ggplot(averagePriceDecadeGrade, aes(x = grade, y = averagePrice)) +
     scale_y_continuous(labels = dollar, limits = c(0, 8000000)) + 
     facet_wrap(~decade) +
     labs(x = "Grade", y = "Average Price",
-    title = "Impact of grade on price across time") +
+    title = "Impact of grade on average price across time") +
     theme_minimal()
 ```
 a. Based on the above visualization it is pretty evident that **grade does impact pricing** and overall general trend across time remains the **same for grade 1 to 10**.  
@@ -183,7 +175,7 @@ ggplot(houses, aes(x = grade, y = price)) +
   geom_point(color='steelblue') +
   scale_y_continuous(labels = dollar) + 
   labs(x = "Grade", y = "Price",
-  title = "Impact of grade on price over time") +
+  title = "Impact of grade on price across time") +
   facet_wrap(~decade) +
   theme_minimal()
 ```
@@ -205,7 +197,7 @@ ggplot(averagePriceDecadeCondition, aes(x = condition, y = averagePrice)) +
     scale_y_continuous(labels = dollar) + 
     facet_wrap(~decade) +
     labs(x = "Condition", y = "Average Price",
-    title = "Impact of condition on price across time") +
+    title = "Impact of condition on average price across time") +
     theme_minimal()
 ```
 a. In general across time frame of 20th century **condition** **does impact** the house **price**, better the condition higher the price.  
@@ -227,7 +219,49 @@ ggplot(houses, aes(x = condition, y = price)) +
   scale_y_continuous(labels = dollar) + 
    facet_wrap(~decade) +
   labs(x = "Grade", y = "Price",
-  title = "Impact of condition on price") +
+  title = "Impact of condition on price across time") +
   theme_minimal()
 ```
+
+# Question 7
+If you can figure out the maps then are location, grade, and prices concentrated in certain zipcodes
+
+In order to find correlation between grade, prices and zip code, plotted 2 spatial visualizations    
+1. Figure: 1 - Average Price by zip codes and highlighted only those houses which have price higher than $600,000  
+2. Figure: 2 - Average Grade by zip codes and highlighted only those houses which have grade higher than 7  
+
+Below are the 2 visualizations (Figure: 1 and Figure: 2).  
+
+```{r question_7_code, message=FALSE}
+mergedShapeAndAvgZipCodeData %>%
+  ggplot() + 
+  geom_sf(aes(fill=averagePrice)) + 
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, hjust = 1.25) +
+  scale_fill_viridis_c("Average Price", labels = dollar, limits=c(600000, 2200000)) +
+  labs(x = "Longitude", y = "Latitude",
+  title = "Average price by zipcode",subtitle = "Figure: 1") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))
+
+
+mergedShapeAndAvgZipCodeData %>%
+  ggplot() + 
+  geom_sf(aes(fill=averageGrade)) + 
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, hjust = 1.25) +
+  scale_fill_viridis_c("Average Grade", limits=c(8, 13)) +
+  labs(x = "Longitude", y = "Latitude",
+  title = "Average grade by zipcode",subtitle = "Figure: 2") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))
+
+```
+
+1. If you compare the visualizations with grade and price, then same set of zip codes are getting highlighted, so there is clear indication that houses with higher grades and higher prices are concentrated in certain set of zip codes.  
+2. These concentrated zip codes are around Seattle, towards slight North East and slight South West.  
 
