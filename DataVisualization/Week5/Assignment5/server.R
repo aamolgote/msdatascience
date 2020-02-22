@@ -12,6 +12,7 @@ library(tidyverse)
 library(maps)
 library(scales)
 library(sf)
+
 king <- read_csv("data/KING COUNTY House Data.csv")
 
 # Define server logic required to draw a histogram
@@ -24,8 +25,29 @@ shinyServer(function(input, output) {
       filter(str_detect(ID, "king"))
     sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
     
+    
     average_price_data <- reactive({
+      waterfrontView <- input$waterfront
+      livingSqFeet <- input$livingSqFeet
+      gradeMin <- input$gradeRange[1]
+      gradeMax <- input$gradeRange[2]
+      waterfrontFilter <- c(0,1)
+      if (waterfrontView == 1){
+        waterfrontFilter <- c(1)
+      }
+      else if (waterfrontView == 0){
+        waterfrontFilter <- c(0)
+      }
+      else if (waterfrontView == -1){
+        waterfrontFilter <- c(0,1)  
+      }
+      numberOfBedRooms <- input$numberOfBedRooms
       averagePriceEachYear <- king %>%
+        filter(condition %in% input$condition) %>%
+        filter(waterfront %in% waterfrontFilter) %>%
+        filter(bedrooms >= numberOfBedRooms) %>%
+        filter(sqft_living >= livingSqFeet) %>%
+        filter (grade > gradeMin & grade < gradeMax) %>%
         group_by(yr_built) %>%
         summarise(averagePrice = mean(price)) %>%
         filter (averagePrice > input$range[1] & averagePrice < input$range[2])
@@ -43,7 +65,27 @@ shinyServer(function(input, output) {
     })
     
     houses_data <- reactive({
+      waterfrontView <- input$waterfront
+      waterfrontFilter <- c(0,1)
+      if (waterfrontView == 1){
+        waterfrontFilter <- c(1)
+      }
+      else if (waterfrontView == 0){
+        waterfrontFilter <- c(0)
+      }
+      else if (waterfrontView == -1){
+        waterfrontFilter <- c(0,1)  
+      }
+      numberOfBedRooms <- input$numberOfBedRooms
+      livingSqFeet <- input$livingSqFeet
+      gradeMin <- input$gradeRange[1]
+      gradeMax <- input$gradeRange[2]
       king  %>% 
+        filter(condition %in% input$condition) %>%
+        filter(waterfront %in% waterfrontFilter) %>%
+        filter(bedrooms >= numberOfBedRooms) %>%
+        filter(sqft_living >= livingSqFeet) %>%
+        filter (grade > gradeMin & grade < gradeMax) %>%
         filter (price > input$range[1] & price < input$range[2])
     })
     
@@ -83,6 +125,7 @@ shinyServer(function(input, output) {
       print(" ================================================== ")
       print(input$range[1])
       print(input$range[2])
+      print(input$condition)
     })
 
 })

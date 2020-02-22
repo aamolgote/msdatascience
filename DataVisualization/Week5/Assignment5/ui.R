@@ -6,22 +6,62 @@
 #
 #    http://shiny.rstudio.com/
 #
-
+library(shinythemes)
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
-
+    theme = shinytheme("superhero"),
     # Application title
-    titlePanel("King county house prices data analysis"),
-
-    # Sidebar with a slider input for number of bins
+    titlePanel(title=div(style="display:inline-block;width:100%;background-color:#4E5D6C !important",img(src="homelogo.png", style="height:100px;"), "King county house price data analysis")),
+    
     sidebarLayout(
+        
         sidebarPanel(
+                    
             sliderInput("range",
                         "Price range:",
                         pre = "$",
                         min = 50000,
                         max = 1000000,
-                        value = c(50000, 1000000))
+                        value = c(50000, 1000000)),
+            # Horizontal line ----
+            tags$hr(),
+            checkboxGroupInput(inputId = "condition",
+                               label ="Condition:",
+                               choiceNames = c("1", "2", "3", "4", "5"),  
+                               choiceValues = c(1, 2, 3, 4, 5),
+                               selected = c(1, 2, 3, 4, 5),
+                               inline = TRUE
+                        ),
+            # Horizontal line ----
+            tags$hr(),
+            radioButtons(inputId = "waterfront",
+                         label = "Waterfront:",
+                         choiceNames = c("Both", "Yes", "No"),  
+                         choiceValues = c(-1, 1, 0),
+                         selected = c(-1), inline = TRUE),
+            # Horizontal line ----
+            tags$hr(),
+            selectInput("numberOfBedRooms", "Number of Bedrooms:",
+                        c("Any" = 0,
+                          "1+" = 1,
+                          "2+" = 2,
+                          "3+" = 3,
+                          "4+" = 4,
+                          "5+" = 5
+                          )),
+            # Horizontal line ----
+            tags$hr(),
+            numericInput("livingSqFeet", "Living area(Sq ft) greater than:", 290, min = 290, max = 14000),
+            # Horizontal line ----
+            tags$hr(),
+            sliderInput("gradeRange",
+                        "Grade range:",
+                        min = 1,
+                        max = 13,
+                        value = c(1, 13)),
+            # Horizontal line ----
+            tags$hr(),
+            
         ),
 
         # Show a plot of the generated distribution
