@@ -88,3 +88,48 @@ mergedShapeAndAvgZipCodeData %>%
   theme_minimal()
   
 ```
+
+```{r, message=FALSE}
+zipcodeShapeData <- st_read('data/Zipcodes_for_King_County/Zipcodes_for_King_County_and_Surrounding_Area_Shorelines__zipcode_shore_area.shp', quiet = TRUE)
+houses <- read_csv("data/KING COUNTY House Data.csv")
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties_wa <-counties %>% 
+  filter(str_detect(ID, 'washington,'))
+
+counties_wa_king <- counties_wa %>% 
+  filter(str_detect(ID, "king"))
+
+
+averagePriceByZip <- houses %>% group_by(zipcode) %>% summarize(averagePrice = mean(price), averageGrade = mean(grade))
+mergedShapeAndAvgZipCodeData <- merge(zipcodeShapeData,averagePriceByZip,by.x=c("ZIPCODE"),by.y=c("zipcode"))
+sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
+```
+
+```{r, message=FALSE}
+library(gridExtra)
+mergedShapeAndAvgZipCodeData %>%
+  ggplot() + 
+  geom_sf(aes(fill=averagePrice)) + 
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, vjust = -1.0) +
+  scale_fill_viridis_c("Average Price by zip code", labels = dollar, limits=c(600000, 2000000)) +
+  labs(x = "Longitude", y = "Latitude",
+  title = "King County house prices by zip codes") +
+  theme_minimal()
+
+
+mergedShapeAndAvgZipCodeData %>%
+  ggplot() + 
+  geom_sf(aes(fill=averageGrade)) + 
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 4, 
+        shape = 23, fill = "red") +
+  geom_text(data = sites, aes(x = longitude, y = latitude), label = 'Seattle', position =  
+              position_dodge(width = 0.8), size = 3, vjust = -1.0) +
+  scale_fill_viridis_c("Average Price by zip code", limits=c(8, 13)) +
+  labs(x = "Longitude", y = "Latitude",
+  title = "King County house prices by zip codes") +
+  theme_minimal()
+  
+```
