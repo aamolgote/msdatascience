@@ -12,7 +12,7 @@ library(tidyverse)
 library(maps)
 library(scales)
 library(sf)
-options(allow_html_in_all_outputs=TRUE)
+
 king <- read_csv("data/KING COUNTY House Data.csv")
 
 # Define server logic required to draw 3 graphs for assignment 3
