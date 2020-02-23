@@ -11,7 +11,8 @@ library(shinythemes)
 shinyUI(fluidPage(
     theme = shinytheme("superhero"),
     # Application title
-    titlePanel(title=div(style="display:inline-block;width:100%;background-color:#4E5D6C !important",img(src="homelogo.png", style="height:100px;"), "King county house price data analysis")),
+    titlePanel(title=div(style="display:inline-block;width:100%;background-color:#4E5D6C !important",
+            img(src="homelogo.png", style="height:100px;"), "King county house price data analysis")),
     
     sidebarLayout(
         
@@ -64,7 +65,7 @@ shinyUI(fluidPage(
                           "3+" = 3,
                           "4+" = 4,
                           "5+" = 5
-                          )),
+                        )),
             # Horizontal line ----
             tags$hr(),
             
@@ -80,7 +81,7 @@ shinyUI(fluidPage(
                         max = 13,
                         value = c(1, 13))
         ),
-
+        
         # Show the genrated plots
         mainPanel(
             tabsetPanel(
