@@ -12,7 +12,8 @@ shinyUI(fluidPage(
     theme = shinytheme("superhero"),
     # Application title
     titlePanel(title=div(style="display:inline-block;width:100%;background-color:#4E5D6C !important",
-            img(src="homelogo.png", style="height:100px;"), "King county house price data analysis")),
+            img(src="homelogo.png", style="height:100px;"), "King county house price data analysis"), 
+            windowTitle = "King county house price data analysis"),
     
     sidebarLayout(
         
