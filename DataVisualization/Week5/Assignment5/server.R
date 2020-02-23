@@ -16,21 +16,25 @@ library(sf)
 king <- read_csv("data/KING COUNTY House Data.csv")
 
 # Define server logic required to draw a histogram
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
   
+    # Get County data
     counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
     counties_wa <-counties %>%
-      filter(str_detect(ID, 'washington,'))
+      filter(str_detect(ID, 'washington,')) # Filter Washinton state counties
     counties_wa_king <- counties_wa %>%
-      filter(str_detect(ID, "king"))
+      filter(str_detect(ID, "king")) #Filter king county data
     sites <- data.frame(longitude = c(-122.3321), latitude = c(47.6062))
     
     
     average_price_data <- reactive({
-      waterfrontView <- input$waterfront
-      livingSqFeet <- input$livingSqFeet
-      gradeMin <- input$gradeRange[1]
-      gradeMax <- input$gradeRange[2]
+      floorsFilter <- input$floors # Floors Filter
+      waterfrontView <- input$waterfront #Water front filter
+      livingSqFeet <- input$livingSqFeet #Living area sq feet filter
+      gradeMin <- input$gradeRange[1] #Minimum grade from slider input
+      gradeMax <- input$gradeRange[2] #Maximum grade from slider input
+      
+      #Set appropriate water front filter vector, based on the drop down input from ui
       waterfrontFilter <- c(0,1)
       if (waterfrontView == 1){
         waterfrontFilter <- c(1)
@@ -41,31 +45,37 @@ shinyServer(function(input, output) {
       else if (waterfrontView == -1){
         waterfrontFilter <- c(0,1)  
       }
+      # Number of bedrooms filter 
       numberOfBedRooms <- input$numberOfBedRooms
+      
+      #Build the data for the plot averagePriceEachYear
       averagePriceEachYear <- king %>%
-        filter(condition %in% input$condition) %>%
+        filter(condition %in% input$condition & waterfront %in% waterfrontFilter) %>%
         filter(waterfront %in% waterfrontFilter) %>%
+        filter(floors %in% floorsFilter) %>%
         filter(bedrooms >= numberOfBedRooms) %>%
         filter(sqft_living >= livingSqFeet) %>%
         filter (grade > gradeMin & grade < gradeMax) %>%
+        filter (price >= input$priceRange[1] & price <= input$priceRange[2]) %>%
         group_by(yr_built) %>%
-        summarise(averagePrice = mean(price)) %>%
-        filter (averagePrice > input$range[1] & averagePrice < input$range[2])
+        summarise(averagePrice = mean(price))
     })
 
-    
+    #Plot 1: Average price Year on Year
     output$averagePricePlot <- renderPlot({
         ggplot(data = average_price_data()) +
         geom_point(aes(x = yr_built, y = averagePrice)) +
         geom_smooth(aes(yr_built, averagePrice)) +
         scale_y_continuous(labels = scales::dollar) +
-        labs(x = "Year", y = "Average Price",
-             title = "Average price Year on Year") +
+        labs(x = "Year", y = "Average Price") +
         theme_minimal()
     })
     
     houses_data <- reactive({
-      waterfrontView <- input$waterfront
+      waterfrontView <- input$waterfront #get the waterfront filter
+      floorsFilter <- input$floors #get floors filter
+      
+      #Set appropriate water front filter vector, based on the drop down input from ui
       waterfrontFilter <- c(0,1)
       if (waterfrontView == 1){
         waterfrontFilter <- c(1)
@@ -76,20 +86,23 @@ shinyServer(function(input, output) {
       else if (waterfrontView == -1){
         waterfrontFilter <- c(0,1)  
       }
-      numberOfBedRooms <- input$numberOfBedRooms
-      livingSqFeet <- input$livingSqFeet
-      gradeMin <- input$gradeRange[1]
-      gradeMax <- input$gradeRange[2]
+      numberOfBedRooms <- input$numberOfBedRooms #Number of bedrooms filter
+      livingSqFeet <- input$livingSqFeet #Living Area Sq feet filter
+      gradeMin <- input$gradeRange[1] #Minimum grade from slider input
+      gradeMax <- input$gradeRange[2] #Maximum grade from slider input
+      
+      # Apply filter to houses data for king county
       king  %>% 
         filter(condition %in% input$condition) %>%
         filter(waterfront %in% waterfrontFilter) %>%
+        filter(floors %in% floorsFilter) %>%
         filter(bedrooms >= numberOfBedRooms) %>%
         filter(sqft_living >= livingSqFeet) %>%
         filter (grade > gradeMin & grade < gradeMax) %>%
-        filter (price > input$range[1] & price < input$range[2])
+        filter (price >= input$priceRange[1] & price <= input$priceRange[2])
     })
     
-   
+    # Plot 2: Price by Geography
     output$geopraphicPlot <- renderPlot({
     counties_wa_king %>%
       ggplot() +
@@ -102,10 +115,10 @@ shinyServer(function(input, output) {
       scale_colour_viridis_c("Price", limits = c(input$range[1], input$range[2]), labels = scales::dollar) +
       theme_minimal() +
       labs(x = "Longitude",
-           y = "Latitude",
-           title = "King County house prices over geographic space")
+           y = "Latitude")
     })
     
+    # Plot 3: Price over time and geographic space
     output$geopraphicPlotByTime <- renderPlot({
     counties_wa_king %>%
       ggplot() +
@@ -117,14 +130,13 @@ shinyServer(function(input, output) {
       facet_wrap(~decade) +
       theme(axis.text.x = element_text(angle =50, hjust=0.75))+
       labs(x = "Longitude",
-           y = "Latitude",
-           title = "King County house prices over time and geographic space")
+           y = "Latitude")
     });
     
+    # Printing input variables for debugging purpose
     observe({
       print(" ================================================== ")
-      print(input$range[1])
-      print(input$range[2])
+      print(input$priceRange)
       print(input$condition)
     })
 
