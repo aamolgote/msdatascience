@@ -1237,3 +1237,10 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 /.vs/msdatascience/v15/.suo
 /.vs/VSWorkspaceState.json
 /.vs/msdatascience/v16/.suo
+/DataVisualization/Week8/shinyapp/.Rproj.user
+/DataVisualization/Week8/shinyapp/.Rhistory
+/DataVisualization/Week8/ShinyWebApp/FinalProject/.Rproj.user
+/DataVisualization/Week8/ShinyWebApp/FinalProject/rsconnect/shinyapps.io
+/DataVisualization/Week8/Visualizations/FinalProject/.Rproj.user
+/DataVisualization/Week8/ShinyWebApp/FinalProject/.Rhistory
+/DataVisualization/Week8/ShinyWebApp/FinalProject/.RData
