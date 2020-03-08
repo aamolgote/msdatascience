@@ -24,7 +24,11 @@ shinyUI(fluidPage(
         # Show a plot of the generated distribution
         mainPanel(
             tabsetPanel(
-                tabPanel("Loans processed in each Year", plotOutput("loanProcessesedEachYear", height="700px"))
+                tabPanel("Loans processed in each Year", plotOutput("loanProcessesedEachYear", height="700px")),
+                tabPanel("Price by Geography", plotOutput("totalFundedLoanAmountEachYear", height="700px")),
+                tabPanel("Loan Amount Term Relation", plotOutput("loanAmtTermRelation", height="700px")),
+                tabPanel("Loan Amount Term Relation", plotOutput("fundedAmtIncomeAndInterestRelation", height="700px")),
+                tabPanel("Loan Amount Term Relation", plotOutput("loanFundedAmtByState", height="700px"))
             )
         )
     )
