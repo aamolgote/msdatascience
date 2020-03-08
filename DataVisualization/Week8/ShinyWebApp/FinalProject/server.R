@@ -12,7 +12,7 @@ library(tidyverse)
 library(maps)
 library(scales)
 library(sf)
-
+library(shinycssloaders)
 lendingClubLoanData <- read.csv("data/lending_club_loan_data_final.csv")
 filteredLendingClubData <- lendingClubLoanData %>%
   drop_na(annual_inc)

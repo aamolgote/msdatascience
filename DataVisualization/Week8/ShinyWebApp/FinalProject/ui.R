@@ -84,10 +84,10 @@ shinyUI(fluidPage(
         # Show a plot of the generated distribution
         mainPanel(
             tabsetPanel(
-                tabPanel("Year wise loans trend", plotOutput("loanProcessesedEachYear")%>% withSpinner(color="#0dc5c1"), plotOutput("totalFundedLoanAmountEachYear")),
-                tabPanel("Loan Amount Term Relation", plotOutput("loanAmtTermRelation", height="700px")%>% withSpinner(color="#0dc5c1") ),
-                tabPanel("Loan Funded Amount, Income, Interest Relation", plotOutput("fundedAmtIncomeAndInterestRelation", height="700px")%>% withSpinner(color="#0dc5c1")),
-                tabPanel("Loan Amount Funded by state", plotOutput("loanFundedAmtByState", height="700px")%>% withSpinner(color="#0dc5c1"))
+                tabPanel("Year wise loans trend", shinycssloaders::withSpinner(plotOutput("loanProcessesedEachYear")), plotOutput("totalFundedLoanAmountEachYear")),
+                tabPanel("Loan Amount Term Relation", shinycssloaders::withSpinner(plotOutput("loanAmtTermRelation", height="700px"))),
+                tabPanel("Loan Funded Amount, Income, Interest Relation", shinycssloaders::withSpinner(plotOutput("fundedAmtIncomeAndInterestRelation", height="700px"))),
+                tabPanel("Loan Amount Funded by state", shinycssloaders::withSpinner(plotOutput("loanFundedAmtByState", height="700px")))
             )
         )
     )
