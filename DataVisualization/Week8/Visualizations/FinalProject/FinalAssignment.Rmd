@@ -2,7 +2,9 @@
 title: "FinalAssignment"
 author: "Amol Gote"
 date: "3/7/2020"
-output: word_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -18,11 +20,6 @@ library(sf)
 library(maps)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 
 ```{r final_project_data_load, message=FALSE}
@@ -36,7 +33,10 @@ lendingClubLoanData <- read.csv("data/lending_club_loan_data_final.csv")
 ```
 
 
-
+1. Below visualization shows number of loans funded each year from 2007 till 2018. 
+2. From 2007 till 2012, it had gradual progress, but 2012 to 2015, number of loans issued has grown exponentially.
+3. 2015 to 2017 saw a marginal hike in number of loans, 2017 to 2018 saw a considerable hike. 
+4. Number of loans issued in 2018 by lending club is close to 500,000 which is highest
 ```{r, message=FALSE}
 numberOfLoansByYear <- lendingClubLoanData %>% 
   group_by(orig_year)%>%
@@ -47,11 +47,16 @@ ggplot(data = numberOfLoansByYear)+
   geom_point(color="steelblue", size=2.5, aes(x=orig_year,y=loanCountByYear))+
   scale_x_continuous(breaks = numberOfLoansByYear$orig_year) +
   scale_y_continuous(labels = scales::comma_format()) +
-  labs(x="Year",y="# Number of loans",title="Loans processed in each Year")+
+  labs(x="Year",y="# Number of loans",title="Loans processed year on year (2007-2018)")+
   theme_minimal() 
 ```
 
+1. Below visualization shows total loan funded amount for each year from 2007 till 2018.
+2. In general trend of total loan funded amount is in align to the number of loans issued as above visulization.
+3. Lending club has funded loans maximum of $8 billion in 2018.
+4. 2015 to 2017, total funded loan amount is flat.
 ```{r, message=FALSE}
+
 totalFundedAMountPerYear <- lendingClubLoanData %>% 
   group_by(orig_year)%>%
   summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
@@ -60,21 +65,33 @@ ggplot(data = totalFundedAMountPerYear, aes(x=orig_year, y=totalFundedAmount)) +
   geom_bar(stat="identity", width=0.5, fill = "steelblue") +
   scale_x_continuous(breaks = numberOfLoansByYear$orig_year) +
   scale_y_continuous(labels = scales::dollar) +
-  labs(x = "Year", y = "$ Total funded loan",title="Total Funded Loan Amount each Year") +
+  labs(x = "Year", y = "Total funded loan amount",title="Total loan funded amount year on year (2007-2018)") +
   theme_minimal() 
 ```
 
+1. Below visualization shows relationship between loan funded amount and term.
+2. Lending club offers only loans with 2 terms
+  a. 36 Months
+  b. 60 Months
+3. For 36 months loan:
+  a. Median loan funded amount is $10000.
+  b. Majority of the funded loan amount ranges from close $6000 to $16000.
+4. For 60 months loan:
+  a. Median loan funded amount is $20000.
+  b. Majority of the funded loan amount ranges from close $15000 to $25000.
+  
 ```{r, message=FALSE}
 lendingClubLoanData %>%
 ggplot() +
   geom_boxplot(aes(x=term, y=funded_amnt, color=term)) + 
   scale_y_continuous(labels = scales::dollar) +
-  labs(x = "Term", y = "Loan Funded Amount", title="Loan Amount and term relation") +
+  labs(x = "Term", y = "Loan funded amount", title="Loan funded amount and term relation") +
   theme_minimal() 
 ```
 
-
-
+1. Below visulization shows relationship between funded loan amount, annual income and interest rate.
+2. Visulization shows that higher the annual income more is the funded loan amount.
+2. Also as the annual income increase the interest rate drop by couple of percentage points.
 ```{r, message=FALSE}
 
 filteredLendingClubData <- lendingClubLoanData %>%
@@ -92,15 +109,33 @@ ggplot(data =groupedData, aes(x=incomeGroup, y=averageLoanLoanFundedAmount)) +
   geom_point(colour="steelblue", shape=16, aes(size=averageInterest)) +
   geom_smooth(aes(incomeGroup, averageLoanLoanFundedAmount, group = 1), method = "lm") +
   scale_y_continuous(labels = scales::dollar) +
-  labs(x="Annual Income ($)",y="Average loan funded amount",title="Relation between Funded Amt, Income and Interest Rate")+
-  guides(size=guide_legend("Avg \nInterest Rate (%)")) +
+  labs(x="Annual Income ($)",y="Average loan funded amount",title="Relation between funded loan Amount, income and interest rate")+
+  guides(size=guide_legend("Average \ninterest rate (%)")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))+
   theme(legend.background = element_rect())
 ```
 
+1. Below visualization shows the distribution of annual income of lenders.
+2. Majority of lenders are having annual income less than $200K.
+3. Median annual income seems to around $60K.
+4. Have excluded loans taken by lenders having annual income > 300K as they are few in number and are outliars.
+```{r, message=FALSE }
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(annual_inc)%>%
+  filter(annual_inc < 300000)
 
-
+ggplot(data = filteredLendingClubData, aes(x = annual_inc)) +
+  geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+  geom_vline(aes(xintercept=median(annual_inc)),color="green", linetype="dashed", size=1) +
+  scale_x_continuous(labels = scales::dollar) +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  labs(x="Annual income",y="Density of loans",title="Annual income distribution") +
+  theme_minimal()
+    
+```
+1. Below visulization shows geographical distribution of total loan funded amount across various US states.
+2. California has the highest total funded loan amount, followed by Texas, New York and Florida.
 ```{r, message=FALSE}
 
 fullStateNames <- read.csv("data/states.csv")
@@ -118,12 +153,13 @@ states2 <- states %>% left_join(fundedAmountByState, by = c("ID" = "state" ))
 
 ggplot(data = states2) + 
   geom_sf(aes(fill = totalFundedAmount)) +
-  scale_fill_viridis_c("Loan Funded Amount", labels = scales::dollar) +
-  labs(title = "Loans Funded amount by state") +
+  scale_fill_viridis_c("Loan funded amount", labels = scales::dollar) +
+  labs(title = "Total loan funded amount by state") +
   theme_minimal()
 ```
 
-
+1. Below visualization shows the distributiion of DTI (Debt to Income Ratio (%)) for the lenders.
+2. Lower the DTI, higher the probability of getting the loan approved.
 ```{r, message=FALSE }
 filteredLendingClubData <- lendingClubLoanData %>%
   drop_na(dti)%>%
@@ -131,43 +167,95 @@ filteredLendingClubData <- lendingClubLoanData %>%
 
 ggplot(data = filteredLendingClubData, aes(x = dti)) +
   geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+  geom_vline(aes(xintercept=median(dti)),color="green", linetype="dashed", size=1) +
   labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI") +
   theme_minimal()
     
 ```
 
+1. Below visulization shows loan distribution by the loan status.
+2. Close to 900K loans are current and 1 Million loans which are paid off.
+3. Charged of loans are close to 2,61,655 out of total 2,260,668 loans. SO the charge of percentage is close to 12% (exact 11.57 %).
+3. Most current loans will be eventually paid off.
+```{r, message=FALSE}
+loan_statuses <- c("Current",
+                  "Fully Paid",
+                  "Late (31-120 days)",
+                  "In Grace Period",
+                  "Charged Off",
+                  "Late (16-30 days)")
 
-```{r, message=FALSE }
-filteredLendingClubData <- lendingClubLoanData %>%
-  drop_na(annual_inc)%>%
-  filter(annual_inc < 300000)
+numberOfLoansByLoanStatus <- lendingClubLoanData %>% 
+  filter(loan_status %in% loan_statuses) %>%
+  group_by(loan_status)%>%
+  summarise(numberOfLoans = n())
 
-ggplot(data = filteredLendingClubData, aes(x = annual_inc)) +
-  geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
-  scale_x_continuous(labels = scales::dollar) +
-  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
-  labs(x="Annual Income",y="Density of loans",title="Annual income distribution") +
-  theme_minimal()
-    
+ggplot(data = numberOfLoansByLoanStatus, aes(x=loan_status, y=numberOfLoans)) +
+  geom_bar(stat="identity", width=0.5, fill = "steelblue") +
+  geom_text(aes(label=numberOfLoans), vjust=-0.3, size=3.5) +
+  scale_y_continuous(labels = scales::comma_format()) +
+  labs(x = "Loan Status", y = "Number of Loans (#)",title="# Loans by status") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))
+```
+1. Below visulization shows the distribution of loans taken for various causes.
+2. Debt consolidation is major primary purpose of taking loan from lending club.
+3. Second major purpose of taking loan is for paying credit card bills.
+```{r, message=FALSE}
+numberOfLoansByPurpose <- lendingClubLoanData %>% 
+  group_by(purpose)%>%
+  summarise(numberOfLoans = n())
+
+ggplot(data = numberOfLoansByPurpose, aes(x=purpose, y=numberOfLoans)) +
+  geom_bar(stat="identity", width=0.5, fill = "steelblue") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  labs(x = "Loan Purpose", y = "Number of Loans (#)",title="# Loans by purpose") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))
 ```
 
 
 ```{r data_exploration, message=FALSE}
 filteredLendingClubData <- lendingClubLoanData %>%
-  drop_na(loan_amnt)
+  drop_na(loan_amnt) %>%
+  drop_na(funded_amnt)
+# Max loan amount
 as.numeric(max(filteredLendingClubData$loan_amnt))
+# Minimum loan amount
 as.numeric(min(filteredLendingClubData$loan_amnt))
 
-loanGreaterThan100K <- filteredLendingClubData %>%
-  filter(loan_amnt > 100000)
-
+# Unique loan statuses 
 uniqueLoanStatus <- unique(filteredLendingClubData$loan_status)
 uniqueLoanStatus
 
 filteredLendingClubData <- lendingClubLoanData %>%
   drop_na(dti)
+# Max DTI
 as.numeric(max(filteredLendingClubData$dti))
+#Minimum DTI
 as.numeric(min(filteredLendingClubData$dti))
-```
+# Total loan funded amount
+as.numeric(sum(filteredLendingClubData$funded_amnt))
 
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(annual_inc)%>%
+  filter(annual_inc < 300000)
+# Annual income median
+median(filteredLendingClubData$annual_inc)
+
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(dti)%>%
+  filter(dti < 100)
+# Dti median
+median(filteredLendingClubData$dti)
+```
+```{r message=FALSE}
+nrow(lendingClubLoanData)
+```
+```{r}
+
+```
+```{r}
+
+```
 

@@ -18,6 +18,13 @@ fullStateNames <- read.csv("data/states.csv")
 states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 incomeLabels <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K','120-140K','140-160K','160-180K','180-200K', '200-220K', '220-240K', '240-260K', '260-280K', '280-300K')
 
+loan_statuses <- c("Current",
+                   "Fully Paid",
+                   "Late (31-120 days)",
+                   "In Grace Period",
+                   "Charged Off",
+                   "Late (16-30 days)")
+
 filteredLendingClubData <- lendingClubLoanData %>%
   drop_na(annual_inc)
 
@@ -123,6 +130,27 @@ shinyServer(function(input, output) {
     states2 <- states %>% left_join(fundedAmountByState, by = c("ID" = "state" ))
   })
   
+  loans_by_status <- reactive({
+    numberOfLoansByLoanStatus <- lendingClubLoanData %>% 
+      filter(loan_status %in% loan_statuses) %>%
+      filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      group_by(loan_status)%>%
+      summarise(numberOfLoans = n())
+  })
+  
+  loans_by_purpose <- reactive({
+    numberOfLoansByPurpose <- lendingClubLoanData %>% 
+      filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      group_by(purpose)%>%
+      summarise(numberOfLoans = n())
+  })
+  
   output$dtiTrend <- renderPlot({
     ggplot(data = dti_trend(), aes(x = dti)) +
       geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
@@ -130,26 +158,22 @@ shinyServer(function(input, output) {
       theme_minimal()
   })
   
-  
-  
   output$loanProcessesedEachYear <- renderPlot({
     ggplot(data = number_of_loans_each_year())+
       geom_line(color="steelblue", size=1.2, aes(x=orig_year,y=loanCountByYear))+
       geom_point(color="steelblue", size=2.5, aes(x=orig_year,y=loanCountByYear))+
       scale_x_continuous(breaks = number_of_loans_each_year()$orig_year) +
       scale_y_continuous(labels = scales::comma_format()) +
-      labs(x="Year",y="# Number of loans",title="Loans processed in each Year")+
+      labs(x="Year",y="# Number of loans",title="Loans processed year on year (2007-2018)")+
       theme_minimal() 
   })
-  
-  
   
   output$totalFundedLoanAmountEachYear <- renderPlot({
     ggplot(data = total_amount_funded_each_year(), aes(x=orig_year, y=totalFundedAmount)) +
       geom_bar(stat="identity", width=0.5, fill = "steelblue") +
       scale_x_continuous(breaks = total_amount_funded_each_year()$orig_year) +
       scale_y_continuous(labels = scales::dollar) +
-      labs(x = "Year", y = "$ Total funded loan",title="Total Funded Loan Amount each Year") +
+      labs(x = "Year", y = "Total funded loan amount",title="Total loan funded amount year on year (2007-2018)") +
       theme_minimal() 
   })
   
@@ -157,7 +181,7 @@ shinyServer(function(input, output) {
     ggplot(data = loan_amt_term_relation()) +
       geom_boxplot(aes(x=term, y=funded_amnt, color=term)) + 
       scale_y_continuous(labels = scales::dollar) +
-      labs(x = "Term", y = "Loan Funded Amount", title="Loan Amount and term relation") +
+      labs(x = "Term", y = "Loan funded amount", title="Loan funded amount and term relation") +
       theme_minimal() 
   })
   
@@ -166,8 +190,8 @@ shinyServer(function(input, output) {
       geom_point(colour="steelblue", shape=16, aes(size=averageInterest)) +
       geom_smooth(aes(incomeGroup, averageLoanLoanFundedAmount, group = 1), method = "lm") +
       scale_y_continuous(labels = scales::dollar) +
-      labs(x="Annual Income ($)",y="Average loan funded amount",title="Relation between Funded Amt, Income and Interest Rate")+
-      guides(size=guide_legend("Avg \nInterest Rate (%)")) +
+      labs(x="Annual Income ($)",y="Average loan funded amount",title="Relation between funded loan Amount, income and interest rate")+
+      guides(size=guide_legend("Average \ninterest rate (%)")) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle =50, hjust=0.75))+
       theme(legend.background = element_rect())
@@ -178,16 +202,36 @@ shinyServer(function(input, output) {
       geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
       scale_x_continuous(labels = scales::dollar) +
       scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
-      labs(x="Annual Income",y="Density of loans",title="Annual income distribution") +
+      labs(x="Annual income",y="Density of loans",title="Annual income distribution") +
       theme_minimal()
   })
   
   output$loanFundedAmtByState <- renderPlot({
     ggplot(data = loan_funded_amt_by_state()) + 
       geom_sf(aes(fill = totalFundedAmount)) +
-      scale_fill_viridis_c("Loan Funded Amount", labels = scales::dollar) +
-      labs(title = "Loans Funded amount by state") +
+      scale_fill_viridis_c("Loan funded amount", labels = scales::dollar) +
+      labs(title = "Total loan funded amount by state") +
       theme_minimal()
   })
+  
+  output$loansByStatus <- renderPlot({
+    ggplot(loans_by_status(), aes(x=loan_status, y=numberOfLoans)) +
+      geom_bar(stat="identity", width=0.5, fill = "steelblue") +
+      geom_text(aes(label=numberOfLoans), vjust=-0.3, size=3.5) +
+      scale_y_continuous(labels = scales::comma_format()) +
+      labs(x = "Loan Status", y = "Number of Loans (#)",title="# Loans by status") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle =50, hjust=0.75))
+  })
+  
+  output$loansByPurpose <- renderPlot({
+    ggplot(loans_by_purpose(), aes(x=purpose, y=numberOfLoans)) +
+      geom_bar(stat="identity", width=0.5, fill = "steelblue") +
+      scale_y_continuous(labels = scales::comma_format()) +
+      labs(x = "Loan Purpose", y = "Number of Loans (#)",title="# Loans by purpose") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle =50, hjust=0.75))
+  })
+  
 })
 

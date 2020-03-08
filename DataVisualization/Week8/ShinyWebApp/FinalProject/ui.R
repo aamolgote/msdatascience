@@ -94,7 +94,10 @@ shinyUI(fluidPage(
                          shinycssloaders::withSpinner(plotOutput("fundedAmtIncomeAndInterestRelation")),
                          shinycssloaders::withSpinner(plotOutput("incomeTrend"))),
                 tabPanel("Loan Amount Funded by state", 
-                         shinycssloaders::withSpinner(plotOutput("loanFundedAmtByState", height="700px")))
+                         shinycssloaders::withSpinner(plotOutput("loanFundedAmtByState", height="700px"))),
+                tabPanel("Loans status and purpose", 
+                         shinycssloaders::withSpinner(plotOutput("loansByStatus")),
+                         shinycssloaders::withSpinner(plotOutput("loansByPurpose")))
             )
         )
     )
