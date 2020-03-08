@@ -9,7 +9,7 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, message=FALSE}
 library(ggplot2) 
 library(readr) 
 library(gridExtra)
@@ -35,7 +35,9 @@ write.csv(lendingClubLoanData, file = "data/lending_club_loan_data_final.csv", r
 lendingClubLoanData <- read.csv("data/lending_club_loan_data_final.csv")
 ```
 
-```{r}
+
+
+```{r, message=FALSE}
 numberOfLoansByYear <- lendingClubLoanData %>% 
   group_by(orig_year)%>%
   summarise(loanCountByYear=n())
@@ -49,7 +51,7 @@ ggplot(data = numberOfLoansByYear)+
   theme_minimal() 
 ```
 
-```{r}
+```{r, message=FALSE}
 totalFundedAMountPerYear <- lendingClubLoanData %>% 
   group_by(orig_year)%>%
   summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
@@ -62,7 +64,7 @@ ggplot(data = totalFundedAMountPerYear, aes(x=orig_year, y=totalFundedAmount)) +
   theme_minimal() 
 ```
 
-```{r}
+```{r, message=FALSE}
 lendingClubLoanData %>%
 ggplot() +
   geom_boxplot(aes(x=term, y=funded_amnt, color=term)) + 
@@ -73,12 +75,12 @@ ggplot() +
 
 
 
-```{r}
+```{r, message=FALSE}
 
 filteredLendingClubData <- lendingClubLoanData %>%
   drop_na(annual_inc)
 
-filteredLendingClubData <- filteredLeningClubData %>%
+filteredLendingClubData <- filteredLendingClubData %>%
   filter(annual_inc <= 300000)
 
 lbls <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K','120-140K','140-160K','160-180K','180-200K', '200-220K', '220-240K', '240-260K', '260-280K', '280-300K')
@@ -99,9 +101,11 @@ ggplot(data =groupedData, aes(x=incomeGroup, y=averageLoanLoanFundedAmount)) +
 
 
 
-```{r}
+```{r, message=FALSE}
 
 fullStateNames <- read.csv("data/states.csv")
+states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+
 fundedAmountByState <- lendingClubLoanData %>% 
   group_by(addr_state)%>%
   summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
@@ -109,7 +113,7 @@ fundedAmountByState <- lendingClubLoanData %>%
 fundedAmountByState <- fundedAmountByState %>%
   inner_join(fullStateNames, by = c("addr_state" = "abbreviation"))
 
-states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+
 states2 <- states %>% left_join(fundedAmountByState, by = c("ID" = "state" ))
 
 ggplot(data = states2) + 
@@ -120,26 +124,50 @@ ggplot(data = states2) +
 ```
 
 
+```{r, message=FALSE }
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(dti)%>%
+  filter(dti < 100)
+
+ggplot(data = filteredLendingClubData, aes(x = dti)) +
+  geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+  labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI") +
+  theme_minimal()
+    
+```
 
 
+```{r, message=FALSE }
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(annual_inc)%>%
+  filter(annual_inc < 300000)
+
+ggplot(data = filteredLendingClubData, aes(x = annual_inc)) +
+  geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+  scale_x_continuous(labels = scales::dollar) +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  labs(x="Annual Income",y="Density of loans",title="Annual income distribution") +
+  theme_minimal()
+    
+```
 
 
+```{r data_exploration, message=FALSE}
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(loan_amnt)
+as.numeric(max(filteredLendingClubData$loan_amnt))
+as.numeric(min(filteredLendingClubData$loan_amnt))
 
+loanGreaterThan100K <- filteredLendingClubData %>%
+  filter(loan_amnt > 100000)
 
+uniqueLoanStatus <- unique(filteredLendingClubData$loan_status)
+uniqueLoanStatus
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(dti)
+as.numeric(max(filteredLendingClubData$dti))
+as.numeric(min(filteredLendingClubData$dti))
+```
 
 

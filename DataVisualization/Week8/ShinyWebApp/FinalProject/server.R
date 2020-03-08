@@ -14,20 +14,124 @@ library(scales)
 library(sf)
 library(shinycssloaders)
 lendingClubLoanData <- read.csv("data/lending_club_loan_data_final.csv")
-filteredLendingClubData <- lendingClubLoanData %>%
-  drop_na(annual_inc)
 fullStateNames <- read.csv("data/states.csv")
 states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+incomeLabels <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K','120-140K','140-160K','160-180K','180-200K', '200-220K', '220-240K', '240-260K', '260-280K', '280-300K')
+
+filteredLendingClubData <- lendingClubLoanData %>%
+  drop_na(annual_inc)
+
+filtereDdtiData <- lendingClubLoanData %>%
+  drop_na(dti)%>%
+  drop_na(dti) %>%
+  filter(dti < 100)
+
+filteredAnnualIncomeData <- lendingClubLoanData %>%
+  drop_na(annual_inc)%>%
+  filter(annual_inc < 300000)
+
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
   
+  loanStatusFilter <- function(loanStatusValue) {
+    toReturn <- c("Current",
+                  "Fully Paid",
+                  "Late (31-120 days)",
+                  "In Grace Period",
+                  "Charged Off",
+                  "Late (16-30 days)",
+                  "Default",
+                  "Does not meet the credit policy. Status:Fully Paid",
+                  "Does not meet the credit policy. Status:Charged Off")
+    if (loanStatusValue != "Any"){
+      toReturn <- c(loanStatusValue)
+    }
+    return(toReturn)
+  }
+  
   number_of_loans_each_year <- reactive({
     numberOfLoansEachYear <- lendingClubLoanData %>%
+      filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
       group_by(orig_year) %>%
       summarise(loanCountByYear=n())
   })
-
+  
+  total_amount_funded_each_year <- reactive({
+    totalFundedAMountPerYear <- lendingClubLoanData %>% 
+      filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      group_by(orig_year)%>%
+      summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
+  })
+  
+  loan_amt_term_relation <- reactive({
+    lendingClubLoanData %>%
+      filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+  })
+  
+  dti_trend <- reactive({
+    filtereDdtiData %>%
+      filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+  })
+  
+  funded_amt_term_interest_relation <- reactive({
+    filteredLendingClubData <- filteredLendingClubData %>%
+      filter(annual_inc <= 300000) %>%
+      filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+    
+    groupedData <- filteredLendingClubData %>% 
+      group_by(incomeGroup = cut(annual_inc, breaks= seq(0, 300000, by = 20000), right = TRUE, include.lowest = TRUE, labels = incomeLabels) ) %>% 
+      summarise(averageInterest= mean(int_rate), averageLoanLoanFundedAmount = mean(funded_amnt)) 
+    
+  })
+  
+  income_trend <- reactive({
+    filteredAnnualIncomeData %>%
+      filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+  })
+  
+  loan_funded_amt_by_state <- reactive({
+    fundedAmountByState <- lendingClubLoanData %>% 
+      filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
+      filter(grade %in% input$grades) %>%
+      filter(home_ownership %in% input$homeOwnerships) %>%
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      group_by(addr_state)%>%
+      summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
+    
+    fundedAmountByState <- fundedAmountByState %>%
+      inner_join(fullStateNames, by = c("addr_state" = "abbreviation"))
+    
+    states2 <- states %>% left_join(fundedAmountByState, by = c("ID" = "state" ))
+  })
+  
+  output$dtiTrend <- renderPlot({
+    ggplot(data = dti_trend(), aes(x = dti)) +
+      geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+      labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI (Excluded > 100") +
+      theme_minimal()
+  })
+  
+  
+  
   output$loanProcessesedEachYear <- renderPlot({
     ggplot(data = number_of_loans_each_year())+
       geom_line(color="steelblue", size=1.2, aes(x=orig_year,y=loanCountByYear))+
@@ -38,11 +142,7 @@ shinyServer(function(input, output) {
       theme_minimal() 
   })
   
-  total_amount_funded_each_year <- reactive({
-    totalFundedAMountPerYear <- lendingClubLoanData %>% 
-      group_by(orig_year)%>%
-      summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
-  })
+  
   
   output$totalFundedLoanAmountEachYear <- renderPlot({
     ggplot(data = total_amount_funded_each_year(), aes(x=orig_year, y=totalFundedAmount)) +
@@ -53,10 +153,6 @@ shinyServer(function(input, output) {
       theme_minimal() 
   })
   
-  loan_amt_term_relation <- reactive({
-    lendingClubLoanData
-  })
-  
   output$loanAmtTermRelation <- renderPlot({
     ggplot(data = loan_amt_term_relation()) +
       geom_boxplot(aes(x=term, y=funded_amnt, color=term)) + 
@@ -64,19 +160,6 @@ shinyServer(function(input, output) {
       labs(x = "Term", y = "Loan Funded Amount", title="Loan Amount and term relation") +
       theme_minimal() 
   })
-  
-  funded_amt_term_interest_relation <- reactive({
-    filteredLendingClubData <- filteredLendingClubData %>%
-      filter(annual_inc <= 300000)
-    
-    lbls <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K','120-140K','140-160K','160-180K','180-200K', '200-220K', '220-240K', '240-260K', '260-280K', '280-300K')
-
-    groupedData <- filteredLendingClubData %>% 
-      group_by(incomeGroup = cut(annual_inc, breaks= seq(0, 300000, by = 20000), right = TRUE, include.lowest = TRUE, labels = lbls) ) %>% 
-      summarise(averageInterest= mean(int_rate), averageLoanLoanFundedAmount = mean(funded_amnt)) 
-    
-  })
-  
   
   output$fundedAmtIncomeAndInterestRelation <- renderPlot({
     ggplot(data =funded_amt_term_interest_relation(), aes(x=incomeGroup, y=averageLoanLoanFundedAmount)) +
@@ -89,16 +172,14 @@ shinyServer(function(input, output) {
       theme(axis.text.x = element_text(angle =50, hjust=0.75))+
       theme(legend.background = element_rect())
   })
-  
-  loan_funded_amt_by_state <- reactive({
-    fundedAmountByState <- lendingClubLoanData %>% 
-      group_by(addr_state)%>%
-      summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
-    
-    fundedAmountByState <- fundedAmountByState %>%
-      inner_join(fullStateNames, by = c("addr_state" = "abbreviation"))
-    
-    states2 <- states %>% left_join(fundedAmountByState, by = c("ID" = "state" ))
+
+  output$incomeTrend <- renderPlot({
+    ggplot(data = income_trend(), aes(x = annual_inc)) +
+      geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+      scale_x_continuous(labels = scales::dollar) +
+      scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+      labs(x="Annual Income",y="Density of loans",title="Annual income distribution") +
+      theme_minimal()
   })
   
   output$loanFundedAmtByState <- renderPlot({
@@ -109,3 +190,4 @@ shinyServer(function(input, output) {
       theme_minimal()
   })
 })
+

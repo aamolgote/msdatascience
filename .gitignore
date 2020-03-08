@@ -1244,3 +1244,6 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 /DataVisualization/Week8/Visualizations/FinalProject/.Rproj.user
 /DataVisualization/Week8/ShinyWebApp/FinalProject/.Rhistory
 /DataVisualization/Week8/ShinyWebApp/FinalProject/.RData
+/DataVisualization/Week8/ShinyWebApp/FinalProject/data/lending_club_loan_data_final.csv
+/DataVisualization/Week8/Visualizations/FinalProject/data/lending_club_loan_data.csv
+/DataVisualization/Week8/Visualizations/FinalProject/data/lending_club_loan_data_final.csv

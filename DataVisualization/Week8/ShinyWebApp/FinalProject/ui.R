@@ -23,7 +23,7 @@ shinyUI(fluidPage(
     sidebarLayout(
         sidebarPanel(
             # Price Range filter
-            sliderInput("loanAmount",
+            sliderInput("loanAmountRange",
                         "Loan Amount:",
                         pre = "$",
                         min = 500,
@@ -33,7 +33,7 @@ shinyUI(fluidPage(
             tags$hr(),
             
             # House condition filter
-            checkboxGroupInput(inputId = "grade",
+            checkboxGroupInput(inputId = "grades",
                                label ="Grade:",
                                choiceNames = c("A", "B", "C", "D", "E", "F", "G"),  
                                choiceValues = c("A", "B", "C", "D", "E", "F", "G"),
@@ -43,7 +43,7 @@ shinyUI(fluidPage(
             tags$hr(),
             
             # House condition filter
-            checkboxGroupInput(inputId = "homeOwnership",
+            checkboxGroupInput(inputId = "homeOwnerships",
                                label ="Home Ownership:",
                                choiceNames = c("ANY", "RENT", "MORTGAGE", "OWN"),  
                                choiceValues = c("ANY", "RENT", "MORTGAGE", "OWN"),
@@ -52,7 +52,7 @@ shinyUI(fluidPage(
             # Horizontal line ----
             tags$hr(),
             
-
+            
             # Number of bedrooms filter
             selectInput("loanStatus", "Loan Status:",
                         c(
@@ -73,7 +73,7 @@ shinyUI(fluidPage(
             # Price Range filter
             sliderInput("dti",
                         "Debt to Income Ratio:",
-                        pre = "$",
+                        pre = "%",
                         min = -1,
                         max = 999,
                         value = c(0, 100)),
@@ -84,11 +84,19 @@ shinyUI(fluidPage(
         # Show a plot of the generated distribution
         mainPanel(
             tabsetPanel(
-                tabPanel("Year wise loans trend", shinycssloaders::withSpinner(plotOutput("loanProcessesedEachYear")), plotOutput("totalFundedLoanAmountEachYear")),
-                tabPanel("Loan Amount Term Relation", shinycssloaders::withSpinner(plotOutput("loanAmtTermRelation", height="700px"))),
-                tabPanel("Loan Funded Amount, Income, Interest Relation", shinycssloaders::withSpinner(plotOutput("fundedAmtIncomeAndInterestRelation", height="700px"))),
-                tabPanel("Loan Amount Funded by state", shinycssloaders::withSpinner(plotOutput("loanFundedAmtByState", height="700px")))
+                tabPanel("Year wise loans trend", shinycssloaders::withSpinner(plotOutput("loanProcessesedEachYear")), 
+                         shinycssloaders::withSpinner(plotOutput("totalFundedLoanAmountEachYear"))),
+                tabPanel("Loan Amount Term Relation", 
+                         shinycssloaders::withSpinner(plotOutput("loanAmtTermRelation", height="700px"))),
+                tabPanel("DTI Trend", 
+                         shinycssloaders::withSpinner(plotOutput("dtiTrend", height="700px"))),
+                tabPanel("Loan Funded Amount, Income, Interest Relation", 
+                         shinycssloaders::withSpinner(plotOutput("fundedAmtIncomeAndInterestRelation")),
+                         shinycssloaders::withSpinner(plotOutput("incomeTrend"))),
+                tabPanel("Loan Amount Funded by state", 
+                         shinycssloaders::withSpinner(plotOutput("loanFundedAmtByState", height="700px")))
             )
         )
     )
 ))
+
