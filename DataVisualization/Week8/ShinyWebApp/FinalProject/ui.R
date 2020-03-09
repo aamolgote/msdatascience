@@ -79,7 +79,7 @@ shinyUI(fluidPage(
                         value = c(0, 100)),
             # Horizontal line ----
             tags$hr(),
-            tags$div(style="display:inline-block;width:100%;color:#e48806", "** Due to large datset size, visualizations and filters may run slow **"),
+            tags$div(style="display:inline-block;width:100%;color:#e48806", "** Due to large dataset size, visualizations and filters may run slow **"),
          ),
         
         # Show a plot of the generated distribution
@@ -87,14 +87,14 @@ shinyUI(fluidPage(
             tabsetPanel(
                 tabPanel("Year wise loans trend", shinycssloaders::withSpinner(plotOutput("loanProcessesedEachYear")), 
                          shinycssloaders::withSpinner(plotOutput("totalFundedLoanAmountEachYear"))),
-                tabPanel("Loan Amount Term Relation", 
+                tabPanel("Loan Amount, Term Relation", 
                          shinycssloaders::withSpinner(plotOutput("loanAmtTermRelation", height="700px"))),
                 tabPanel("DTI Trend", 
                          shinycssloaders::withSpinner(plotOutput("dtiTrend", height="700px"))),
-                tabPanel("Loan Funded Amount, Income, Interest Relation", 
+                tabPanel("Loan Amount, Income, Interest Relation", 
                          shinycssloaders::withSpinner(plotOutput("fundedAmtIncomeAndInterestRelation")),
                          shinycssloaders::withSpinner(plotOutput("incomeTrend"))),
-                tabPanel("Loan Amount Funded by state", 
+                tabPanel("Loan Amount by state", 
                          shinycssloaders::withSpinner(plotOutput("loanFundedAmtByState", height="700px"))),
                 tabPanel("Loans status and purpose", 
                          shinycssloaders::withSpinner(plotOutput("loansByStatus")),
