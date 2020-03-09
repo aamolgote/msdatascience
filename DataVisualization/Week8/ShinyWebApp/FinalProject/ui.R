@@ -78,8 +78,9 @@ shinyUI(fluidPage(
                         max = 999,
                         value = c(0, 100)),
             # Horizontal line ----
-            tags$hr()
-        ),
+            tags$hr(),
+            tags$div(style="display:inline-block;width:100%;color:#e48806", "** Due to large datset size, visualizations and filters may run slow **"),
+         ),
         
         # Show a plot of the generated distribution
         mainPanel(
@@ -99,7 +100,8 @@ shinyUI(fluidPage(
                          shinycssloaders::withSpinner(plotOutput("loansByStatus")),
                          shinycssloaders::withSpinner(plotOutput("loansByPurpose")))
             )
-        )
+        ),
+       
     )
 ))
 

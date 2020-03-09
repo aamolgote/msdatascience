@@ -151,12 +151,7 @@ shinyServer(function(input, output) {
       summarise(numberOfLoans = n())
   })
   
-  output$dtiTrend <- renderPlot({
-    ggplot(data = dti_trend(), aes(x = dti)) +
-      geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
-      labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI (Excluded > 100") +
-      theme_minimal()
-  })
+ 
   
   output$loanProcessesedEachYear <- renderPlot({
     ggplot(data = number_of_loans_each_year())+
@@ -200,6 +195,7 @@ shinyServer(function(input, output) {
   output$incomeTrend <- renderPlot({
     ggplot(data = income_trend(), aes(x = annual_inc)) +
       geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+      geom_vline(aes(xintercept=median(annual_inc)),color="green", linetype="dashed", size=1) +
       scale_x_continuous(labels = scales::dollar) +
       scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
       labs(x="Annual income",y="Density of loans",title="Annual income distribution") +
@@ -211,6 +207,14 @@ shinyServer(function(input, output) {
       geom_sf(aes(fill = totalFundedAmount)) +
       scale_fill_viridis_c("Loan funded amount", labels = scales::dollar) +
       labs(title = "Total loan funded amount by state") +
+      theme_minimal()
+  })
+  
+  output$dtiTrend <- renderPlot({
+    ggplot(data = dti_trend(), aes(x = dti)) +
+      geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
+      geom_vline(aes(xintercept=median(dti)),color="green", linetype="dashed", size=1) +
+      labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI (Excluded > 100") +
       theme_minimal()
   })
   

@@ -1,0 +1,621 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={FinalAssignment},
+            pdfauthor={Amol Gote},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{FinalAssignment}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Amol Gote}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+      \predate{\centering\large\emph}
+  \postdate{\par}
+    \date{3/7/2020}
+
+
+\begin{document}
+\maketitle
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(ggplot2) }
+\KeywordTok{library}\NormalTok{(readr) }
+\KeywordTok{library}\NormalTok{(gridExtra)}
+\KeywordTok{library}\NormalTok{(tidyverse)}
+\KeywordTok{library}\NormalTok{(sf)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'sf' was built under R version 3.6.3
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(maps)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'maps' was built under R version 3.6.3
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lendingClubLoanData <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"data/lending_club_loan_data.csv"}\NormalTok{)}
+\NormalTok{lendingClubLoanData <-}\StringTok{ }\NormalTok{lendingClubLoanData[, }\OperatorTok{!}\NormalTok{(}\KeywordTok{colnames}\NormalTok{(lendingClubLoanData) }\OperatorTok{%in%}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"id"}\NormalTok{,}\StringTok{"member_id"}\NormalTok{, }\StringTok{"url"}\NormalTok{, }\StringTok{"desc"}\NormalTok{))]}
+\NormalTok{lendingClubLoanData <-}\StringTok{ }\NormalTok{lendingClubLoanData[, }\OperatorTok{!}\NormalTok{(}\KeywordTok{colnames}\NormalTok{(lendingClubLoanData) }\OperatorTok{%in%}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"open_acc_6m"}\NormalTok{, }\StringTok{"open_act_il"}\NormalTok{, }\StringTok{"open_il_12m"}\NormalTok{, }\StringTok{"open_il_24m"}\NormalTok{, }\StringTok{"mths_since_rcnt_il"}\NormalTok{, }\StringTok{"total_bal_il"}\NormalTok{, }\StringTok{"il_util"}\NormalTok{, }\StringTok{"open_rv_12m"}\NormalTok{, }\StringTok{"open_rv_24m"}\NormalTok{, }\StringTok{"max_bal_bc"}\NormalTok{, }\StringTok{"all_util"}\NormalTok{, }\StringTok{"total_rev_hi_lim"}\NormalTok{, }\StringTok{"inq_fi"}\NormalTok{, }\StringTok{"total_cu_tl"}\NormalTok{, }\StringTok{"acc_open_past_24mths"}\NormalTok{, }\StringTok{"bc_open_to_buy"}\NormalTok{, }\StringTok{"bc_util"}\NormalTok{, }\StringTok{"mo_sin_old_il_acct"}\NormalTok{, }\StringTok{"mo_sin_old_rev_tl_op"}\NormalTok{, }\StringTok{"mo_sin_rcnt_rev_tl_op"}\NormalTok{, }\StringTok{"mo_sin_rcnt_tl"}\NormalTok{, }\StringTok{"mths_since_recent_bc"}\NormalTok{, }\StringTok{"mths_since_recent_bc_dlq"}\NormalTok{, }\StringTok{"mths_since_recent_inq"}\NormalTok{, }\StringTok{"mths_since_recent_revol_delinq"}\NormalTok{, }\StringTok{"num_accts_ever_120_pd"}\NormalTok{, }\StringTok{"num_actv_bc_tl"}\NormalTok{, }\StringTok{"num_actv_rev_tl"}\NormalTok{, }\StringTok{"num_bc_sats"}\NormalTok{, }\StringTok{"num_bc_tl"}\NormalTok{, }\StringTok{"num_il_tl"}\NormalTok{, }\StringTok{"num_op_rev_tl"}\NormalTok{, }\StringTok{"num_rev_accts"}\NormalTok{, }\StringTok{"num_rev_tl_bal_gt_0"}\NormalTok{, }\StringTok{"num_sats"}\NormalTok{, }\StringTok{"pct_tl_nvr_dlq"}\NormalTok{, }\StringTok{"percent_bc_gt_75"}\NormalTok{, }\StringTok{"tot_hi_cred_lim"}\NormalTok{, }\StringTok{"total_bal_ex_mort"}\NormalTok{, }\StringTok{"total_bc_limit"}\NormalTok{, }\StringTok{"total_il_high_credit_limit"}\NormalTok{, }\StringTok{"revol_bal_joint"}\NormalTok{, }\StringTok{"sec_app_earliest_cr_line"}\NormalTok{, }\StringTok{"sec_app_inq_last_6mths"}\NormalTok{, }\StringTok{"sec_app_mort_acc"}\NormalTok{, }\StringTok{"sec_app_open_acc"}\NormalTok{, }\StringTok{"sec_app_revol_util"}\NormalTok{, }\StringTok{"sec_app_open_act_il"}\NormalTok{, }\StringTok{"sec_app_num_rev_accts"}\NormalTok{, }\StringTok{"sec_app_chargeoff_within_12_mths"}\NormalTok{, }\StringTok{"sec_app_collections_12_mths_ex_med"}\NormalTok{, }\StringTok{"sec_app_mths_since_last_major_derog"}\NormalTok{, }\StringTok{"hardship_reason"}\NormalTok{, }\StringTok{"hardship_status"}\NormalTok{, }\StringTok{"deferral_term"}\NormalTok{, }\StringTok{"hardship_amount"}\NormalTok{, }\StringTok{"hardship_start_date"}\NormalTok{, }\StringTok{"hardship_end_date"}\NormalTok{, }\StringTok{"payment_plan_start_date"}\NormalTok{, }\StringTok{"hardship_length"}\NormalTok{, }\StringTok{"hardship_dpd"}\NormalTok{, }\StringTok{"hardship_loan_status"}\NormalTok{, }\StringTok{"orig_projected_additional_accrued_interest"}\NormalTok{, }\StringTok{"hardship_payoff_balance_amount"}\NormalTok{, }\StringTok{"hardship_last_payment_amount"}\NormalTok{, }\StringTok{"disbursement_method"}\NormalTok{, }\StringTok{"debt_settlement_flag"}\NormalTok{, }\StringTok{"debt_settlement_flag_date"}\NormalTok{, }\StringTok{"settlement_status"}\NormalTok{, }\StringTok{"settlement_date"}\NormalTok{, }\StringTok{"settlement_amount"}\NormalTok{, }\StringTok{"settlement_percentage"}\NormalTok{, }\StringTok{"settlement_term"}\NormalTok{))]}
+\NormalTok{lendingClubLoanData <-}\StringTok{ }\NormalTok{lendingClubLoanData[, }\OperatorTok{!}\NormalTok{(}\KeywordTok{colnames}\NormalTok{(lendingClubLoanData) }\OperatorTok{%in%}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"earliest_cr_line"}\NormalTok{,}\StringTok{"inq_last_6mths"}\NormalTok{,}\StringTok{"mths_since_last_delinq"}\NormalTok{,}\StringTok{"mths_since_last_record"}\NormalTok{,}\StringTok{"open_acc"}\NormalTok{,}\StringTok{"pub_rec"}\NormalTok{,}\StringTok{"revol_bal"}\NormalTok{,}\StringTok{"revol_util"}\NormalTok{,}\StringTok{"total_acc"}\NormalTok{,}\StringTok{"initial_list_status"}\NormalTok{,}\StringTok{"out_prncp"}\NormalTok{,}\StringTok{"out_prncp_inv"}\NormalTok{,}\StringTok{"total_pymnt"}\NormalTok{,}\StringTok{"total_pymnt_inv"}\NormalTok{,}\StringTok{"total_rec_prncp"}\NormalTok{,}\StringTok{"total_rec_int"}\NormalTok{,}\StringTok{"total_rec_late_fee"}\NormalTok{,}\StringTok{"recoveries"}\NormalTok{,}\StringTok{"collection_recovery_fee"}\NormalTok{,}\StringTok{"last_pymnt_d"}\NormalTok{,}\StringTok{"last_pymnt_amnt"}\NormalTok{,}\StringTok{"next_pymnt_d"}\NormalTok{,}\StringTok{"last_credit_pull_d"}\NormalTok{,}\StringTok{"collections_12_mths_ex_med"}\NormalTok{,}\StringTok{"mths_since_last_major_derog"}\NormalTok{,}\StringTok{"policy_code"}\NormalTok{,}\StringTok{"acc_now_delinq"}\NormalTok{,}\StringTok{"tot_coll_amt"}\NormalTok{,}\StringTok{"tot_cur_bal"}\NormalTok{,}\StringTok{"inq_last_12m"}\NormalTok{,}\StringTok{"avg_cur_bal"}\NormalTok{,}\StringTok{"chargeoff_within_12_mths"}\NormalTok{,}\StringTok{"delinq_amnt"}\NormalTok{,}\StringTok{"mort_acc"}\NormalTok{,}\StringTok{"num_tl_120dpd_2m"}\NormalTok{,}\StringTok{"num_tl_30dpd"}\NormalTok{,}\StringTok{"num_tl_90g_dpd_24m"}\NormalTok{,}\StringTok{"num_tl_op_past_12m"}\NormalTok{))]}
+\NormalTok{lendingClubLoanData}\OperatorTok{$}\NormalTok{orig_year<-}\KeywordTok{substr}\NormalTok{(lendingClubLoanData}\OperatorTok{$}\NormalTok{issue_d,}\DecValTok{5}\NormalTok{,}\DecValTok{8}\NormalTok{)}
+\KeywordTok{write.csv}\NormalTok{(lendingClubLoanData, }\DataTypeTok{file =} \StringTok{"data/lending_club_loan_data_final.csv"}\NormalTok{, }\DataTypeTok{row.names=}\OtherTok{FALSE}\NormalTok{)}
+\NormalTok{lendingClubLoanData <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"data/lending_club_loan_data_final.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Below visualization shows number of loans funded each year from 2007
+  till 2018.
+\item
+  From 2007 till 2012, it had gradual progress, but 2012 to 2015, number
+  of loans issued has grown exponentially.
+\item
+  2015 to 2017 saw a marginal hike in number of loans, 2017 to 2018 saw
+  a considerable hike.
+\item
+  Number of loans issued in 2018 by lending club is close to 500,000
+  which is highest
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{numberOfLoansByYear <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(orig_year)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{loanCountByYear=}\KeywordTok{n}\NormalTok{())}
+
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ numberOfLoansByYear)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\DataTypeTok{color=}\StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{size=}\FloatTok{1.2}\NormalTok{, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{orig_year,}\DataTypeTok{y=}\NormalTok{loanCountByYear))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{color=}\StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{size=}\FloatTok{2.5}\NormalTok{, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{orig_year,}\DataTypeTok{y=}\NormalTok{loanCountByYear))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{breaks =}\NormalTok{ numberOfLoansByYear}\OperatorTok{$}\NormalTok{orig_year) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\KeywordTok{comma_format}\NormalTok{()) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x=}\StringTok{"Year"}\NormalTok{,}\DataTypeTok{y=}\StringTok{"# Number of loans"}\NormalTok{,}\DataTypeTok{title=}\StringTok{"Loans processed year on year (2007-2018)"}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{() }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Below visualization shows total loan funded amount for each year from
+  2007 till 2018.
+\item
+  In general trend of total loan funded amount is in align to the number
+  of loans issued as above visulization.
+\item
+  Lending club has funded loans maximum of \$8 billion in 2018.
+\item
+  2015 to 2017, total funded loan amount is flat.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{totalFundedAMountPerYear <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(orig_year)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{totalFundedAmount=} \KeywordTok{sum}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(funded_amnt)))}
+
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ totalFundedAMountPerYear, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{orig_year, }\DataTypeTok{y=}\NormalTok{totalFundedAmount)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{, }\DataTypeTok{width=}\FloatTok{0.5}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"steelblue"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{breaks =}\NormalTok{ numberOfLoansByYear}\OperatorTok{$}\NormalTok{orig_year) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\NormalTok{dollar) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Year"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Total funded loan amount"}\NormalTok{,}\DataTypeTok{title=}\StringTok{"Total loan funded amount year on year (2007-2018)"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{() }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Below visualization shows relationship between loan funded amount and
+  term.
+\item
+  Lending club offers only loans with 2 terms
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  36 Months
+\item
+  60 Months
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  For 36 months loan:
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  Median loan funded amount is \$10000.
+\item
+  Majority of the funded loan amount ranges from close \$6000 to
+  \$16000.
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  For 60 months loan:
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  Median loan funded amount is \$20000.
+\item
+  Majority of the funded loan amount ranges from close \$15000 to
+  \$25000.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\KeywordTok{ggplot}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_boxplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{term, }\DataTypeTok{y=}\NormalTok{funded_amnt, }\DataTypeTok{color=}\NormalTok{term)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\NormalTok{dollar) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Term"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Loan funded amount"}\NormalTok{, }\DataTypeTok{title=}\StringTok{"Loan funded amount and term relation"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{() }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Below visulization shows relationship between funded loan amount,
+  annual income and interest rate.
+\item
+  Visulization shows that higher the annual income more is the funded
+  loan amount.
+\item
+  Also as the annual income increase the interest rate drop by couple of
+  percentage points.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(annual_inc)}
+
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{filteredLendingClubData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(annual_inc }\OperatorTok{<=}\StringTok{ }\DecValTok{300000}\NormalTok{)}
+
+\NormalTok{lbls <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{'0-20K'}\NormalTok{,}\StringTok{'20-40K'}\NormalTok{,}\StringTok{'40-60K'}\NormalTok{,}\StringTok{'60-80K'}\NormalTok{,}\StringTok{'80-100K'}\NormalTok{,}\StringTok{'100-120K'}\NormalTok{,}\StringTok{'120-140K'}\NormalTok{,}\StringTok{'140-160K'}\NormalTok{,}\StringTok{'160-180K'}\NormalTok{,}\StringTok{'180-200K'}\NormalTok{, }\StringTok{'200-220K'}\NormalTok{, }\StringTok{'220-240K'}\NormalTok{, }\StringTok{'240-260K'}\NormalTok{, }\StringTok{'260-280K'}\NormalTok{, }\StringTok{'280-300K'}\NormalTok{)}
+\NormalTok{groupedData <-}\StringTok{ }\NormalTok{filteredLendingClubData }\OperatorTok{%>%}\StringTok{ }
+\StringTok{     }\KeywordTok{group_by}\NormalTok{(}\DataTypeTok{incomeGroup =} \KeywordTok{cut}\NormalTok{(annual_inc, }\DataTypeTok{breaks=} \KeywordTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{300000}\NormalTok{, }\DataTypeTok{by =} \DecValTok{20000}\NormalTok{), }\DataTypeTok{right =} \OtherTok{TRUE}\NormalTok{, }\DataTypeTok{include.lowest =} \OtherTok{TRUE}\NormalTok{, }\DataTypeTok{labels =}\NormalTok{ lbls) ) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{     }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{averageInterest=} \KeywordTok{mean}\NormalTok{(int_rate), }\DataTypeTok{averageLoanLoanFundedAmount =} \KeywordTok{mean}\NormalTok{(funded_amnt)) }
+
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{groupedData, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{incomeGroup, }\DataTypeTok{y=}\NormalTok{averageLoanLoanFundedAmount)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{colour=}\StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{shape=}\DecValTok{16}\NormalTok{, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{size=}\NormalTok{averageInterest)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(incomeGroup, averageLoanLoanFundedAmount, }\DataTypeTok{group =} \DecValTok{1}\NormalTok{), }\DataTypeTok{method =} \StringTok{"lm"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\NormalTok{dollar) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x=}\StringTok{"Annual Income ($)"}\NormalTok{,}\DataTypeTok{y=}\StringTok{"Average loan funded amount"}\NormalTok{,}\DataTypeTok{title=}\StringTok{"Relation between funded loan Amount, income and interest rate"}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{guides}\NormalTok{(}\DataTypeTok{size=}\KeywordTok{guide_legend}\NormalTok{(}\StringTok{"Average }\CharTok{\textbackslash{}n}\StringTok{interest rate (%)"}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{axis.text.x =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{angle =}\DecValTok{50}\NormalTok{, }\DataTypeTok{hjust=}\FloatTok{0.75}\NormalTok{))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.background =} \KeywordTok{element_rect}\NormalTok{())}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Below visualization shows the distribution of annual income of
+  lenders.
+\item
+  Majority of lenders are having annual income less than \$200K.
+\item
+  Median annual income seems to around \$60K.
+\item
+  Have excluded loans taken by lenders having annual income
+  \textgreater{} 300K as they are few in number and are outliars.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(annual_inc)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(annual_inc }\OperatorTok{<}\StringTok{ }\DecValTok{300000}\NormalTok{)}
+
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ filteredLendingClubData, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ annual_inc)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_density}\NormalTok{(}\DataTypeTok{fill=}\StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{color=}\StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{alpha=}\FloatTok{0.8}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_vline}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{xintercept=}\KeywordTok{median}\NormalTok{(annual_inc)),}\DataTypeTok{color=}\StringTok{"green"}\NormalTok{, }\DataTypeTok{linetype=}\StringTok{"dashed"}\NormalTok{, }\DataTypeTok{size=}\DecValTok{1}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_x_continuous}\NormalTok{(}\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\NormalTok{dollar) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{labels =} \ControlFlowTok{function}\NormalTok{(x) }\KeywordTok{format}\NormalTok{(x, }\DataTypeTok{scientific =} \OtherTok{FALSE}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x=}\StringTok{"Annual income"}\NormalTok{,}\DataTypeTok{y=}\StringTok{"Density of loans"}\NormalTok{,}\DataTypeTok{title=}\StringTok{"Annual income distribution"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-6-1.pdf}
+1. Below visualization shows geographical distribution of total loan
+funded amount across various US states. 2. California has the highest
+total funded loan amount, followed by Texas, New York and Florida.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fullStateNames <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"data/states.csv"}\NormalTok{)}
+\NormalTok{states <-}\StringTok{ }\KeywordTok{st_as_sf}\NormalTok{(}\KeywordTok{map}\NormalTok{(}\StringTok{"state"}\NormalTok{, }\DataTypeTok{plot =} \OtherTok{FALSE}\NormalTok{, }\DataTypeTok{fill =} \OtherTok{TRUE}\NormalTok{))}
+
+\NormalTok{fundedAmountByState <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(addr_state)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{totalFundedAmount=} \KeywordTok{sum}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(funded_amnt)))}
+
+\NormalTok{fundedAmountByState <-}\StringTok{ }\NormalTok{fundedAmountByState }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{inner_join}\NormalTok{(fullStateNames, }\DataTypeTok{by =} \KeywordTok{c}\NormalTok{(}\StringTok{"addr_state"}\NormalTok{ =}\StringTok{ "abbreviation"}\NormalTok{))}
+
+
+\NormalTok{states2 <-}\StringTok{ }\NormalTok{states }\OperatorTok{%>%}\StringTok{ }\KeywordTok{left_join}\NormalTok{(fundedAmountByState, }\DataTypeTok{by =} \KeywordTok{c}\NormalTok{(}\StringTok{"ID"}\NormalTok{ =}\StringTok{ "state"}\NormalTok{ ))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Column `ID`/`state` joining factors with different levels,
+## coercing to character vector
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ states2) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_sf}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{fill =}\NormalTok{ totalFundedAmount)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_fill_viridis_c}\NormalTok{(}\StringTok{"Loan funded amount"}\NormalTok{, }\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\NormalTok{dollar) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title =} \StringTok{"Total loan funded amount by state"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Below visualization shows the distributiion of DTI (Debt to Income
+  Ratio (\%)) for the lenders.
+\item
+  Lower the DTI, higher the probability of getting the loan approved.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(dti)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(dti }\OperatorTok{<}\StringTok{ }\DecValTok{100}\NormalTok{)}
+
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ filteredLendingClubData, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ dti)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_density}\NormalTok{(}\DataTypeTok{fill=}\StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{color=}\StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{alpha=}\FloatTok{0.8}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_vline}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{xintercept=}\KeywordTok{median}\NormalTok{(dti)),}\DataTypeTok{color=}\StringTok{"green"}\NormalTok{, }\DataTypeTok{linetype=}\StringTok{"dashed"}\NormalTok{, }\DataTypeTok{size=}\DecValTok{1}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x=}\StringTok{"Debt to Income Ratio (DTI) %"}\NormalTok{,}\DataTypeTok{y=}\StringTok{"Density of loans"}\NormalTok{,}\DataTypeTok{title=}\StringTok{"Loan distribution across DTI"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Below visulization shows loan distribution by the loan status.
+\item
+  Close to 900K loans are current and 1 Million loans which are paid
+  off.
+\item
+  Charged of loans are close to 2,61,655 out of total 2,260,668 loans.
+  SO the charge of percentage is close to 12\% (exact 11.57 \%).
+\item
+  Most current loans will be eventually paid off.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loan_statuses <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"Current"}\NormalTok{,}
+                  \StringTok{"Fully Paid"}\NormalTok{,}
+                  \StringTok{"Late (31-120 days)"}\NormalTok{,}
+                  \StringTok{"In Grace Period"}\NormalTok{,}
+                  \StringTok{"Charged Off"}\NormalTok{,}
+                  \StringTok{"Late (16-30 days)"}\NormalTok{)}
+
+\NormalTok{numberOfLoansByLoanStatus <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{filter}\NormalTok{(loan_status }\OperatorTok{%in%}\StringTok{ }\NormalTok{loan_statuses) }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(loan_status)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{numberOfLoans =} \KeywordTok{n}\NormalTok{())}
+
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ numberOfLoansByLoanStatus, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{loan_status, }\DataTypeTok{y=}\NormalTok{numberOfLoans)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{, }\DataTypeTok{width=}\FloatTok{0.5}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"steelblue"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_text}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{label=}\NormalTok{numberOfLoans), }\DataTypeTok{vjust=}\OperatorTok{-}\FloatTok{0.3}\NormalTok{, }\DataTypeTok{size=}\FloatTok{3.5}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\KeywordTok{comma_format}\NormalTok{()) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Loan Status"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Number of Loans (#)"}\NormalTok{,}\DataTypeTok{title=}\StringTok{"# Loans by status"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{axis.text.x =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{angle =}\DecValTok{50}\NormalTok{, }\DataTypeTok{hjust=}\FloatTok{0.75}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-9-1.pdf}
+1. Below visulization shows the distribution of loans taken for various
+causes. 2. Debt consolidation is major primary purpose of taking loan
+from lending club. 3. Second major purpose of taking loan is for paying
+credit card bills.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{numberOfLoansByPurpose <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(purpose)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{numberOfLoans =} \KeywordTok{n}\NormalTok{())}
+
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ numberOfLoansByPurpose, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{purpose, }\DataTypeTok{y=}\NormalTok{numberOfLoans)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_bar}\NormalTok{(}\DataTypeTok{stat=}\StringTok{"identity"}\NormalTok{, }\DataTypeTok{width=}\FloatTok{0.5}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"steelblue"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{labels =}\NormalTok{ scales}\OperatorTok{::}\KeywordTok{comma_format}\NormalTok{()) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Loan Purpose"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Number of Loans (#)"}\NormalTok{,}\DataTypeTok{title=}\StringTok{"# Loans by purpose"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_minimal}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{axis.text.x =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{angle =}\DecValTok{50}\NormalTok{, }\DataTypeTok{hjust=}\FloatTok{0.75}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{FinalAssignment_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(loan_amnt) }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(funded_amnt)}
+\CommentTok{# Max loan amount}
+\KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{max}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{loan_amnt))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 40000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Minimum loan amount}
+\KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{min}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{loan_amnt))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 500
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Unique loan statuses }
+\NormalTok{uniqueLoanStatus <-}\StringTok{ }\KeywordTok{unique}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{loan_status)}
+\NormalTok{uniqueLoanStatus}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] Current                                            
+## [2] Fully Paid                                         
+## [3] Late (31-120 days)                                 
+## [4] In Grace Period                                    
+## [5] Charged Off                                        
+## [6] Late (16-30 days)                                  
+## [7] Default                                            
+## [8] Does not meet the credit policy. Status:Fully Paid 
+## [9] Does not meet the credit policy. Status:Charged Off
+## 9 Levels: Charged Off Current ... Late (31-120 days)
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(dti)}
+\CommentTok{# Max DTI}
+\KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{max}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{dti))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 999
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Minimum DTI}
+\KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{min}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{dti))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] -1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Total loan funded amount}
+\KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{sum}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{funded_amnt))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 33971525425
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(annual_inc)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(annual_inc }\OperatorTok{<}\StringTok{ }\DecValTok{300000}\NormalTok{)}
+\CommentTok{# Annual income median}
+\KeywordTok{median}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{annual_inc)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 65000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{filteredLendingClubData <-}\StringTok{ }\NormalTok{lendingClubLoanData }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{drop_na}\NormalTok{(dti)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(dti }\OperatorTok{<}\StringTok{ }\DecValTok{100}\NormalTok{)}
+\CommentTok{# Dti median}
+\KeywordTok{median}\NormalTok{(filteredLendingClubData}\OperatorTok{$}\NormalTok{dti)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 17.82
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{nrow}\NormalTok{(lendingClubLoanData)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2260668
+\end{verbatim}
+
+
+\end{document}

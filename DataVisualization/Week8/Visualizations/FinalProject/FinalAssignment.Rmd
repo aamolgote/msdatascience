@@ -3,6 +3,8 @@ title: "FinalAssignment"
 author: "Amol Gote"
 date: "3/7/2020"
 output:
+  word_document: default
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -24,19 +26,56 @@ library(maps)
 
 ```{r final_project_data_load, message=FALSE}
 lendingClubLoanData <- read.csv("data/lending_club_loan_data.csv")
-lendingClubLoanData <- lendingClubLoanData[, !(colnames(lendingClubLoanData) %in% c("id","member_id", "url", "desc"))]
-lendingClubLoanData <- lendingClubLoanData[, !(colnames(lendingClubLoanData) %in% c("open_acc_6m", "open_act_il", "open_il_12m", "open_il_24m", "mths_since_rcnt_il", "total_bal_il", "il_util", "open_rv_12m", "open_rv_24m", "max_bal_bc", "all_util", "total_rev_hi_lim", "inq_fi", "total_cu_tl", "acc_open_past_24mths", "bc_open_to_buy", "bc_util", "mo_sin_old_il_acct", "mo_sin_old_rev_tl_op", "mo_sin_rcnt_rev_tl_op", "mo_sin_rcnt_tl", "mths_since_recent_bc", "mths_since_recent_bc_dlq", "mths_since_recent_inq", "mths_since_recent_revol_delinq", "num_accts_ever_120_pd", "num_actv_bc_tl", "num_actv_rev_tl", "num_bc_sats", "num_bc_tl", "num_il_tl", "num_op_rev_tl", "num_rev_accts", "num_rev_tl_bal_gt_0", "num_sats", "pct_tl_nvr_dlq", "percent_bc_gt_75", "tot_hi_cred_lim", "total_bal_ex_mort", "total_bc_limit", "total_il_high_credit_limit", "revol_bal_joint", "sec_app_earliest_cr_line", "sec_app_inq_last_6mths", "sec_app_mort_acc", "sec_app_open_acc", "sec_app_revol_util", "sec_app_open_act_il", "sec_app_num_rev_accts", "sec_app_chargeoff_within_12_mths", "sec_app_collections_12_mths_ex_med", "sec_app_mths_since_last_major_derog", "hardship_reason", "hardship_status", "deferral_term", "hardship_amount", "hardship_start_date", "hardship_end_date", "payment_plan_start_date", "hardship_length", "hardship_dpd", "hardship_loan_status", "orig_projected_additional_accrued_interest", "hardship_payoff_balance_amount", "hardship_last_payment_amount", "disbursement_method", "debt_settlement_flag", "debt_settlement_flag_date", "settlement_status", "settlement_date", "settlement_amount", "settlement_percentage", "settlement_term"))]
-lendingClubLoanData <- lendingClubLoanData[, !(colnames(lendingClubLoanData) %in% c("earliest_cr_line","inq_last_6mths","mths_since_last_delinq","mths_since_last_record","open_acc","pub_rec","revol_bal","revol_util","total_acc","initial_list_status","out_prncp","out_prncp_inv","total_pymnt","total_pymnt_inv","total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries","collection_recovery_fee","last_pymnt_d","last_pymnt_amnt","next_pymnt_d","last_credit_pull_d","collections_12_mths_ex_med","mths_since_last_major_derog","policy_code","acc_now_delinq","tot_coll_amt","tot_cur_bal","inq_last_12m","avg_cur_bal","chargeoff_within_12_mths","delinq_amnt","mort_acc","num_tl_120dpd_2m","num_tl_30dpd","num_tl_90g_dpd_24m","num_tl_op_past_12m"))]
+
+# Remove not required columns from the dataset, so as to minimize the dataset size.
+lendingClubLoanData <- lendingClubLoanData[, !(colnames(lendingClubLoanData) 
+                                               %in% c("id","member_id", "url", "desc"))]
+
+lendingClubLoanData <- lendingClubLoanData[, !(colnames(lendingClubLoanData) 
+                                               %in% c("open_acc_6m", "open_act_il", "open_il_12m", 
+"open_il_24m", "mths_since_rcnt_il", "total_bal_il", "il_util", "open_rv_12m", "open_rv_24m", "max_bal_bc", "all_util", 
+"total_rev_hi_lim", "inq_fi", 
+"total_cu_tl", "acc_open_past_24mths", "bc_open_to_buy", "bc_util", "mo_sin_old_il_acct", "mo_sin_old_rev_tl_op",
+"mo_sin_rcnt_rev_tl_op",
+"mo_sin_rcnt_tl", "mths_since_recent_bc", "mths_since_recent_bc_dlq", "mths_since_recent_inq", "mths_since_recent_revol_delinq",
+"num_accts_ever_120_pd",
+"num_actv_bc_tl", "num_actv_rev_tl", "num_bc_sats", "num_bc_tl", "num_il_tl", "num_op_rev_tl", "num_rev_accts",
+"num_rev_tl_bal_gt_0", "num_sats",
+"pct_tl_nvr_dlq", "percent_bc_gt_75", "tot_hi_cred_lim", "total_bal_ex_mort", "total_bc_limit", "total_il_high_credit_limit", 
+"revol_bal_joint",
+"sec_app_earliest_cr_line", "sec_app_inq_last_6mths", "sec_app_mort_acc", "sec_app_open_acc", "sec_app_revol_util", 
+"sec_app_open_act_il", 
+"sec_app_num_rev_accts", "sec_app_chargeoff_within_12_mths", "sec_app_collections_12_mths_ex_med", 
+"sec_app_mths_since_last_major_derog",
+"hardship_reason", "hardship_status", "deferral_term", "hardship_amount", "hardship_start_date", "hardship_end_date",
+"payment_plan_start_date", "hardship_length", "hardship_dpd", "hardship_loan_status", 
+"orig_projected_additional_accrued_interest", 
+"hardship_payoff_balance_amount", "hardship_last_payment_amount", "disbursement_method", 
+"debt_settlement_flag", "debt_settlement_flag_date", 
+"settlement_status", "settlement_date", "settlement_amount", "settlement_percentage", "settlement_term"))]
+
+lendingClubLoanData <- lendingClubLoanData[, !(colnames(lendingClubLoanData) %in% c("earliest_cr_line",
+"inq_last_6mths","mths_since_last_delinq","mths_since_last_record","open_acc","pub_rec","revol_bal",
+"revol_util","total_acc","initial_list_status","out_prncp","out_prncp_inv","total_pymnt","total_pymnt_inv",
+"total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries","collection_recovery_fee","last_pymnt_d",
+"last_pymnt_amnt","next_pymnt_d","last_credit_pull_d","collections_12_mths_ex_med","mths_since_last_major_derog",
+"policy_code","acc_now_delinq","tot_coll_amt","tot_cur_bal","inq_last_12m","avg_cur_bal","chargeoff_within_12_mths",
+"delinq_amnt","mort_acc","num_tl_120dpd_2m","num_tl_30dpd","num_tl_90g_dpd_24m","num_tl_op_past_12m"))]
+
 lendingClubLoanData$orig_year<-substr(lendingClubLoanData$issue_d,5,8)
+
+#Write the dataset to csv file for analysis
 write.csv(lendingClubLoanData, file = "data/lending_club_loan_data_final.csv", row.names=FALSE)
+
 lendingClubLoanData <- read.csv("data/lending_club_loan_data_final.csv")
 ```
 
 
 1. Below visualization shows number of loans funded each year from 2007 till 2018. 
-2. From 2007 till 2012, it had gradual progress, but 2012 to 2015, number of loans issued has grown exponentially.
-3. 2015 to 2017 saw a marginal hike in number of loans, 2017 to 2018 saw a considerable hike. 
-4. Number of loans issued in 2018 by lending club is close to 500,000 which is highest
+2. From 2007 till 2012, it had gradual progress in number of loans issued, 
+3. 2012 to 2015 number of loans issued has grown exponentially.
+4. 2015 to 2017 saw a marginal hike in number of loans, 2017 to 2018 saw a considerable hike. 
+5. Number of loans issued in 2018 by lending club is close to 500,000 which is highest
 ```{r, message=FALSE}
 numberOfLoansByYear <- lendingClubLoanData %>% 
   group_by(orig_year)%>%
@@ -51,10 +90,13 @@ ggplot(data = numberOfLoansByYear)+
   theme_minimal() 
 ```
 
+
 1. Below visualization shows total loan funded amount for each year from 2007 till 2018.
 2. In general trend of total loan funded amount is in align to the number of loans issued as above visulization.
 3. Lending club has funded loans maximum of $8 billion in 2018.
 4. 2015 to 2017, total funded loan amount is flat.
+
+
 ```{r, message=FALSE}
 
 totalFundedAMountPerYear <- lendingClubLoanData %>% 
@@ -65,20 +107,21 @@ ggplot(data = totalFundedAMountPerYear, aes(x=orig_year, y=totalFundedAmount)) +
   geom_bar(stat="identity", width=0.5, fill = "steelblue") +
   scale_x_continuous(breaks = numberOfLoansByYear$orig_year) +
   scale_y_continuous(labels = scales::dollar) +
-  labs(x = "Year", y = "Total funded loan amount",title="Total loan funded amount year on year (2007-2018)") +
+  labs(x = "Year", y = "Total funded loan amount",
+       title="Total loan funded amount year on year (2007-2018)") +
   theme_minimal() 
 ```
 
 1. Below visualization shows relationship between loan funded amount and term.
 2. Lending club offers only loans with 2 terms
-  a. 36 Months
-  b. 60 Months
+   a. 36 Months
+   b. 60 Months
 3. For 36 months loan:
-  a. Median loan funded amount is $10000.
-  b. Majority of the funded loan amount ranges from close $6000 to $16000.
+   a. Median loan funded amount is $10,000.
+   b. Majority of the funded loan amount ranges from close $6000 to $16,000.
 4. For 60 months loan:
-  a. Median loan funded amount is $20000.
-  b. Majority of the funded loan amount ranges from close $15000 to $25000.
+   a. Median loan funded amount is $20000.
+   b. Majority of the funded loan amount ranges from close $15,000 to $25,000.
   
 ```{r, message=FALSE}
 lendingClubLoanData %>%
@@ -90,8 +133,9 @@ ggplot() +
 ```
 
 1. Below visulization shows relationship between funded loan amount, annual income and interest rate.
-2. Visulization shows that higher the annual income more is the funded loan amount.
-2. Also as the annual income increase the interest rate drop by couple of percentage points.
+2. Visualization shows, that higher the annual income more is the funded loan amount.
+3. As the annual income increase the interest rate drop by couple of percentage points.
+
 ```{r, message=FALSE}
 
 filteredLendingClubData <- lendingClubLoanData %>%
@@ -100,26 +144,30 @@ filteredLendingClubData <- lendingClubLoanData %>%
 filteredLendingClubData <- filteredLendingClubData %>%
   filter(annual_inc <= 300000)
 
-lbls <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K','120-140K','140-160K','160-180K','180-200K', '200-220K', '220-240K', '240-260K', '260-280K', '280-300K')
+lbls <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K','120-140K','140-160K',
+          '160-180K','180-200K', '200-220K', '220-240K', '240-260K', '260-280K', '280-300K')
 groupedData <- filteredLendingClubData %>% 
-     group_by(incomeGroup = cut(annual_inc, breaks= seq(0, 300000, by = 20000), right = TRUE, include.lowest = TRUE, labels = lbls) ) %>% 
+     group_by(incomeGroup = cut(annual_inc, breaks= seq(0, 300000, by = 20000), 
+                                right = TRUE, include.lowest = TRUE, labels = lbls) ) %>% 
      summarise(averageInterest= mean(int_rate), averageLoanLoanFundedAmount = mean(funded_amnt)) 
 
 ggplot(data =groupedData, aes(x=incomeGroup, y=averageLoanLoanFundedAmount)) +
   geom_point(colour="steelblue", shape=16, aes(size=averageInterest)) +
   geom_smooth(aes(incomeGroup, averageLoanLoanFundedAmount, group = 1), method = "lm") +
   scale_y_continuous(labels = scales::dollar) +
-  labs(x="Annual Income ($)",y="Average loan funded amount",title="Relation between funded loan Amount, income and interest rate")+
+  labs(x="Annual Income ($)",y="Average loan funded amount",
+       title="Relation between funded loan Amount, income and interest rate")+
   guides(size=guide_legend("Average \ninterest rate (%)")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))+
   theme(legend.background = element_rect())
 ```
 
-1. Below visualization shows the distribution of annual income of lenders.
-2. Majority of lenders are having annual income less than $200K.
+1. Below visualization shows the distribution of annual income of people getting loans.
+2. Majority of people are having annual income less than $200K.
 3. Median annual income seems to around $60K.
-4. Have excluded loans taken by lenders having annual income > 300K as they are few in number and are outliars.
+4. Have excluded loans taken by people having annual income > 300K, as they are few in number and are outliars.
+
 ```{r, message=FALSE }
 filteredLendingClubData <- lendingClubLoanData %>%
   drop_na(annual_inc)%>%
@@ -134,8 +182,9 @@ ggplot(data = filteredLendingClubData, aes(x = annual_inc)) +
   theme_minimal()
     
 ```
-1. Below visulization shows geographical distribution of total loan funded amount across various US states.
+1. Below visualization shows geographical distribution of total loan funded amount across various US states.
 2. California has the highest total funded loan amount, followed by Texas, New York and Florida.
+
 ```{r, message=FALSE}
 
 fullStateNames <- read.csv("data/states.csv")
@@ -158,8 +207,9 @@ ggplot(data = states2) +
   theme_minimal()
 ```
 
-1. Below visualization shows the distributiion of DTI (Debt to Income Ratio (%)) for the lenders.
+1. Below visualization shows the distributiion of DTI (Debt to Income Ratio (%)) for the people getting loan.
 2. Lower the DTI, higher the probability of getting the loan approved.
+
 ```{r, message=FALSE }
 filteredLendingClubData <- lendingClubLoanData %>%
   drop_na(dti)%>%
@@ -174,9 +224,10 @@ ggplot(data = filteredLendingClubData, aes(x = dti)) +
 ```
 
 1. Below visulization shows loan distribution by the loan status.
-2. Close to 900K loans are current and 1 Million loans which are paid off.
+2. Close to 900K loans are current and 1 Million loans are paid off.
 3. Charged of loans are close to 2,61,655 out of total 2,260,668 loans. SO the charge of percentage is close to 12% (exact 11.57 %).
 3. Most current loans will be eventually paid off.
+
 ```{r, message=FALSE}
 loan_statuses <- c("Current",
                   "Fully Paid",
@@ -198,9 +249,11 @@ ggplot(data = numberOfLoansByLoanStatus, aes(x=loan_status, y=numberOfLoans)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))
 ```
-1. Below visulization shows the distribution of loans taken for various causes.
+
+1. Below visualization shows the distribution of loans taken for various causes.
 2. Debt consolidation is major primary purpose of taking loan from lending club.
 3. Second major purpose of taking loan is for paying credit card bills.
+
 ```{r, message=FALSE}
 numberOfLoansByPurpose <- lendingClubLoanData %>% 
   group_by(purpose)%>%
@@ -248,14 +301,14 @@ filteredLendingClubData <- lendingClubLoanData %>%
   filter(dti < 100)
 # Dti median
 median(filteredLendingClubData$dti)
-```
-```{r message=FALSE}
+
+#Number of loans
 nrow(lendingClubLoanData)
 ```
-```{r}
+```{r message=FALSE}
 
 ```
-```{r}
 
-```
+
+
 
