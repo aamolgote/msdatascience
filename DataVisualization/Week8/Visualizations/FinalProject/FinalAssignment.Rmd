@@ -129,7 +129,7 @@ ggplot() +
   geom_boxplot(aes(x=term, y=funded_amnt, color=term)) + 
   scale_y_continuous(labels = scales::dollar) +
   labs(x = "Term", y = "Loan funded amount", title="Loan funded amount and term relation") +
-  theme_minimal() 
+  theme_minimal()
 ```
 
 1. Below visulization shows relationship between funded loan amount, annual income and interest rate.
