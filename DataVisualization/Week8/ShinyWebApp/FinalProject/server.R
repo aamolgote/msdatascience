@@ -63,6 +63,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(orig_year) %>%
       summarise(loanCountByYear=n())
   })
@@ -73,6 +74,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(orig_year)%>%
       summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
   })
@@ -82,7 +84,8 @@ shinyServer(function(input, output) {
       filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
   })
   
   dti_trend <- reactive({
@@ -90,7 +93,8 @@ shinyServer(function(input, output) {
       filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
   })
   
   funded_amt_term_interest_relation <- reactive({
@@ -99,7 +103,8 @@ shinyServer(function(input, output) {
       filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
     
     groupedData <- filteredLendingClubData %>% 
       group_by(incomeGroup = cut(annual_inc, breaks= seq(0, 300000, by = 20000), right = TRUE, include.lowest = TRUE, labels = incomeLabels) ) %>% 
@@ -112,7 +117,8 @@ shinyServer(function(input, output) {
       filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
   })
   
   loan_funded_amt_by_state <- reactive({
@@ -121,6 +127,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(addr_state)%>%
       summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
     
@@ -137,6 +144,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(loan_status)%>%
       summarise(numberOfLoans = n())
   })
@@ -147,6 +155,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(purpose)%>%
       summarise(numberOfLoans = n())
   })
@@ -214,7 +223,7 @@ shinyServer(function(input, output) {
     ggplot(data = dti_trend(), aes(x = dti)) +
       geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
       geom_vline(aes(xintercept=median(dti)),color="green", linetype="dashed", size=1) +
-      labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI (Excluded > 100") +
+      labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI (Excluded > 100)") +
       theme_minimal()
   })
   

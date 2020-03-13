@@ -29,9 +29,7 @@ library(shinycssloaders)
 lendingClubLoanData <- read.csv("data/lending_club_loan_data_final.csv")
 fullStateNames <- read.csv("data/states.csv")
 states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
-incomeLabels <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K',
-                  '120-140K','140-160K','160-180K','180-200K', '200-220K', 
-                  '220-240K', '240-260K', '260-280K', '280-300K')
+incomeLabels <- c('0-20K','20-40K','40-60K','60-80K','80-100K','100-120K','120-140K','140-160K','160-180K','180-200K', '200-220K', '220-240K', '240-260K', '260-280K', '280-300K')
 
 loan_statuses <- c("Current",
                    "Fully Paid",
@@ -78,6 +76,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(orig_year) %>%
       summarise(loanCountByYear=n())
   })
@@ -88,6 +87,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(orig_year)%>%
       summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
   })
@@ -97,7 +97,8 @@ shinyServer(function(input, output) {
       filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
   })
   
   dti_trend <- reactive({
@@ -105,7 +106,8 @@ shinyServer(function(input, output) {
       filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
   })
   
   funded_amt_term_interest_relation <- reactive({
@@ -114,11 +116,11 @@ shinyServer(function(input, output) {
       filter(loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
     
     groupedData <- filteredLendingClubData %>% 
-      group_by(incomeGroup = cut(annual_inc, breaks= seq(0, 300000, by = 20000), 
-                                 right = TRUE, include.lowest = TRUE, labels = incomeLabels) ) %>% 
+      group_by(incomeGroup = cut(annual_inc, breaks= seq(0, 300000, by = 20000), right = TRUE, include.lowest = TRUE, labels = incomeLabels) ) %>% 
       summarise(averageInterest= mean(int_rate), averageLoanLoanFundedAmount = mean(funded_amnt)) 
     
   })
@@ -128,7 +130,8 @@ shinyServer(function(input, output) {
       filter (loan_amnt >= input$loanAmountRange[1] & loan_amnt <= input$loanAmountRange[2]) %>%
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
-      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus))
+      filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2])
   })
   
   loan_funded_amt_by_state <- reactive({
@@ -137,6 +140,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(addr_state)%>%
       summarise(totalFundedAmount= sum(as.numeric(funded_amnt)))
     
@@ -153,6 +157,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(loan_status)%>%
       summarise(numberOfLoans = n())
   })
@@ -163,6 +168,7 @@ shinyServer(function(input, output) {
       filter(grade %in% input$grades) %>%
       filter(home_ownership %in% input$homeOwnerships) %>%
       filter(loan_status %in% loanStatusFilter(loanStatusValue = input$loanStatus)) %>%
+      filter (dti >= input$dti[1] & dti <= input$dti[2]) %>%
       group_by(purpose)%>%
       summarise(numberOfLoans = n())
   })
@@ -201,8 +207,7 @@ shinyServer(function(input, output) {
       geom_point(colour="steelblue", shape=16, aes(size=averageInterest)) +
       geom_smooth(aes(incomeGroup, averageLoanLoanFundedAmount, group = 1), method = "lm") +
       scale_y_continuous(labels = scales::dollar) +
-      labs(x="Annual Income ($)",y="Average loan funded amount",
-           title="Relation between funded loan Amount, income and interest rate")+
+      labs(x="Annual Income ($)",y="Average loan funded amount",title="Relation between funded loan Amount, income and interest rate")+
       guides(size=guide_legend("Average \ninterest rate (%)")) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle =50, hjust=0.75))+
@@ -231,8 +236,7 @@ shinyServer(function(input, output) {
     ggplot(data = dti_trend(), aes(x = dti)) +
       geom_density(fill="steelblue", color="steelblue", alpha=0.8) +
       geom_vline(aes(xintercept=median(dti)),color="green", linetype="dashed", size=1) +
-      labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",
-           title="Loan distribution across DTI (Excluded > 100") +
+      labs(x="Debt to Income Ratio (DTI) %",y="Density of loans",title="Loan distribution across DTI (Excluded > 100)") +
       theme_minimal()
   })
   
