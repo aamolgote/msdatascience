@@ -1,5 +1,4 @@
 Apply your understanding of the Data Governance pillars to your industry profession or one that you are seeking. Describe the important pillars to an organizational issue that you are aware of and discuss reasons why. Support your answers addressing the benefits and focus of the pillars.
-Identify one pillar in the Data Governance framework and define the activities to develop a governance strategy for a particular industry challenge. Describe the organizational issue/challenge and discuss why this type governance program would be beneficial.
 
 I work for start up in Fintech Space, so essentially I am touching both financial industry and technology. So in this context I wanted to highligth data breach issue that occured with Capital One. Capital one is in the list of top 10 banks in united states. In this data breach scenario an outside person gained access to personal information of the customers who has applied for credit cards from 2005 to 2019, this included names, addresses, zip, mobile, email, dates of birth, income, credit scores, credit limits, balances, payment history, contact information etc. This issue was primarily due to misconfiguration of the firewall with additionals permissions to read and list files from S3 buckets in AWS, the individual able to retrieve identity and access management credentials and assume a role on the server which had broader permissions for S3 buckets where the sesnitive information was residing. So considering this data breach, if the data governance frameworks was in place along with implementation four pillars, then this data breach could have been easily avoided. Below are the 4 pillars
 Policies, Standards and Strategy
@@ -18,4 +17,7 @@ Fine grained, role based, access controls based on the principle of least privil
 2. Securing and protecting sensitive data.
 For protecting sensitive data encryption need to be in place as well data can be anonymized. This could have prevented exposure to sensitive PII data.
 
-Apart from Pillar 3, Pillar 1 (Policies, Standards and Strategy) could also have been significance over here. It talks about desicion makers related to access rights and estalishing appropriate rights 
+Apart from Pillar 3, Pillar 1 (Policies, Standards and Strategy) could also have been significance over here. It talks about desicion making desicion about the access rights, which was definitely failure over here. Desicion makers did not facto in the cloud related desision roles and permissions and did not enformce any controls or establish IAM roles related policy. Even if the IAM related policy was established it was not properly audited or was not implemented correctly. 
+
+Identify one pillar in the Data Governance framework and define the activities to develop a governance strategy for a particular industry challenge. Describe the organizational issue/challenge and discuss why this type governance program would be beneficial.
+
