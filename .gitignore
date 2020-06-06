@@ -1251,3 +1251,5 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 /DataVisualization/Week8/Visualizations/FinalProject/.Rhistory
 /DataVisualization/Week8/Visualizations/FinalProject/.RData
 /.vs/msdatasciencelatest/v15/.suo
+/Data-Exploration/Week-4/Data-DueDiligence/.Rproj.user
+/Data-Exploration/Week-4/Data-DueDiligence/.Rhistory

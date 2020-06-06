@@ -1,0 +1,96 @@
+---
+title: "Data-Due-Diligence"
+author: "Aamol Gote"
+date: "6/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(maps)
+library(scales)
+library(sf)
+```
+```{r, message=FALSE}
+customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+```
+
+```{r, message=FALSE}
+sum(is.na(customers))
+sapply(customers,function(x)sum(is.na(x)))
+```
+# Feature engineering steps
+1. Remove the dollar sign from household income
+```{r, message=FALSE}
+customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+customers <- customers %>%
+  replace(.=="#NULL!", NA) # replace with NA
+customers$HHIncome = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$HHIncome)))) 
+customers$VoiceLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceLastMonth)))) 
+customers$VoiceOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceOverTenure)))) 
+customers$CardSpendMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$CardSpendMonth)))) 
+customers$EquipmentLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentLastMonth)))) 
+customers$EquipmentOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentOverTenure)))) 
+customers$DataLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataLastMonth)))) 
+customers$DataOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataOverTenure)))) 
+sapply(customers,function(x)sum(is.na(x)))
+ncol(customers)
+```
+
+
+```{r, message=FALSE}
+customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+print("Number of rows with Gender = NA before imputation")
+sum(is.na(customers$Gender))
+
+numberOfFemales <- customers %>% 
+  filter(Gender=="Female") %>% 
+  nrow()
+print("Number of females before imputation")
+numberOfFemales
+
+numberOfMales <- customers %>% 
+  filter(Gender=="Male") %>% 
+  nrow()
+count <- 0
+print("Number of males before imputation")
+numberOfMales
+for(i in 1:nrow(customers)){
+  if(is.na(customers$Gender[i])){
+    #customers$Gender[i] <- "F"
+    count <- count + 1
+    if (count %% 2 == 0){
+      customers$Gender[i] <- "Female"
+    }
+    else{
+      customers$Gender[i] <- "Male"
+    }
+  }
+}
+
+print("Number of rows with Gender = NA after imputation")
+sum(is.na(customers$Gender))
+numberOfFemales <- customers %>% 
+  filter(Gender=="Female") %>% 
+  nrow()
+print("Number of females after imputation")
+numberOfFemales
+
+numberOfMales <- customers %>% 
+  filter(Gender=="Male") %>% 
+  nrow()
+print("Number of males after imputation")
+numberOfMales
+```
