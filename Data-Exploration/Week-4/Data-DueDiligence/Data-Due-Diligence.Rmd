@@ -3,18 +3,13 @@ title: "Data-Due-Diligence"
 author: "Aamol Gote"
 date: "6/6/2020"
 output:
-  html_document: default
   word_document: default
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_knit$set(progress = FALSE, verbose = FALSE)
-knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
-```
-
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(maps)
 library(scales)
@@ -29,9 +24,8 @@ customers <- read_csv("data/Customer_Dataset_File_Original.csv")
 sum(is.na(customers))
 sapply(customers,function(x)sum(is.na(x)))
 ```
+
 # Feature engineering steps
-
-
 # Data Imputation for customers.
 ```{r imputeGender, message=FALSE}
 #customers <- read_csv("data/Customer_Dataset_File_Original.csv")
@@ -195,5 +189,5 @@ ggplot(customers) +
 ```
 
 ```{r finalSummary, message=FALSE}
-#summary(customers)
+summary(customers)
 ```
