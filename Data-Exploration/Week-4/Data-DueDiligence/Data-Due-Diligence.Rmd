@@ -2,18 +2,15 @@
 title: "Data-Due-Diligence"
 author: "Aamol Gote"
 date: "6/6/2020"
-output: html_document
+output:
+  html_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(progress = FALSE, verbose = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
 ```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 
 ```{r setup, include=FALSE}
@@ -22,36 +19,22 @@ library(tidyverse)
 library(maps)
 library(scales)
 library(sf)
+library(Hmisc)
 ```
-```{r, message=FALSE}
+```{r loadData, message=FALSE}
 customers <- read_csv("data/Customer_Dataset_File_Original.csv")
 ```
 
-```{r, message=FALSE}
+```{r getAllMissingValueCount, message=FALSE}
 sum(is.na(customers))
 sapply(customers,function(x)sum(is.na(x)))
 ```
 # Feature engineering steps
-1. Remove the dollar sign from household income
-```{r, message=FALSE}
-customers <- read_csv("data/Customer_Dataset_File_Original.csv")
-customers <- customers %>%
-  replace(.=="#NULL!", NA) # replace with NA
-customers$HHIncome = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$HHIncome)))) 
-customers$VoiceLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceLastMonth)))) 
-customers$VoiceOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceOverTenure)))) 
-customers$CardSpendMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$CardSpendMonth)))) 
-customers$EquipmentLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentLastMonth)))) 
-customers$EquipmentOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentOverTenure)))) 
-customers$DataLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataLastMonth)))) 
-customers$DataOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataOverTenure)))) 
-sapply(customers,function(x)sum(is.na(x)))
-ncol(customers)
-```
 
 
-```{r, message=FALSE}
-customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+# Data Imputation for customers.
+```{r imputeGender, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
 print("Number of rows with Gender = NA before imputation")
 sum(is.na(customers$Gender))
 
@@ -93,4 +76,124 @@ numberOfMales <- customers %>%
   nrow()
 print("Number of males after imputation")
 numberOfMales
+```
+
+# Data Imputation for HouseholdSize.
+```{r imputeHouseHold, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+print("Number of rows with HouseholdSize = NA before imputation")
+sum(is.na(customers$HouseholdSize))
+summary(customers$HouseholdSize)
+customers$HouseholdSize[is.na(customers$HouseholdSize)] <- median(customers$HouseholdSize, na.rm = T)
+print("Check for missing values for HouseholdSize")
+sum(is.na(customers$HouseholdSize))
+```
+
+# Data Imputation for HomeOwner.
+```{r imputeHoeOwnership, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+print("Number of rows with HomeOwner = NA before imputation")
+sum(is.na(customers$HomeOwner))
+summary(customers$HomeOwner)
+get_mode <- function(x) {
+  unique_x <- unique(x)
+  mode <- unique_x[which.max(tabulate(match(x, unique_x)))]
+  mode
+}
+mode_value = get_mode(customers$HomeOwner)
+customers$HomeOwner[is.na(customers$HomeOwner)] <- mode_value
+print("Check for missing values for HomeOwner")
+sum(is.na(customers$HomeOwner))
+ggplot(customers) + 
+  geom_bar(aes(x = HomeOwner))
+```
+
+# Data Imputation for JobCategory
+```{r imputeJobCategory, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+print("Number of rows with JobCategory = NA before imputation")
+sum(is.na(customers$JobCategory))
+summary(customers$JobCategory)
+ggplot(customers) + 
+  geom_bar(aes(x = JobCategory))
+customers$JobCategory[is.na(customers$JobCategory)] <- "Misc"
+print("Check for missing values for HomeOwner")
+sum(is.na(customers$JobCategory))
+ggplot(customers) + 
+  geom_bar(aes(x = JobCategory))
+```
+
+# Remove the dollar sign from household income
+```{r cleanAmountVariables, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+customers <- customers %>%
+  replace(.=="#NULL!", NA) # replace with NA
+customers$HHIncome = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$HHIncome)))) 
+customers$VoiceLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceLastMonth)))) 
+customers$VoiceOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceOverTenure)))) 
+customers$CardSpendMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$CardSpendMonth)))) 
+customers$EquipmentLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentLastMonth)))) 
+customers$EquipmentOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentOverTenure)))) 
+customers$DataLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataLastMonth)))) 
+customers$DataOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataOverTenure)))) 
+sapply(customers,function(x)sum(is.na(x)))
+ncol(customers)
+```
+
+
+# Adding of additional variables 
+```{r additionalVaribales, message=FALSE}
+customers$LastMonthTotalValue <- customers$VoiceLastMonth + customers$EquipmentLastMonth + customers$DataLastMonth
+customers$OverTenureTotalValue <- customers$VoiceOverTenure + customers$EquipmentOverTenure + customers$DataOverTenure
+customers$TotalDebt <- customers$CreditDebt + customers$OtherDebt
+```
+
+
+
+# Remove the dollar sign from CarValue
+```{r imputeCarValue, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+customers$CarValue = gsub("\\ ", "", customers$CarValue) 
+summary(customers$CarValue)
+
+carValueLessThanZero <- customers %>% 
+  filter(CarValue =="$(1,000.00)") %>% 
+  nrow()
+
+customers$CarValue[customers$CarValue =="$(1,000.00)"] <- 0
+customers$CarValue = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$CarValue)))) 
+customers$CarValue = as.numeric(customers$CarValue)
+
+carValueLessThanZero <- customers %>% 
+  filter(is.na(customers$CarValue)) %>%
+  nrow()
+  
+print("Number of records with CarValue = NA")
+carValueLessThanZero
+
+carOwnership <- customers %>% 
+  filter(customers$CarOwnership == "-1") %>%
+  nrow()
+print("Number of records with CarOwnership == -1")
+carOwnership
+
+carBrand <- customers %>% 
+  filter(customers$CarBrand == "-1") %>%
+  nrow()
+print("Number of records with CarBrand == -1")
+carBrand
+customers$CarOwnership[customers$CarOwnership =="-1"] <- NA
+customers$CarBrand[customers$CarBrand =="-1"] <- NA
+```
+
+# Impute Commute Time, there are 2 missing values
+```{r imputeCommuteTime, message=FALSE}
+customers$CommuteTime = as.numeric(customers$CommuteTime)
+customers$CommuteTime[is.na(customers$CommuteTime)] <- mean(customers$CommuteTime, na.rm = T)
+ggplot(customers) + 
+  geom_bar(aes(x = CommuteTime))
+```
+
+```{r finalSummary, message=FALSE}
+#summary(customers)
 ```
