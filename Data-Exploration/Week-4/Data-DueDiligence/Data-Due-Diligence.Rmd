@@ -1,6 +1,6 @@
 ---
 title: "Data-Due-Diligence"
-author: "Aamol Gote"
+author: "Amol Gote"
 date: "6/6/2020"
 output:
   word_document: default
@@ -170,7 +170,7 @@ ggplot(customers) +
   geom_bar(aes(x = CommuteTime))
 ```
 #Address Missing values for EquipmentLastMonth, DataLastMonth, EquipmentOverTenure,DataOverTenure
-```{r finalSummary, message=FALSE}
+```{r addressMissingValies, message=FALSE}
 customers$EquipmentLastMonth[is.na(customers$EquipmentLastMonth)] <- 0
 customers$DataLastMonth[is.na(customers$DataLastMonth)] <- 0
 customers$EquipmentOverTenure[is.na(customers$EquipmentOverTenure)] <- 0
