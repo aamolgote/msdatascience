@@ -17,8 +17,12 @@ library(sf)
 library(Hmisc)
 library(dplyr)
 library(ggplot2)
-
 ```
+
+```{r include = FALSE}
+#knitr::opts_chunk$set(echo=FALSE)
+```
+
 ```{r loadData, message=FALSE}
 customers <- read_csv("data/Customer_Dataset_File_Original.csv")
 ```
