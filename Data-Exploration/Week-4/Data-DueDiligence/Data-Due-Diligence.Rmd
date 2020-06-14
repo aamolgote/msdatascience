@@ -15,11 +15,13 @@ library(maps)
 library(scales)
 library(sf)
 library(Hmisc)
+library(dplyr)
+library(ggplot2)
 ```
 ```{r loadData, message=FALSE}
 customers <- read_csv("data/Customer_Dataset_File_Original.csv")
 ```
-
+# Identify all missing values
 ```{r getAllMissingValueCount, message=FALSE}
 sum(is.na(customers))
 sapply(customers,function(x)sum(is.na(x)))
@@ -31,13 +33,11 @@ sapply(customers,function(x)sum(is.na(x)))
 #customers <- read_csv("data/Customer_Dataset_File_Original.csv")
 print("Number of rows with Gender = NA before imputation")
 sum(is.na(customers$Gender))
-
 numberOfFemales <- customers %>% 
   filter(Gender=="Female") %>% 
   nrow()
 print("Number of females before imputation")
 numberOfFemales
-
 numberOfMales <- customers %>% 
   filter(Gender=="Male") %>% 
   nrow()
@@ -56,7 +56,6 @@ for(i in 1:nrow(customers)){
     }
   }
 }
-
 print("Number of rows with Gender = NA after imputation")
 sum(is.na(customers$Gender))
 numberOfFemales <- customers %>% 
@@ -64,7 +63,6 @@ numberOfFemales <- customers %>%
   nrow()
 print("Number of females after imputation")
 numberOfFemales
-
 numberOfMales <- customers %>% 
   filter(Gender=="Male") %>% 
   nrow()
@@ -135,42 +133,28 @@ ncol(customers)
 ```
 
 
-# Adding of additional variables 
-```{r additionalVaribales, message=FALSE}
-customers$LastMonthTotalValue <- customers$VoiceLastMonth + customers$EquipmentLastMonth + customers$DataLastMonth
-customers$OverTenureTotalValue <- customers$VoiceOverTenure + customers$EquipmentOverTenure + customers$DataOverTenure
-customers$TotalDebt <- customers$CreditDebt + customers$OtherDebt
-```
-
-
-
 # Remove the dollar sign from CarValue
 ```{r imputeCarValue, message=FALSE}
 #customers <- read_csv("data/Customer_Dataset_File_Original.csv")
 customers$CarValue = gsub("\\ ", "", customers$CarValue) 
 summary(customers$CarValue)
-
 carValueLessThanZero <- customers %>% 
   filter(CarValue =="$(1,000.00)") %>% 
   nrow()
-
 customers$CarValue[customers$CarValue =="$(1,000.00)"] <- 0
 customers$CarValue = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$CarValue)))) 
 customers$CarValue = as.numeric(customers$CarValue)
-
 carValueLessThanZero <- customers %>% 
   filter(is.na(customers$CarValue)) %>%
   nrow()
   
 print("Number of records with CarValue = NA")
 carValueLessThanZero
-
 carOwnership <- customers %>% 
   filter(customers$CarOwnership == "-1") %>%
   nrow()
 print("Number of records with CarOwnership == -1")
 carOwnership
-
 carBrand <- customers %>% 
   filter(customers$CarBrand == "-1") %>%
   nrow()
@@ -187,7 +171,149 @@ customers$CommuteTime[is.na(customers$CommuteTime)] <- mean(customers$CommuteTim
 ggplot(customers) + 
   geom_bar(aes(x = CommuteTime))
 ```
+#Address Missing values for EquipmentLastMonth, DataLastMonth, EquipmentOverTenure,DataOverTenure
+```{r finalSummary, message=FALSE}
+customers$EquipmentLastMonth[is.na(customers$EquipmentLastMonth)] <- 0
+customers$DataLastMonth[is.na(customers$DataLastMonth)] <- 0
+customers$EquipmentOverTenure[is.na(customers$EquipmentOverTenure)] <- 0
+customers$DataOverTenure[is.na(customers$DataOverTenure)] <- 0
+customers$PhoneCoTenure <- ifelse(customers$PhoneCoTenure == 0, 1, customers$PhoneCoTenure)
+customers$VoiceOverTenure <- ifelse(is.na(customers$VoiceOverTenure), customers$VoiceLastMonth, customers$VoiceOverTenure)
+```
+
 
 ```{r finalSummary, message=FALSE}
 summary(customers)
+```
+
+
+# Adding of additional variables 
+```{r additionalVaribales, message=FALSE}
+customers$LastMonthTotalValue <- customers$VoiceLastMonth + customers$EquipmentLastMonth + customers$DataLastMonth
+customers$OverTenureTotalValue <- customers$VoiceOverTenure + customers$EquipmentOverTenure + customers$DataOverTenure
+customers$TotalDebt <- customers$CreditDebt + customers$OtherDebt
+customers$AverageMonthlyRevenue <- customers$OverTenureTotalValue/customers$PhoneCoTenure
+```
+
+```{r filteredColumnData}
+customersForAnalysis <- customers[,c("CustomerID","Gender","Age","EducationYears","JobCategory","EmploymentLength","HHIncome","DebtToIncomeRatio","CreditDebt","OtherDebt","MaritalStatus","HouseholdSize","HomeOwner","CommuteTime","PhoneCoTenure","VoiceLastMonth","VoiceOverTenure","EquipmentRental","EquipmentLastMonth","EquipmentOverTenure","WirelessData","DataLastMonth","DataOverTenure","Multiline","EBilling", "LastMonthTotalValue", "OverTenureTotalValue", "TotalDebt", "AverageMonthlyRevenue")]
+summary(customersForAnalysis)
+```
+```{r agePlots}
+ggplot(data = customersForAnalysis,
+       aes(x = Gender, y = AverageMonthlyRevenue)) +
+  geom_boxplot() +
+  stat_summary(fun.y = mean, geom="point",size=3) +
+  stat_summary(fun.y = median, geom="point",size=3) 
+
+customersForAnalysis%>%
+group_by(Gender)%>% 
+summarise(Mean=mean(AverageMonthlyRevenue), Median=median(AverageMonthlyRevenue))
+
+```
+
+```{r}
+ggplot(customersForAnalysis, aes(x=Age)) +
+    geom_histogram(binwidth=.5, colour="black", fill="white")
+
+lbls <- c('0-10','10-20','20-30', '30-40','40-50','50-60','60-70', '70-80', '80-90', '90-100')
+groupedData <- customersForAnalysis %>% 
+     group_by(ageGroup = cut(Age, breaks= seq(0, 100, by = 10), 
+                                right = TRUE, include.lowest = TRUE, labels = lbls) ) %>% 
+     summarise(totalMonthlyValue= sum(AverageMonthlyRevenue)) 
+
+ggplot(data =groupedData, aes(x=ageGroup, y=totalMonthlyValue)) +
+  geom_point(colour="steelblue", shape=16) 
+```
+
+```{r}
+
+lbls <- c('0-5','5-10','10-15', '15-20','20-25','25-30','30-35', '35-40', '40-45', '45-50')
+groupedData <- customersForAnalysis %>% 
+     group_by(debtGroup = cut(TotalDebt, breaks= seq(0, 50, by = 5), 
+                                right = TRUE, include.lowest = TRUE, labels = lbls) ) %>% 
+     summarise(totalMonthlyValue= sum(AverageMonthlyRevenue)) 
+
+
+ggplot(groupedData, aes(x = debtGroup, y = totalMonthlyValue)) + 
+  geom_bar(stat="identity", width=0.5, fill = "steelblue") 
+```
+
+```{r}
+groupedData <- customersForAnalysis%>%
+  group_by(HouseholdSize)%>% 
+  summarise(Mean=mean(AverageMonthlyRevenue), Median=median(AverageMonthlyRevenue), totalMonthlyRevenue= sum(AverageMonthlyRevenue))
+groupedData
+```
+
+```{r}
+groupedData <- customersForAnalysis%>%
+  filter(HouseholdSize > 1) %>%
+  filter(Multiline == "No") %>%
+  summarise(totalMonthlyRevenue= sum(AverageMonthlyRevenue))
+groupedData
+
+groupedData <- customersForAnalysis%>%
+  filter(HouseholdSize > 1) %>%
+  filter(Multiline == "No")
+count(groupedData)
+```
+```{r}
+groupedData <- customersForAnalysis %>% 
+     group_by(EducationYears) %>% 
+     summarise(totalMonthlyValue= sum(AverageMonthlyRevenue)) 
+
+ggplot(groupedData, aes(x = EducationYears, y = totalMonthlyValue)) + 
+  geom_bar(stat="identity", width=0.5, fill = "steelblue") 
+```
+```{r}
+summary(customersForAnalysis$HHIncome)
+ggplot(customersForAnalysis, aes(x = HHIncome, y = AverageMonthlyRevenue)) + 
+  geom_point()
+
+lbls <- c('0-10K','10-20K','20-30K', '30-40K','40-50K','50-60K','60-70K', '70-80K', '80-90K', '90-100K', '100-110K', '110-120K', '120-130K', '130-140K', '140-150K')
+
+groupedData <- customersForAnalysis %>% 
+     group_by(hhIncomeGroup = cut(HHIncome, breaks= seq(0, 150000, by = 10000), 
+                                right = TRUE, include.lowest = TRUE, labels = lbls) ) %>% 
+     summarise(totalMonthlyValue= sum(AverageMonthlyRevenue))
+groupedData
+
+ggplot(groupedData, aes(x = hhIncomeGroup, y = totalMonthlyValue)) + 
+  geom_bar(stat="identity", width=0.5, fill = "steelblue") 
+
+```
+
+```{r}
+groupedData <- customersForAnalysis%>%
+group_by(JobCategory)%>% 
+summarise(totalMonthlyValue = sum(AverageMonthlyRevenue))
+
+groupedData
+
+ggplot(groupedData, aes(x = JobCategory, y = totalMonthlyValue)) + 
+  geom_bar(stat="identity", width=0.5, fill = "steelblue") 
+```
+
+```{r agePlots}
+ggplot(data = customersForAnalysis,
+       aes(x = HomeOwner, y = AverageMonthlyRevenue, group=HomeOwner)) +
+  geom_boxplot()  
+
+customersForAnalysis%>%
+group_by(HomeOwner)%>% 
+summarise(SUm = sum(AverageMonthlyRevenue), Mean=mean(AverageMonthlyRevenue), Median=median(AverageMonthlyRevenue))
+```
+
+```{r}
+
+lbls <- c('0-10','10-20','20-30', '30-40','40-50','50-60','60-70', '70-80', '80-90', '90-100')
+groupedData <- customersForAnalysis %>% 
+     group_by(debtToIncomeRatioGroup = cut(DebtToIncomeRatio, breaks= seq(0, 100, by = 10), 
+                                right = TRUE, include.lowest = TRUE, labels = lbls) ) %>% 
+     summarise(totalMonthlyValue= sum(AverageMonthlyRevenue)) 
+
+
+ggplot(groupedData, aes(x = debtToIncomeRatioGroup, y = totalMonthlyValue)) + 
+  geom_bar(stat="identity", width=0.5, fill = "steelblue") 
 ```
