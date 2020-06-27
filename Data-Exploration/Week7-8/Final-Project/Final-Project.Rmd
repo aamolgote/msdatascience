@@ -222,9 +222,9 @@ customers.for.analysis_2 <- as.data.frame(scale(customers.for.analysis))
 
 customers.for.analysis_2.kmeans_seg_5 <- kmeans(customers.for.analysis_2, centers = 4, nstart = 25)
 names(customers.for.analysis_2.kmeans_seg_5)
-sol_5 <-fviz_cluster(customers.for.analysis_2.kmeans_seg_5, cust_data.df.num_2)
-sol_5
-fviz_cluster(k4, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 4")
+#sol_5 <-fviz_cluster(customers.for.analysis_2.kmeans_seg_5, customers.for.analysis_2)
+#sol_5
+#fviz_cluster(k4, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 4")
 
 
 k2 <- kmeans(customers.for.analysis_2, centers = 2, nstart = 25)
@@ -257,7 +257,7 @@ grid.arrange(p2, p3, p4, p5,  nrow = 2)
 set.seed(1234)
 #Function to compute total within cluster sum of squares 
 wss <- function(k) {
-  kmeans(customers.for.analysis_2, k, nstart = 10)$tot.withinss
+  kmeans(customers.for.analysis_2, k, nstart = 50, iter.max = 50)$tot.withinss
 }
 
 #Compute and plot the within sum of squares (wss) for k = 1 to k = 10
@@ -277,7 +277,7 @@ fviz_nbclust(customers.for.analysis_2, kmeans, method = "wss")
 
 ```{r silhouette}
 avg_sil <- function(k) {
-  km.res <- kmeans(customers.for.analysis_2, centers = k, nstart = 25)
+  km.res <- kmeans(customers.for.analysis_2, centers = k, nstart = 25, iter.max = 50)
   ss <- silhouette(km.res$cluster, dist(customers.for.analysis_2))
   mean(ss[, 3])
 }
@@ -303,10 +303,10 @@ fviz_nbclust(customers.for.analysis_2, kmeans, method = "silhouette")
 ```
 
 ```{r gapStat}
-set.seed(123)
-gap_stat <- clusGap(customers.for.analysis_2, FUN = kmeans, nstart = 25,
-                  K.max = 10, B = 10)
+#set.seed(123)
+#gap_stat <- clusGap(customers.for.analysis_2, FUN = kmeans, nstart = 25,
+                 # K.max = 10, B = 10)
 # Print the result
-print(gap_stat, method = "firstmax")
-fviz_gap_stat(gap_stat)
+#print(gap_stat, method = "firstmax")
+#fviz_gap_stat(gap_stat)
 ```
