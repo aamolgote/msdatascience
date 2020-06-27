@@ -1,0 +1,312 @@
+---
+title: "Data-Due-Diligence"
+author: "Amol Gote"
+date: "6/6/2020"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(progress = FALSE, verbose = FALSE)
+library(cluster)    # clustering algorithms
+library(factoextra) # clustering algorithms & visualization
+library(maps)
+library(scales)
+library(sf)
+library(Hmisc)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+```
+
+```{r include = FALSE}
+#knitr::opts_chunk$set(echo=FALSE)
+```
+
+```{r loadData, message=FALSE}
+customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+```
+# Feature engineering steps
+# Data Imputation for customers.
+```{r imputeGender, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+for(i in 1:nrow(customers)){
+  if(is.na(customers$Gender[i])){
+    #customers$Gender[i] <- "F"
+    count <- count + 1
+    if (count %% 2 == 0){
+      customers$Gender[i] <- "Female"
+    }
+    else{
+      customers$Gender[i] <- "Male"
+    }
+  }
+}
+```
+
+# Data Imputation for HouseholdSize.
+```{r imputeHouseHold, message=FALSE}
+customers$HouseholdSize[is.na(customers$HouseholdSize)] <- median(customers$HouseholdSize, na.rm = T)
+```
+
+# Data Imputation for HomeOwner.
+```{r imputeHoeOwnership, message=FALSE}
+get_mode <- function(x) {
+  unique_x <- unique(x)
+  mode <- unique_x[which.max(tabulate(match(x, unique_x)))]
+  mode
+}
+mode_value = get_mode(customers$HomeOwner)
+customers$HomeOwner[is.na(customers$HomeOwner)] <- mode_value
+```
+
+# Data Imputation for JobCategory
+```{r imputeJobCategory, message=FALSE}
+customers$JobCategory[is.na(customers$JobCategory)] <- "Misc"
+```
+
+# Remove the dollar sign from household income
+```{r cleanAmountVariables, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+customers <- customers %>%
+  replace(.=="#NULL!", NA) # replace with NA
+customers$HHIncome = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$HHIncome)))) 
+customers$VoiceLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceLastMonth)))) 
+customers$VoiceOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$VoiceOverTenure)))) 
+customers$CardSpendMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$CardSpendMonth)))) 
+customers$EquipmentLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentLastMonth)))) 
+customers$EquipmentOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentOverTenure)))) 
+customers$DataLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataLastMonth)))) 
+customers$DataOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataOverTenure)))) 
+sapply(customers,function(x)sum(is.na(x)))
+```
+
+
+# Remove the dollar sign from CarValue
+```{r imputeCarValue, message=FALSE}
+#customers <- read_csv("data/Customer_Dataset_File_Original.csv")
+customers$CarValue = gsub("\\ ", "", customers$CarValue) 
+summary(customers$CarValue)
+carValueLessThanZero <- customers %>% 
+  filter(CarValue =="$(1,000.00)") %>% 
+  nrow()
+customers$CarValue[customers$CarValue =="$(1,000.00)"] <- 0
+customers$CarValue = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$CarValue)))) 
+customers$CarValue = as.numeric(customers$CarValue)
+carValueLessThanZero <- customers %>% 
+  filter(is.na(customers$CarValue)) %>%
+  nrow()
+  
+carOwnership <- customers %>% 
+  filter(customers$CarOwnership == "-1") %>%
+  nrow()
+carBrand <- customers %>% 
+  filter(customers$CarBrand == "-1") %>%
+  nrow()
+customers$CarOwnership[customers$CarOwnership =="-1"] <- NA
+customers$CarBrand[customers$CarBrand =="-1"] <- NA
+```
+
+# Impute Commute Time, there are 2 missing values
+```{r imputeCommuteTime, message=FALSE}
+customers$CommuteTime = as.numeric(customers$CommuteTime)
+customers$CommuteTime[is.na(customers$CommuteTime)] <- mean(customers$CommuteTime, na.rm = T)
+```
+#Address Missing values for EquipmentLastMonth, DataLastMonth, EquipmentOverTenure,DataOverTenure
+```{r addressMissingValies, message=FALSE}
+customers$EquipmentLastMonth[is.na(customers$EquipmentLastMonth)] <- 0
+customers$DataLastMonth[is.na(customers$DataLastMonth)] <- 0
+customers$EquipmentOverTenure[is.na(customers$EquipmentOverTenure)] <- 0
+customers$DataOverTenure[is.na(customers$DataOverTenure)] <- 0
+customers$PhoneCoTenure <- ifelse(customers$PhoneCoTenure == 0, 1, customers$PhoneCoTenure)
+customers$VoiceOverTenure <- ifelse(is.na(customers$VoiceOverTenure), customers$VoiceLastMonth, customers$VoiceOverTenure)
+```
+
+# Adding of additional variables 
+```{r additionalVaribales, message=FALSE}
+customers$LastMonthTotalValue <- customers$VoiceLastMonth + customers$EquipmentLastMonth + customers$DataLastMonth
+customers$OverTenureTotalValue <- customers$VoiceOverTenure + customers$EquipmentOverTenure + customers$DataOverTenure
+customers$TotalDebt <- customers$CreditDebt + customers$OtherDebt
+customers$AverageMonthlyRevenue <- customers$OverTenureTotalValue/customers$PhoneCoTenure
+
+customers$Gender_num <- ifelse(customers$Gender == "Male", 1, 2)
+customers$LoanDefault_num <- ifelse(customers$LoanDefault == "Yes", 1, 2)
+customers$MaritalStatus_num <- ifelse(customers$MaritalStatus == "Married", 1, 2)
+customers$Multiline_num <- ifelse(customers$Multiline == "Yes", 1, 2)
+
+customers <- mutate(customers, HHIncome_group = case_when(
+ HHIncome %in%  0:25000          ~ 1,
+ HHIncome %in%  25001:50000      ~ 2,
+ HHIncome %in%  50001:75000      ~ 3,
+ HHIncome %in%  75001:100000     ~ 4,
+ HHIncome %in%  100001:150001    ~ 5,
+ HHIncome >     150001           ~ 6
+ )
+) 
+customers$DebtToIncomeRatio_int <- as.integer(10*(customers$DebtToIncomeRatio))
+customers <- mutate(customers, DebtToIncomeRatio_group = case_when(
+DebtToIncomeRatio_int %in%  0:50         ~ 5,
+DebtToIncomeRatio_int %in%  51:100       ~ 10,
+DebtToIncomeRatio_int %in%  101:150      ~ 15,
+DebtToIncomeRatio_int %in%  151:200      ~ 20,
+DebtToIncomeRatio_int %in%  201:250      ~ 25,
+DebtToIncomeRatio_int %in%  251:300      ~ 30,
+DebtToIncomeRatio_int %in%  301:400      ~ 40,
+DebtToIncomeRatio_int >     401          ~ -1
+ )
+)  
+
+customers <- mutate(customers, EducationYears_group = case_when(
+ EducationYears %in%  6:10      ~ 1,
+ EducationYears %in%  11:15     ~ 2,
+ EducationYears %in%  16:19     ~ 3,
+ EducationYears %in%  20:21     ~ 4,
+ EducationYears %in%  22:23     ~ 5,
+ EducationYears >     23        ~ 6
+ )
+)
+
+customers <- mutate(customers, Age_group = case_when(
+ Age %in%  0:18      ~ 1,
+ Age %in%  18:40     ~ 2,
+ Age %in%  40:60     ~ 3,
+ Age >     60        ~ 4
+ )
+)
+
+customers <- mutate(customers, EmploymentLength_group = case_when(
+ EmploymentLength %in%  0:5       ~ 1,
+ EmploymentLength %in%  6:10      ~ 2,
+ EmploymentLength %in%  11:20     ~ 3,
+ EmploymentLength %in%  21:30     ~ 4,
+ EmploymentLength >     30        ~ 5
+ )
+)
+```
+
+# Create a dataset for analysis with required variables only
+```{r filteredColumnData, message=FALSE}
+customers.for.analysis <- customers[,c("Gender_num","Age","EducationYears","EmploymentLength",
+                                     "HHIncome_group","DebtToIncomeRatio_group","TotalDebt",
+                                     "MaritalStatus_num","HouseholdSize","HomeOwner",
+                                     "PhoneCoTenure", "Multiline_num",
+                                     "VoiceOverTenure","EquipmentOverTenure", "DataOverTenure",
+                                     "OverTenureTotalValue","AverageMonthlyRevenue")]
+
+#customers.for.analysis <- customers[,c("HHIncome_group","DebtToIncomeRatio_group",
+#                                       "OverTenureTotalValue")]
+
+customers.for.analysis <- customers[,c("Gender_num","Age_group","EducationYears_group", "EmploymentLength_group",
+                                     "HHIncome_group","DebtToIncomeRatio_group", 
+                                     "MaritalStatus_num","HouseholdSize","HomeOwner",
+                                     "PhoneCoTenure", "Multiline_num",
+                                     "OverTenureTotalValue","AverageMonthlyRevenue")]
+
+str(customers.for.analysis)
+
+summary(customers.for.analysis)
+```
+
+#Clustering analysis
+```{r}
+#summary(customers.for.analysis)
+#sapply(customers.for.analysis, class)
+#sum(is.na(customers.for.analysis))
+#sapply(customers.for.analysis, function(x) sum(is.na(x))/length(x))*100
+
+#Rescale the data before input into kmeans for creating clusters
+customers.for.analysis_2 <- as.data.frame(scale(customers.for.analysis))
+#class(cust_data.df.num_2)
+
+customers.for.analysis_2.kmeans_seg_5 <- kmeans(customers.for.analysis_2, centers = 4, nstart = 25)
+names(customers.for.analysis_2.kmeans_seg_5)
+sol_5 <-fviz_cluster(customers.for.analysis_2.kmeans_seg_5, cust_data.df.num_2)
+sol_5
+fviz_cluster(k4, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 4")
+
+
+k2 <- kmeans(customers.for.analysis_2, centers = 2, nstart = 25)
+k3 <- kmeans(customers.for.analysis_2, centers = 3, nstart = 25)
+k4 <- kmeans(customers.for.analysis_2, centers = 4, nstart = 25)
+k5 <- kmeans(customers.for.analysis_2, centers = 5, nstart = 25)
+#k6 <- kmeans(customers.for.analysis_2, centers = 6, nstart = 25)
+#k7 <- kmeans(customers.for.analysis_2, centers = 7, nstart = 25)
+#k8 <- kmeans(customers.for.analysis_2, centers = 8, nstart = 25)
+
+
+# plots to compare
+p2 <- fviz_cluster(k2, geom = "point", data = customers.for.analysis_2) + ggtitle("k = 2")
+p3 <- fviz_cluster(k3, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 3")
+p4 <- fviz_cluster(k4, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 4")
+p5 <- fviz_cluster(k5, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 5")
+#p6 <- fviz_cluster(k6, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 6")
+#p7 <- fviz_cluster(k7, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 7")
+#p8 <- fviz_cluster(k8, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 8")
+
+library(gridExtra)
+grid.arrange(p2, p3, p4, p5,  nrow = 2)
+#grid.arrange(p6, p7, p8,  nrow = 2)
+
+
+```
+
+
+```{r elbowMethod}
+set.seed(1234)
+#Function to compute total within cluster sum of squares 
+wss <- function(k) {
+  kmeans(customers.for.analysis_2, k, nstart = 10)$tot.withinss
+}
+
+#Compute and plot the within sum of squares (wss) for k = 1 to k = 10
+k.values <- 1:15
+
+#Extract wss for 2 - 10 clusters
+wss_values <- map_dbl(k.values, wss)
+
+plot(k.values, wss_values,
+     type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of clusters K",
+     ylab = "Total within clusters sum of squares")
+
+set.seed(1234)
+fviz_nbclust(customers.for.analysis_2, kmeans, method = "wss")
+```
+
+```{r silhouette}
+avg_sil <- function(k) {
+  km.res <- kmeans(customers.for.analysis_2, centers = k, nstart = 25)
+  ss <- silhouette(km.res$cluster, dist(customers.for.analysis_2))
+  mean(ss[, 3])
+}
+
+#Compute and plot wss for k = 2 to k = 10
+k.values <-  2: 10
+
+#Visually check the distribution of income according to segment
+#box
+#Extract average silhouette for 2 - 10 clusters
+avg_sil_values <-  map_dbl(k.values, avg_sil)
+
+# Based on the plots - does the 7 segment solution look optimal??
+plot(k.values, avg_sil_values,
+     type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of clusters K",
+     ylab = "Total within clusters sum of squares")
+                           
+# Similar to the elbow method, this process to compute the “average silhoutte method” 
+# has been wrapped up in a single function (fviz_nbclust):
+
+fviz_nbclust(customers.for.analysis_2, kmeans, method = "silhouette")
+```
+
+```{r gapStat}
+set.seed(123)
+gap_stat <- clusGap(customers.for.analysis_2, FUN = kmeans, nstart = 25,
+                  K.max = 10, B = 10)
+# Print the result
+print(gap_stat, method = "firstmax")
+fviz_gap_stat(gap_stat)
+```
