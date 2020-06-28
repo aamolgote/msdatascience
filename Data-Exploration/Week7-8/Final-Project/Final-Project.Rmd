@@ -193,7 +193,7 @@ customers <- mutate(customers, Age_group = case_when(
 
 customers <- mutate(customers, Age_category = case_when(
  Age %in%  0:18      ~ "Below 18",
- Age %in%  18:40     ~ "18 - 20",
+ Age %in%  18:40     ~ "18 - 40",
  Age %in%  40:60     ~ "40 - 60",
  Age >     60        ~ "> 60"
  )
@@ -534,7 +534,12 @@ summary(gold_customers$Age)
 summary(silver_customers$Age)
 summary(bronze_customers$Age)
 ```
-
+```{r attributeComparison}
+summary(platinum_customers$DebtToIncomeRatio)
+summary(gold_customers$DebtToIncomeRatio)
+summary(silver_customers$DebtToIncomeRatio)
+summary(bronze_customers$Age)
+```
 
 ```{r visualizations}
 ggplot(customers) +
@@ -545,6 +550,13 @@ ggplot(customers) +
 
 ggplot(customers) +
     geom_bar(aes(x = category, fill = Age_category))
+
+ggplot(customers) +
+    geom_bar(aes(x = category, fill = MaritalStatus))
+
+ggplot(customers) +
+    geom_bar(aes(x = category, fill = Multiline))
+
 
 ggplot(customers, aes(x = HHIncome, y = AverageMonthlyRevenue)) + 
   geom_point(color = "steelblue") +
@@ -602,6 +614,8 @@ groupedData <- customers %>%
   arrange(desc(category))
 
 groupedData$label <- scales::percent(round(groupedData$per,2))
+
+write_csv(groupedData,"data/cluster_distribution.csv")
 ggplot(data=groupedData) +
   geom_bar(aes(x="", y=per, fill=category), stat="identity", width = 1) +
   coord_polar("y", start=0, direction = -1) +
@@ -623,6 +637,242 @@ ggplot(groupedData, aes(x="", y=per, fill=category)) +
   
   geom_text(aes(y = ypos, label = category), color = "white", size=6) +
   scale_fill_brewer(palette="Set1")
+
+groupedData <- customers %>%
+  group_by(category) %>%
+  summarise(totalValue= sum(OverTenureTotalValue), categoryCount = n(), averageValue= mean(AverageMonthlyRevenue)) 
+write_csv(groupedData,"data/cluster_total_revenue.csv")
+
+
+groupedData <- customers %>%
+  group_by(category) %>%
+  summarise(averageValue= mean(Age)) 
+
+groupedData
+write_csv(groupedData,"data/cluster_total_revenue.csv")
+```
+
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  group_by(MaritalStatus) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = MaritalStatus, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "steelblue") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
+```
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  group_by(MaritalStatus) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = MaritalStatus, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "steelblue") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
+```
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  group_by(MaritalStatus) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = MaritalStatus, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "steelblue") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
+```
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Bronze") %>%
+  group_by(MaritalStatus) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = MaritalStatus, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "steelblue") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
+```
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  group_by(Gender) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = Gender, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "DarkGreen") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
+```
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  group_by(Gender) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = Gender, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "DarkGreen") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
+```
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  group_by(Gender) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = Gender, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "DarkGreen") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
+```
+```{r}
+
+cystomersFiltered <- customers %>%
+  filter(category == "Bronze") %>%
+  group_by(Gender) %>%
+  summarise(totalCount = n())
+
+ggplot(cystomersFiltered, aes(x = Gender, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "DarkGreen") + 
+  geom_text(aes(label=totalCount), vjust=-0.5) +
+  scale_y_continuous() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    aspect.ratio = 2/1) 
 ```
 
 
+```{r}
+
+customersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  group_by(EducationYears_category) %>%
+  summarise(totalCount = n()) 
+
+write_csv(customersFiltered,"data/Platinum_education.csv")
+
+ggplot(customersFiltered, aes(x = EducationYears_category, y= totalCount, label = totalCount)) +
+  geom_col(width = 0.2, fill = "DarkGreen") + 
+  geom_text(aes(label=totalCount), hjust=-0.5) +
+  scale_y_continuous() +
+  coord_flip() +
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+```
+
+
+```{r}
+
+customersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  group_by(Multiline) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Platinum_Multiline.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  group_by(Multiline) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Gold_Multiline.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  group_by(Multiline) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Silver_Multiline.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Bronze") %>%
+  group_by(Multiline) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Bronze_Multiline.csv")
+
+```
+
+```{r}
+
+customersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  group_by(LoanDefault) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Platinum_LoanDefault.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  group_by(LoanDefault) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Gold_LoanDefault.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  group_by(LoanDefault) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Silver_LoanDefault.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Bronze") %>%
+  group_by(LoanDefault) %>%
+  summarise(totalCount = n()) 
+write_csv(customersFiltered,"data/Bronze_LoanDefault.csv")
+
+
+```
