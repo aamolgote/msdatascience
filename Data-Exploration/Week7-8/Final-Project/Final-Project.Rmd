@@ -173,11 +173,29 @@ customers <- mutate(customers, EducationYears_group = case_when(
  )
 )
 
+customers <- mutate(customers, EducationYears_category = case_when(
+ EducationYears %in%  6:10      ~ '6-10 years',
+ EducationYears %in%  11:15     ~ '11-15 years',
+ EducationYears %in%  16:19     ~ '16-19 years',
+ EducationYears %in%  20:21     ~ '20-21 years',
+ EducationYears %in%  22:23     ~ '22-23 years',
+ EducationYears >     23        ~ '> 23 years'
+ )
+)  
+
 customers <- mutate(customers, Age_group = case_when(
  Age %in%  0:18      ~ 1,
  Age %in%  18:40     ~ 2,
  Age %in%  40:60     ~ 3,
  Age >     60        ~ 4
+ )
+)
+
+customers <- mutate(customers, Age_category = case_when(
+ Age %in%  0:18      ~ "Below 18",
+ Age %in%  18:40     ~ "18 - 20",
+ Age %in%  40:60     ~ "40 - 60",
+ Age >     60        ~ "> 60"
  )
 )
 
@@ -516,3 +534,95 @@ summary(gold_customers$Age)
 summary(silver_customers$Age)
 summary(bronze_customers$Age)
 ```
+
+
+```{r visualizations}
+ggplot(customers) +
+    geom_bar(aes(x = category, fill = Gender))
+
+ggplot(customers) +
+    geom_bar(aes(x = category, fill = CarOwnership))
+
+ggplot(customers) +
+    geom_bar(aes(x = category, fill = Age_category))
+
+ggplot(customers, aes(x = HHIncome, y = AverageMonthlyRevenue)) + 
+  geom_point(color = "steelblue") +
+  facet_grid(~category) +
+  geom_smooth() + 
+  labs( title= "Monthly revenue generated Debt to income ratio", x="Debt to income ratio (DTI)", y = "Over Tenure Total Value ($)") +
+  theme_minimal() 
+
+```
+
+```{r }
+groupedData <- customers %>% 
+      filter(HHIncome < 300000) %>%
+     group_by(category,HHIncome) %>% 
+     summarise(totalMonthlyValue= mean(AverageMonthlyRevenue)) 
+
+ggplot(groupedData, aes(x = HHIncome, y = totalMonthlyValue)) + 
+  geom_point(color = "steelblue") +
+  geom_smooth(method = lm) + 
+  facet_wrap(~category, nrow(2)) +
+  labs( title= "Average Monthly revenue generated to House hold income", x="Household Income ($)", y = "Average Monthly revenue ($)") +
+  scale_x_continuous(labels = comma) +
+  theme_minimal() 
+
+```
+
+```{r }
+groupedData <- customers %>% 
+      filter(HHIncome < 300000) %>%
+     group_by(category,HHIncome) %>% 
+     summarise(totalMonthlyValue= sum(OverTenureTotalValue)) 
+
+ggplot(groupedData, aes(x = HHIncome, y = totalMonthlyValue)) + 
+  geom_point(color = "steelblue") +
+  geom_smooth(method = lm) + 
+  facet_wrap(~category, nrow(2)) +
+  labs( title= "Average Monthly revenue generated to House hold income", x="Household Income ($)", y = "Average Monthly revenue ($)") +
+  scale_x_continuous(labels = comma) +
+  theme_minimal() 
+
+```
+
+```{r }
+
+ggplot(customers) +
+    geom_bar(aes(x = category, fill = EducationYears_category))
+
+
+groupedData <- customers %>% 
+  group_by(category) %>% 
+  count() %>% 
+  ungroup() %>% 
+  mutate(per=`n`/sum(`n`)) %>% 
+  mutate(ypos = cumsum(per) - 0.5*per ) %>% 
+  arrange(desc(category))
+
+groupedData$label <- scales::percent(round(groupedData$per,2))
+ggplot(data=groupedData) +
+  geom_bar(aes(x="", y=per, fill=category), stat="identity", width = 1) +
+  coord_polar("y", start=0, direction = -1) +
+  geom_text(aes(x=1, y = cumsum(per) - per/2, label=label)) +
+  theme_void()
+
+ggplot(data=groupedData) +
+  geom_bar(aes(x="", y=per, fill=category), stat="identity", width = 1) +
+  coord_polar("y", start=0, direction = -1) +
+  scale_fill_brewer(palette="Set1") +
+  theme_void()
+
+
+ggplot(groupedData, aes(x="", y=per, fill=category)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  theme(legend.position="none") +
+  
+  geom_text(aes(y = ypos, label = category), color = "white", size=6) +
+  scale_fill_brewer(palette="Set1")
+```
+
+
