@@ -22,6 +22,8 @@ library(dplyr)
 library(rpart)
 library(rpart.plot)
 library(poLCA)
+library(dendextend)
+library(gridExtra)
 ```
 
 ```{r include = FALSE}
@@ -234,9 +236,9 @@ k2 <- kmeans(customers.for.analysis_2, centers = 2, nstart = 25)
 k3 <- kmeans(customers.for.analysis_2, centers = 3, nstart = 25)
 k4 <- kmeans(customers.for.analysis_2, centers = 4, nstart = 25)
 k5 <- kmeans(customers.for.analysis_2, centers = 5, nstart = 25)
-#k6 <- kmeans(customers.for.analysis_2, centers = 6, nstart = 25)
-#k7 <- kmeans(customers.for.analysis_2, centers = 7, nstart = 25)
-#k8 <- kmeans(customers.for.analysis_2, centers = 8, nstart = 25)
+k6 <- kmeans(customers.for.analysis_2, centers = 6, nstart = 25)
+k7 <- kmeans(customers.for.analysis_2, centers = 7, nstart = 25)
+k8 <- kmeans(customers.for.analysis_2, centers = 8, nstart = 25)
 
 
 # plots to compare
@@ -244,15 +246,13 @@ p2 <- fviz_cluster(k2, geom = "point", data = customers.for.analysis_2) + ggtitl
 p3 <- fviz_cluster(k3, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 3")
 p4 <- fviz_cluster(k4, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 4")
 p5 <- fviz_cluster(k5, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 5")
-#p6 <- fviz_cluster(k6, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 6")
-#p7 <- fviz_cluster(k7, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 7")
-#p8 <- fviz_cluster(k8, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 8")
+p6 <- fviz_cluster(k6, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 6")
+p7 <- fviz_cluster(k7, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 7")
+p8 <- fviz_cluster(k8, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 8")
 
-library(gridExtra)
+
 grid.arrange(p2, p3, p4, p5,  nrow = 2)
-#grid.arrange(p6, p7, p8,  nrow = 2)
-
-
+grid.arrange(p6, p7, p8,  nrow = 2)
 ```
 
 
@@ -341,4 +341,178 @@ poLCA(f, customers.for.analysis, nclass=3, nrep=5, na.rm=FALSE, verbose = FALSE)
 #poLCA(f, customers.for.analysis, nclass=5, nrep=5, na.rm=FALSE)
 #poLCA(f, customers.for.analysis, nclass=6, nrep=5, na.rm=FALSE)
 #poLCA(f, customers.for.analysis, nclass=7, nrep=5, na.rm=FALSE)
+```
+
+```{r HierarchicalClusterAnalysis }
+customers.for.analysis_hierarchy <- customers[,c("Gender_num","Age_group","EducationYears_group", "EmploymentLength_group",
+                                     "HHIncome_group","DebtToIncomeRatio_group", 
+                                     "MaritalStatus_num","HouseholdSize","HomeOwner",
+                                     "PhoneCoTenure", "Multiline_num",
+                                     "OverTenureTotalValue","AverageMonthlyRevenue")]
+
+# compute divisive hierarchical clustering
+hc4 <- diana(customers.for.analysis_hierarchy)
+
+# Divise coefficient; amount of clustering structure found
+#hc4$dc
+## [1] 0.8514345
+
+# plot dendrogram
+#pltree(hc4, cex = 0.6, hang = -1, main = "Dendrogram of diana")
+```
+
+```{r}
+hc4$dc
+pltree(hc4, cex = 0.6, hang = -1, main = "Dendrogram of diana")
+clust2 <- cutree(hc4, k = 2)
+p2 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust2))  
+
+clust3 <- cutree(hc4, k = 3)
+p3 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust3))  
+
+clust4 <- cutree(hc4, k = 4)
+p4 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust4))  
+
+clust5 <- cutree(hc4, k = 5)
+p5 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust5))  
+
+clust6 <- cutree(hc4, k = 6)
+p6 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust6))
+
+clust7 <- cutree(hc4, k = 7)
+p7 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust7))  
+
+clust8 <- cutree(hc4, k = 8)
+p8 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust8))  
+
+
+grid.arrange(p2, p3, p4, p5,  nrow = 2)
+grid.arrange(p6, p7, p8,  nrow = 2)
+
+```
+```{r clusterVerification}
+fviz_nbclust(customers.for.analysis_hierarchy, FUN = hcut, method = "wss")
+fviz_nbclust(customers.for.analysis_hierarchy, FUN = hcut, method = "silhouette")
+```
+
+```{r clusterDataAnalysis}
+customers$cluster <- k4$cluster
+```
+
+```{r analysisBasedonCluster}
+groupedData <- customers %>% 
+     group_by(cluster) %>% 
+     summarise(totalValue= sum(OverTenureTotalValue)) 
+groupedData
+
+ggplot(data=groupedData, aes(x=cluster, y=totalValue)) +
+  geom_bar(colour="black", stat="identity")
+
+groupedData <- customers %>% 
+     group_by(cluster) %>% 
+     summarise(averageMonthlyRevenue= mean(AverageMonthlyRevenue)) 
+
+ggplot(data=groupedData, aes(x=cluster, y=averageMonthlyRevenue)) +
+  geom_bar(colour="black", stat="identity")
+
+ggplot(customers, aes(cluster)) +
+  geom_bar(fill = "#0073C2FF") 
+
+ggplot(data = customers, aes(x = cluster, y = OverTenureTotalValue, group=cluster)) +
+  geom_boxplot() +
+  labs( title= "Distribution of monthly revenue generated by job category", x="Job category", y = "Monthly revenue ($)")  +
+  theme_minimal() 
+
+ggplot(data = customers, aes(x = cluster, y = AverageMonthlyRevenue, group=cluster)) +
+  geom_boxplot() +
+  labs( title= "Distribution of monthly revenue generated by job category", x="Job category", y = "Monthly revenue ($)")  +
+  theme_minimal() 
+
+```
+
+```{r assignCustomerCategories}
+customers$category <- ""
+for(i in 1:nrow(customers)){
+    count <- count + 1
+    if (customers$cluster[i] == 1){
+        customers$category[i] <- "Silver"
+    }
+    else if (customers$cluster[i] == 2){
+      customers$category[i] <- "Bronze"
+    }
+    else if (customers$cluster[i] == 3){
+      customers$category[i] <- "Gold"
+    }
+    else if (customers$cluster[i] == 4){
+      customers$category[i] <- "Platinum"
+    }
+}
+
+platinum_customers <- customers %>%
+  filter(category == "Platinum")
+
+gold_customers <- customers %>%
+  filter(category == "Gold")
+
+silver_customers <- customers %>%
+  filter(category == "Silver")
+
+bronze_customers <- customers %>%
+  filter(category == "Bronze")
+
+```
+
+#"Gender_num","Age_group","EducationYears_group", "EmploymentLength_group",
+#                                     "HHIncome_group","DebtToIncomeRatio_group", 
+#                                     "MaritalStatus_num","HouseholdSize","HomeOwner",
+#                                     "PhoneCoTenure", "Multiline_num",
+#                                     "OverTenureTotalValue","AverageMonthlyRevenue"
+
+```{r attributeComparison}
+summary(platinum_customers$HHIncome)
+summary(gold_customers$HHIncome)
+summary(silver_customers$HHIncome)
+summary(bronze_customers$HHIncome)
+```
+```{r attributeComparison}
+summary(platinum_customers$HouseholdSize)
+summary(gold_customers$HouseholdSize)
+summary(silver_customers$HouseholdSize)
+summary(bronze_customers$HouseholdSize)
+```
+
+```{r attributeComparison}
+summary(platinum_customers$PhoneCoTenure)
+summary(gold_customers$PhoneCoTenure)
+summary(silver_customers$PhoneCoTenure)
+summary(bronze_customers$PhoneCoTenure)
+```
+
+```{r attributeComparison}
+summary(platinum_customers$OverTenureTotalValue)
+summary(gold_customers$OverTenureTotalValue)
+summary(silver_customers$OverTenureTotalValue)
+summary(bronze_customers$OverTenureTotalValue)
+```
+
+```{r attributeComparison}
+summary(platinum_customers$AverageMonthlyRevenue)
+summary(gold_customers$AverageMonthlyRevenue)
+summary(silver_customers$AverageMonthlyRevenue)
+summary(bronze_customers$AverageMonthlyRevenue)
+```
+
+```{r attributeComparison}
+summary(platinum_customers$EducationYears)
+summary(gold_customers$EducationYears)
+summary(silver_customers$EducationYears)
+summary(bronze_customers$EducationYears)
+```
+
+
+```{r attributeComparison}
+summary(platinum_customers$Age)
+summary(gold_customers$Age)
+summary(silver_customers$Age)
+summary(bronze_customers$Age)
 ```
