@@ -257,20 +257,22 @@ k5 <- kmeans(customers.for.analysis_2, centers = 5, nstart = 25)
 k6 <- kmeans(customers.for.analysis_2, centers = 6, nstart = 25)
 k7 <- kmeans(customers.for.analysis_2, centers = 7, nstart = 25)
 k8 <- kmeans(customers.for.analysis_2, centers = 8, nstart = 25)
+k9 <- kmeans(customers.for.analysis_2, centers = 9, nstart = 25)
 
 
 # plots to compare
-p2 <- fviz_cluster(k2, geom = "point", data = customers.for.analysis_2) + ggtitle("k = 2")
-p3 <- fviz_cluster(k3, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 3")
-p4 <- fviz_cluster(k4, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 4")
-p5 <- fviz_cluster(k5, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 5")
-p6 <- fviz_cluster(k6, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 6")
-p7 <- fviz_cluster(k7, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 7")
-p8 <- fviz_cluster(k8, geom = "point",  data = customers.for.analysis_2) + ggtitle("k = 8")
+p2 <- fviz_cluster(k2, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 2")
+p3 <- fviz_cluster(k3, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 3")
+p4 <- fviz_cluster(k4, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 4")
+p5 <- fviz_cluster(k5, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 5")
+p6 <- fviz_cluster(k6, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 6")
+p7 <- fviz_cluster(k7, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 7")
+p8 <- fviz_cluster(k8, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 8")
+p9 <- fviz_cluster(k9, geom = "point",  data = customers.for.analysis_2, ggtheme = theme_minimal()) + ggtitle("k = 9")
 
 
 grid.arrange(p2, p3, p4, p5,  nrow = 2)
-grid.arrange(p6, p7, p8,  nrow = 2)
+grid.arrange(p6, p7, p8, p9,  nrow = 2)
 ```
 
 
@@ -278,7 +280,7 @@ grid.arrange(p6, p7, p8,  nrow = 2)
 set.seed(1234)
 #Function to compute total within cluster sum of squares 
 wss <- function(k) {
-  kmeans(customers.for.analysis_2, k, nstart = 50, iter.max = 50)$tot.withinss
+  kmeans(customers.for.analysis_2, k, nstart = 25, iter.max = 30)$tot.withinss
 }
 
 #Compute and plot the within sum of squares (wss) for k = 1 to k = 10
@@ -383,29 +385,32 @@ hc4 <- diana(customers.for.analysis_hierarchy)
 hc4$dc
 pltree(hc4, cex = 0.6, hang = -1, main = "Dendrogram of diana")
 clust2 <- cutree(hc4, k = 2)
-p2 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust2))  
+p2 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust2)) + ggtitle("k = 2")
 
 clust3 <- cutree(hc4, k = 3)
-p3 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust3))  
+p3 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust3)) + ggtitle("k = 3")  
 
 clust4 <- cutree(hc4, k = 4)
-p4 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust4))  
+p4 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust4)) + ggtitle("k = 4")  
 
 clust5 <- cutree(hc4, k = 5)
-p5 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust5))  
+p5 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust5)) + ggtitle("k = 5")  
 
 clust6 <- cutree(hc4, k = 6)
-p6 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust6))
+p6 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust6)) + ggtitle("k = 6")
 
 clust7 <- cutree(hc4, k = 7)
-p7 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust7))  
+p7 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust7)) + ggtitle("k = 7")  
 
 clust8 <- cutree(hc4, k = 8)
-p8 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust8))  
+p8 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust8)) + ggtitle("k = 8")
+
+clust9 <- cutree(hc4, k = 9)
+p9 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust9)) + ggtitle("k = 9")
 
 
 grid.arrange(p2, p3, p4, p5,  nrow = 2)
-grid.arrange(p6, p7, p8,  nrow = 2)
+grid.arrange(p6, p7, p8, p9,  nrow = 2)
 
 ```
 ```{r clusterVerification}
@@ -875,4 +880,49 @@ customersFiltered <- customers %>%
 write_csv(customersFiltered,"data/Bronze_LoanDefault.csv")
 
 
+```
+
+```{r}
+
+customersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  drop_na() %>% 
+  group_by(CarOwnership) %>%
+  summarise(totalCount = n())
+
+write_csv(customersFiltered,"data/Platinum_Car.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  drop_na() %>% 
+  group_by(CarOwnership) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Gold_Car.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  drop_na() %>% 
+  group_by(CarOwnership) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Silver_Car.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Bronze") %>%
+  drop_na() %>% 
+  group_by(CarOwnership) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Bronze_Car.csv")
+
+
+
+
+
+
+```
+
+```{r}
+customersFiltered <- customers %>%
+  group_by(category) %>%
+  summarise(voiceRevenue = sum(VoiceOverTenure), equipmentRevenue = sum(EquipmentOverTenure), dataRevenue = sum(DataOverTenure))
+write_csv(customersFiltered,"data/revenue_voice_equip_data.csv")
 ```
