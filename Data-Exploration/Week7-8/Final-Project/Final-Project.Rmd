@@ -273,6 +273,7 @@ p9 <- fviz_cluster(k9, geom = "point",  data = customers.for.analysis_2, ggtheme
 
 grid.arrange(p2, p3, p4, p5,  nrow = 2)
 grid.arrange(p6, p7, p8, p9,  nrow = 2)
+p4
 ```
 
 
@@ -385,37 +386,41 @@ hc4 <- diana(customers.for.analysis_hierarchy)
 hc4$dc
 pltree(hc4, cex = 0.6, hang = -1, main = "Dendrogram of diana")
 clust2 <- cutree(hc4, k = 2)
-p2 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust2)) + ggtitle("k = 2")
+p2 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust2), ggtheme = theme_minimal()) + ggtitle("k = 2")
 
 clust3 <- cutree(hc4, k = 3)
-p3 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust3)) + ggtitle("k = 3")  
+p3 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust3), ggtheme = theme_minimal()) + ggtitle("k = 3")  
 
 clust4 <- cutree(hc4, k = 4)
-p4 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust4)) + ggtitle("k = 4")  
+p4 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust4), ggtheme = theme_minimal()) + ggtitle("k = 4")  
 
 clust5 <- cutree(hc4, k = 5)
-p5 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust5)) + ggtitle("k = 5")  
+p5 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust5), ggtheme = theme_minimal()) + ggtitle("k = 5")  
 
 clust6 <- cutree(hc4, k = 6)
-p6 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust6)) + ggtitle("k = 6")
+p6 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust6), ggtheme = theme_minimal()) + ggtitle("k = 6")
 
 clust7 <- cutree(hc4, k = 7)
-p7 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust7)) + ggtitle("k = 7")  
+p7 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust7), ggtheme = theme_minimal()) + ggtitle("k = 7")  
 
 clust8 <- cutree(hc4, k = 8)
-p8 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust8)) + ggtitle("k = 8")
+p8 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust8), ggtheme = theme_minimal()) + ggtitle("k = 8")
 
 clust9 <- cutree(hc4, k = 9)
-p9 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust9)) + ggtitle("k = 9")
+p9 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust9), ggtheme = theme_minimal()) + ggtitle("k = 9")
 
 
 grid.arrange(p2, p3, p4, p5,  nrow = 2)
 grid.arrange(p6, p7, p8, p9,  nrow = 2)
-
+p4
 ```
 ```{r clusterVerification}
 fviz_nbclust(customers.for.analysis_hierarchy, FUN = hcut, method = "wss")
 fviz_nbclust(customers.for.analysis_hierarchy, FUN = hcut, method = "silhouette")
+```
+
+```{r }
+summary(k4)
 ```
 
 ```{r clusterDataAnalysis}
@@ -457,7 +462,7 @@ ggplot(data = customers, aes(x = cluster, y = AverageMonthlyRevenue, group=clust
 customers$category <- ""
 for(i in 1:nrow(customers)){
     count <- count + 1
-    if (customers$cluster[i] == 1){
+    if (customers$cluster[i] == 4){
         customers$category[i] <- "Silver"
     }
     else if (customers$cluster[i] == 2){
@@ -466,7 +471,7 @@ for(i in 1:nrow(customers)){
     else if (customers$cluster[i] == 3){
       customers$category[i] <- "Gold"
     }
-    else if (customers$cluster[i] == 4){
+    else if (customers$cluster[i] == 1){
       customers$category[i] <- "Platinum"
     }
 }
@@ -925,4 +930,87 @@ customersFiltered <- customers %>%
   group_by(category) %>%
   summarise(voiceRevenue = sum(VoiceOverTenure), equipmentRevenue = sum(EquipmentOverTenure), dataRevenue = sum(DataOverTenure))
 write_csv(customersFiltered,"data/revenue_voice_equip_data.csv")
+
+customersFiltered <- customers %>%
+  drop_na() %>% 
+  group_by(category, EquipmentRental) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Count_EquipmentRental.csv")
+
+customersFiltered <- customers %>%
+  drop_na() %>% 
+  group_by(category, WirelessData) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Count_WirelessData.csv")
+
+#ggplot(data=customersFiltered, aes(x=category, y=totalCount, fill=EquipmentRental)) +
+#  geom_bar(stat="identity", position=position_dodge()) +
+#  theme_minimal()
+  
+
+```
+
+
+```{r}
+
+customers$hierarchicalCluster <- clust4
+customersGroupedData <- customers %>%
+  group_by(hierarchicalCluster) %>%
+  summarise(totalCount = n())
+
+customersGroupedData
+```
+
+
+```{r}
+customersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+
+write_csv(customersFiltered,"data/Platinum_EBilling.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Gold_EBilling.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Silver_EBilling.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Bronze") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Bronze_EBilling.csv")
+```
+
+```{r}
+customersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  filter(Multiline == "No") %>%
+  filter(MaritalStatus == "Married") %>%
+  drop_na() %>% 
+  group_by(category) %>%
+  summarise(totalCount = n())
+customersFiltered
+```
+
+```{r}
+customersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  filter(Multiline == "No") %>%
+  filter(MaritalStatus == "Married") %>%
+  drop_na() %>% 
+  group_by(category) %>%
+  summarise(totalCount = n())
+customersFiltered
 ```
