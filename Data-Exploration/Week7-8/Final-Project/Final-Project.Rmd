@@ -463,8 +463,8 @@ ggplot(data = customers, aes(x = cluster, y = AverageMonthlyRevenue, group=clust
 customers$category <- ""
 for(i in 1:nrow(customers)){
     count <- count + 1
-    if (customers$cluster[i] == 4){
-        customers$category[i] <- "Silver"
+    if (customers$cluster[i] == 1){
+        customers$category[i] <- "Platinum"
     }
     else if (customers$cluster[i] == 2){
       customers$category[i] <- "Bronze"
@@ -472,8 +472,8 @@ for(i in 1:nrow(customers)){
     else if (customers$cluster[i] == 3){
       customers$category[i] <- "Gold"
     }
-    else if (customers$cluster[i] == 1){
-      customers$category[i] <- "Platinum"
+    else if (customers$cluster[i] == 4){
+      customers$category[i] <- "Silver"
     }
 }
 
