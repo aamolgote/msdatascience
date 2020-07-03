@@ -85,6 +85,7 @@ customers$EquipmentLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("
 customers$EquipmentOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$EquipmentOverTenure)))) 
 customers$DataLastMonth = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataLastMonth)))) 
 customers$DataOverTenure = as.numeric(gsub("\\,", "", gsub("\\$", "", gsub("\\-", "", customers$DataOverTenure)))) 
+customers$CardSpendMonth[is.na(customers$CardSpendMonth)] <- 0
 sapply(customers,function(x)sum(is.na(x)))
 ```
 
@@ -273,6 +274,7 @@ p9 <- fviz_cluster(k9, geom = "point",  data = customers.for.analysis_2, ggtheme
 
 grid.arrange(p2, p3, p4, p5,  nrow = 2)
 grid.arrange(p6, p7, p8, p9,  nrow = 2)
+p4
 ```
 
 
@@ -385,37 +387,41 @@ hc4 <- diana(customers.for.analysis_hierarchy)
 hc4$dc
 pltree(hc4, cex = 0.6, hang = -1, main = "Dendrogram of diana")
 clust2 <- cutree(hc4, k = 2)
-p2 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust2)) + ggtitle("k = 2")
+p2 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust2), ggtheme = theme_minimal()) + ggtitle("k = 2")
 
 clust3 <- cutree(hc4, k = 3)
-p3 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust3)) + ggtitle("k = 3")  
+p3 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust3), ggtheme = theme_minimal()) + ggtitle("k = 3")  
 
 clust4 <- cutree(hc4, k = 4)
-p4 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust4)) + ggtitle("k = 4")  
+p4 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust4), ggtheme = theme_minimal()) + ggtitle("k = 4")  
 
 clust5 <- cutree(hc4, k = 5)
-p5 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust5)) + ggtitle("k = 5")  
+p5 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust5), ggtheme = theme_minimal()) + ggtitle("k = 5")  
 
 clust6 <- cutree(hc4, k = 6)
-p6 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust6)) + ggtitle("k = 6")
+p6 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust6), ggtheme = theme_minimal()) + ggtitle("k = 6")
 
 clust7 <- cutree(hc4, k = 7)
-p7 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust7)) + ggtitle("k = 7")  
+p7 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust7), ggtheme = theme_minimal()) + ggtitle("k = 7")  
 
 clust8 <- cutree(hc4, k = 8)
-p8 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust8)) + ggtitle("k = 8")
+p8 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust8), ggtheme = theme_minimal()) + ggtitle("k = 8")
 
 clust9 <- cutree(hc4, k = 9)
-p9 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust9)) + ggtitle("k = 9")
+p9 <- fviz_cluster(list(data = customers.for.analysis_hierarchy, cluster = clust9), ggtheme = theme_minimal()) + ggtitle("k = 9")
 
 
 grid.arrange(p2, p3, p4, p5,  nrow = 2)
 grid.arrange(p6, p7, p8, p9,  nrow = 2)
-
+p4
 ```
 ```{r clusterVerification}
 fviz_nbclust(customers.for.analysis_hierarchy, FUN = hcut, method = "wss")
 fviz_nbclust(customers.for.analysis_hierarchy, FUN = hcut, method = "silhouette")
+```
+
+```{r }
+summary(k4)
 ```
 
 ```{r clusterDataAnalysis}
@@ -458,7 +464,7 @@ customers$category <- ""
 for(i in 1:nrow(customers)){
     count <- count + 1
     if (customers$cluster[i] == 1){
-        customers$category[i] <- "Silver"
+        customers$category[i] <- "Platinum"
     }
     else if (customers$cluster[i] == 2){
       customers$category[i] <- "Bronze"
@@ -467,7 +473,7 @@ for(i in 1:nrow(customers)){
       customers$category[i] <- "Gold"
     }
     else if (customers$cluster[i] == 4){
-      customers$category[i] <- "Platinum"
+      customers$category[i] <- "Silver"
     }
 }
 
@@ -925,4 +931,200 @@ customersFiltered <- customers %>%
   group_by(category) %>%
   summarise(voiceRevenue = sum(VoiceOverTenure), equipmentRevenue = sum(EquipmentOverTenure), dataRevenue = sum(DataOverTenure))
 write_csv(customersFiltered,"data/revenue_voice_equip_data.csv")
+
+customersFiltered <- customers %>%
+  drop_na() %>% 
+  group_by(category, EquipmentRental) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Count_EquipmentRental.csv")
+
+customersFiltered <- customers %>%
+  drop_na() %>% 
+  group_by(category, WirelessData) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Count_WirelessData.csv")
+
+#ggplot(data=customersFiltered, aes(x=category, y=totalCount, fill=EquipmentRental)) +
+#  geom_bar(stat="identity", position=position_dodge()) +
+#  theme_minimal()
+  
+
+```
+
+
+```{r}
+
+customers$hierarchicalCluster <- clust4
+customersGroupedData <- customers %>%
+  group_by(hierarchicalCluster) %>%
+  summarise(totalCount = n())
+
+customersGroupedData
+```
+
+
+```{r}
+customersFiltered <- customers %>%
+  filter(category == "Platinum") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+
+write_csv(customersFiltered,"data/Platinum_EBilling.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Gold_EBilling.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Silver_EBilling.csv")
+
+customersFiltered <- customers %>%
+  filter(category == "Bronze") %>%
+  drop_na() %>% 
+  group_by(EBilling) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/Bronze_EBilling.csv")
+```
+
+```{r}
+customersFiltered <- customers %>%
+  filter(category == "Gold") %>%
+  filter(Multiline == "No") %>%
+  filter(MaritalStatus == "Married") %>%
+  drop_na() %>% 
+  group_by(category) %>%
+  summarise(totalCount = n())
+customersFiltered
+```
+
+```{r}
+customersFiltered <- customers %>%
+  filter(category == "Silver") %>%
+  filter(Multiline == "No") %>%
+  filter(MaritalStatus == "Married") %>%
+  drop_na() %>% 
+  group_by(category) %>%
+  summarise(totalCount = n())
+customersFiltered
+```
+
+
+```{r}
+customersFiltered <- customers %>%
+  group_by(category) %>%
+  summarise(totalCountNUmberOfCars = sum(CarsOwned), numberOfCustomer = n())
+customersFiltered$carRatio = customersFiltered$totalCountNUmberOfCars/customersFiltered$numberOfCustomer
+customersFiltered
+```
+
+
+```{r}
+customersFiltered <- customers %>%
+  group_by(category, JobCategory) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/all_jogbcategory.csv")
+```
+
+```{r}
+customersFiltered <- customers %>%
+  group_by(category, CreditCard) %>%
+  summarise(totalCount = n())
+write_csv(customersFiltered,"data/all_creditcard.csv")
+```
+
+```{r}
+filteredCustomer <- customers %>%
+  filter(CardSpendMonth <= 20000)
+
+ggplot(filteredCustomer, aes(x=category, y=CardSpendMonth)) +
+  geom_boxplot() +
+  labs( title= "Credit Card Spend across segments", x="Customer Segments", y = "Credit Card Spend ($)") +
+  theme_minimal() 
+
+```
+
+#Statistical analysis for Debt to income ratio
+```{r debtToIncomeRatio, message=FALSE}
+lbls <- c('0-10','10-20','20-30', '30-40','40-50','50-60','60-70', '70-80', '80-90', '90-100')
+groupedData <- customers %>% 
+     group_by(category, DebtToIncomeRatio) %>% 
+     summarise(totalMonthlyValue= sum(AverageMonthlyRevenue)) 
+
+ggplot(groupedData, aes(x = DebtToIncomeRatio, y = totalMonthlyValue)) + 
+  geom_point(color = "steelblue") +
+  geom_smooth() + 
+  facet_grid(~category) +
+  labs( title= "Monthly revenue generated Debt to income ratio", x="Debt to income ratio (DTI)", y = "Monthly revenue ($)") +
+  theme_minimal() 
+
+
+groupedData <- customers %>% 
+  filter(HHIncome <= 300000) %>%
+  group_by(category, HHIncome) %>% 
+  summarise(totalMonthlyValue= mean(AverageMonthlyRevenue)) 
+
+ggplot(groupedData, aes(x = HHIncome, y = totalMonthlyValue)) + 
+  geom_point(color = "steelblue") +
+  geom_smooth(method = lm) + 
+  facet_wrap(~category) +
+  labs( title= "Average Monthly revenue generated to House hold income", x="Household Income ($)", y = "Average Monthly revenue ($)") +
+  scale_x_continuous(labels = comma) +
+  theme_minimal() 
+
+
+```
+
+#Statistical analysis for Debt to income ratio
+```{r debtToIncomeRatio, message=FALSE}
+groupedData <- customers %>% 
+  filter(HHIncome <= 300000) %>%
+  group_by(category, CardSpendMonth) %>% 
+  summarise(totalMonthlyValue= mean(AverageMonthlyRevenue)) 
+
+ggplot(groupedData, aes(x = CardSpendMonth, y = totalMonthlyValue)) + 
+  geom_point(color = "steelblue") +
+  geom_smooth(method = lm) + 
+  facet_wrap(~category) +
+  labs( title= "Average Monthly revenue generated to Debt To Income Ratio", x="Debt To Income Ratio", y = "Average Monthly revenue ($)") +
+  scale_x_continuous(labels = comma) +
+  theme_minimal() 
+
+
+```
+
+#Statistical analysis for Debt to income ratio
+```{r debtToIncomeRatio, message=FALSE}
+ggplot(customers, aes(x = PhoneCoTenure, y = CardTenure)) + 
+  geom_point(color = "steelblue") +
+  geom_smooth(method = lm) + 
+  facet_wrap(~category) +
+  labs( title= "Average Monthly revenue generated to Debt To Income Ratio", x="Phone Company Tenure", y = "Credit card tenue") +
+  scale_x_continuous(labels = comma) +
+  theme_minimal() 
+
+
+```
+
+#Statistical analysis for Debt to income ratio
+```{r debtToIncomeRatio, message=FALSE}
+groupedData <- customers %>% 
+  filter(HHIncome <= 300000) %>%
+  group_by(category, CardTenure) %>% 
+  summarise(totalMonthlyValue= mean(AverageMonthlyRevenue)) 
+
+ggplot(groupedData, aes(x = CardTenure, y = totalMonthlyValue)) + 
+  geom_point(color = "steelblue") +
+  geom_smooth(method = lm) + 
+  facet_wrap(~category) +
+  labs( title= "Average Monthly revenue generated to Debt To Income Ratio", x="Debt To Income Ratio", y = "Average Monthly revenue ($)") +
+  scale_x_continuous(labels = comma) +
+  theme_minimal() 
 ```
