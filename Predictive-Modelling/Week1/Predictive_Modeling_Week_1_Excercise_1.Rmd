@@ -5,6 +5,7 @@ date: "7/11/2020"
 output: word_document
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_knit$set(progress = FALSE, verbose = FALSE)
 library(tidyverse)
