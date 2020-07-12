@@ -13,26 +13,27 @@ library(gpairs)
 library (MASS)
 library(ggplot2)
 ```
-# Read File
+# Problem 10
+
+# 8a Read File
 ```{r problem_8a, message=FALSE}
 college <- read.csv("data/College.csv")
 #college
-
 ```
-# Read Fix  College name column 
+# 8b Fix College name column 
 ```{r problem_8b, message=FALSE}
-#rownames(college) = college[,1]
+rownames(college) = college[,1]
 college_orig <- college
 college =college [,-1]
-#fix(college)
+fix(college)
 #college
 ```
-# Summary
+# 8c_i Summary
 ```{r problem_8c_i, message=FALSE}
 summary(college)
 ```
 
-# pairs() function
+# 8c_ii pairs() function - produce a scatterplot matrix of the first ten columns or variables of the data
 ```{r problem_8c_ii, message=FALSE}
 pairs(college[,1:10])
 pairs(∼ Apps + Accept + Enroll + Top10perc + Top25perc + F.Undergrad + 
@@ -45,13 +46,13 @@ pairs(∼ Apps + Accept + Enroll + Top10perc + Top25perc + F.Undergrad +
          P.Undergrad + Outstate + Room.Board + Books, college)
 ```
 
-# plot function
+# 8c_iii plot function - produce side-by-side boxplots of Outstate versus Private.
 ```{r problem_8c_iii, message=FALSE}
 plot(college$Private, college$Outstate, 
      xlab = "Private University", ylab ="Out of State", main = "Outstate versus Private")
 ```
 
-# Elite
+# 8c_iv Elite - binning the Top10perc variable - side-by-side boxplots of Outstate versus Elite
 ```{r problem_8c_iv, message=FALSE}
 Elite = rep("No",nrow(college))
 Elite[college$Top10perc > 50]= "Yes"
@@ -60,25 +61,31 @@ college = data.frame(college, Elite)
 summary(college)
 summary(college$Elite)
 plot(college$Elite, college$Outstate, 
-     xlab = "Elite University", ylab ="Out of State", main = "Outstate versus Private")
+     xlab = "Elite University", ylab ="Out of State", main = "Outstate versus Elite")
 ```
 
-# Histograms
+# 8c_v Histograms
 ```{r problem_8c_v, message=FALSE}
-par(mfrow=c(3,2))
+par(mfrow=c(2,3))
 hist(college$Apps, col = 2, xlab = "Number of applications", ylab = "Count", main = "Distribution of applications")
 hist(college$Accept, col = 4, xlab = "Number of Accepted applicatons", ylab = "Count", main = "Distribution of college acceptance")
 hist(college$Enroll, col = 4, xlab = "Number of Enrollments", ylab = "Count", main = "Distribution of college enrollment")
-hist(college$Grad.Rate, col = 5, xlab = "Graduation Rate", ylab = "Count", main = "Distribution of graduation rates")
-hist(college$PhD, col = 6, xlab = "PhD", ylab = "Count", main = "Distribution of Phd's")
+hist(college$Grad.Rate, col = 5, breaks=10, xlab = "Graduation Rate", ylab = "Count", main = "Distribution of graduation rates")
+hist(college$PhD, col = 6, breaks=10, xlab = "PhD", ylab = "Count", main = "Distribution of Phd's")
 hist(college$Books, col = 7, xlab = "Books", ylab = "Count", main = "Distribution of Books cost")
+hist(college$S.F.Ratio, col=3, breaks=10, xlab = "Student faculty ratio", main = "")
+hist(college$Expend, col=4, breaks=100, xlab = "Expenditure per student", main = "")
 ```
 
-# Continue exploring the data, and provide a brief summary of what you discover.
+# 8c_vi Continue exploring the data, and provide a brief summary of what you discover.
 ```{r problem_8c_vi, message=FALSE}
 college$rejected <- college$Apps - college$Accept
-hist(college$rejected, col = 2, xlab = "Number of rejected", ylab = "Count", main = "Distribution of applications")
+par(mfrow=c(3,2))
+hist(college$rejected, col = 2, xlab = "Number of rejected", ylab = "Count", main = "Distribution of rejection")
+hist(college$Outstate, col = 3, xlab = "Out-of-state tuition", ylab = "Count", main = "Distribution of Out-of-state tuition cost")
 summary(college$rejected)
+summary(college$Outstate)
+summary(college$Grad.Rate)
 
 colleges_rejected_5000 <- college %>%
   filter(college$rejected > 5000)
@@ -91,21 +98,20 @@ colleges_rejected_20000
 colleges_with_high_reject <- college_orig %>%
   filter(Apps == 48094)
 colleges_with_high_reject
-
-summary(college$Outstate)
-
-hist(college$Outstate, col = 3, xlab = "Out-of-state tuition", ylab = "Count", main = "Distribution of Out-of-state tuition cost")
-
 ```
 
 1. Difference between number of applications and accepted indicates how many applications have been rejected. 
 2. Average rejected applications is 928 and median is 326. 
 3. There are 24 colleges with number of applications rejected > 5000. 
 5. "Rutgers at New Brunswick" college has the highest rejected applications as well as highest number of applications which is 48090. 
-6. College out state tuition is evenly distributed with mean and median around 10000 
+6. College out state tuition follows normal distribution with mean and median around 10000
+7. Graduation rate follows normal distribution with median and mean around 65.
+8. Distribution of college acceptance, enrollment rejection all are right skewed and unimodal.
+9. Distribution of Phd are left skewed and unimodal
+
 
 # Problem 10
-# Boston dataset info
+# 10a Boston dataset info
 ```{r problem_10a, message=FALSE}
 #?Boston
 #Boston
@@ -132,7 +138,7 @@ ncol(Boston)
     o. medv - median value of owner-occupied homes in \$1000s. 
   
   
-# Pairwise scatterplots of the predictors
+# 10b Pairwise scatterplots of the predictors
 ```{r problem_10b, message=FALSE}
 pairs(∼ crim + zn + 
        + rm
@@ -154,7 +160,7 @@ pairs(medv ~ tax + lstat  + nox + rm, Boston)
 3. As nox (lower status of the population) increases then medv(median value of owner-occupied homes) decreases. 
 4. As rm (average number of rooms per dwelling) increases then medv(median value of owner-occupied homes) increases. 
 
-# predictors associated with per capita crime rate?
+# 10c predictors associated with per capita crime rate?
 ```{r problem_10c, message=FALSE}
 pairs(crim ~ rad, Boston)
 pairs(crim ~ age, Boston)
@@ -167,7 +173,7 @@ pairs(crim ~ tax,  Boston)
 3. crime rate is higher in the lower median value of owner-occupied homes. 
 4. As tax rate increase, crime rate increases. 
 
-# suburbs of Boston appear to have particularly high crime rates? Tax rates? Pupil-teacher ratios
+# 10d_1 suburbs of Boston that have particularly high crime rates
 ```{r problem_10d_1, message=FALSE}
 summary(Boston$crim)
 crimeGreateThan20 <- Boston$crim[Boston$crim>20]
@@ -181,6 +187,7 @@ hist(highCrime, col = 3, xlab = "Crime rate", ylab = "Suburbs", main = "Distribu
 highCrime <- Boston$crim[Boston$crim>30]
 hist(highCrime, col = 3, xlab = "Crime rate", ylab = "Suburbs", main = "Distribution of Crime rate")
 ```
+# 10d_2 suburbs of Boston appear that have particularly Tax rates, Pupil-teacher ratios
 ```{r problem_10d_2, message=FALSE}
 par(mfrow=c(1,2))
 hist(Boston$tax, col = 3, xlab = "Tax", ylab = "# Suburbs", main = "Distribution of tax")
@@ -196,7 +203,7 @@ length(Boston$crim[Boston$ptratio>20])
 3. Some suburbs have the highest tax with value greater than 600, there are 137 suburbs like these. These suburbs are beyond the 3rd quartile values. 
 4. Some suburbs have the highest Pupil-teacher ratios with value greater than 20, there are 201 suburbs like these. These suburbs are beyond the 3rd quartile values. 
 
-# Suburbs in this data set bound the Charles river
+# 10e Suburbs in this data set bound the Charles river
 ```{r problem_10e, message=FALSE}
 suburbs_bound_to_river <- Boston %>%
   filter(chas == 1)
@@ -205,7 +212,7 @@ nrow(suburbs_bound_to_river)
 
 1. Number of Suburbs bound to the Charles river is 35. 
 
-# What is the median pupil-teacher ratio among the towns in this data set?
+# 10f What is the median pupil-teacher ratio among the towns in this data set?
 ```{r problem_10f, message=FALSE}
 median(Boston$ptratio)
 ```
@@ -213,7 +220,7 @@ median(Boston$ptratio)
 1. Median pupil-teacher ratio is 19.05. 
 
 
-# Which suburb of Boston has lowest median value of owneroccupied homes?
+# 10g_1 Which suburb of Boston has lowest median value of owneroccupied homes?
 ```{r problem_10g_1, message=FALSE}
 lowestMedianValue <- Boston %>%
   filter(medv == min(Boston$medv))
@@ -241,7 +248,7 @@ compare_summary_dataset <- function(dataset_orig,dataset_target) {
 }
 ```
 
-# What are the values of the other predictors for that suburb, and how do those values compare to the overall ranges for those predictors? Comment on your findings.
+# 10g_2 Values of the other predictors for that suburb, and how do those values compare to the overall ranges for those predictors and Comments on findings.
 ```{r problem_10g_2, message=FALSE}
 t(compare_summary_dataset(Boston,lowestMedianValue))
 ```
@@ -255,14 +262,14 @@ t(compare_summary_dataset(Boston,lowestMedianValue))
 7. Tax is on the higher side compared to overall dataset and it falls in the tower > 600 histogram. 
 
 
-# Suburbs average more than seven rooms per dwelling
+# 10h_1 Suburbs average more than seven rooms per dwelling
 ```{r problem_10h_1, message=FALSE}
 dwelling_7 <- Boston %>%
   filter(rm > 7)
 nrow(dwelling_7)
 ```
 
-# Suburbs average more than eight rooms per dwelling
+# 10h_2 Suburbs average more than eight rooms per dwelling
 ```{r problem_10h_2, message=FALSE}
 dwelling_8 <- Boston %>%
   filter(rm > 8)
@@ -273,7 +280,7 @@ summary(dwelling_8)
 1. Number of suburbs with more than seven rooms per dwelling is 64. 
 2. Number of suburbs with more than eight rooms per dwelling is 13. 
 
-# Suburbs that average more than eight rooms per dwelling compared to overall dataset.
+# 10h_3 Suburbs that average more than eight rooms per dwelling compared to overall dataset.
 ```{r problem_10h_3, message=FALSE}
 t(compare_summary_dataset(Boston,dwelling_8))
 ```
