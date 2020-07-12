@@ -1,0 +1,287 @@
+---
+title: "Predictive_Modeling_Week_1_Excercise_1"
+author: "Amol Gote"
+date: "7/11/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(progress = FALSE, verbose = FALSE)
+library(tidyverse)
+library(plotly)
+library(gpairs) 
+library (MASS)
+library(ggplot2)
+```
+# Read File
+```{r problem_8a, message=FALSE}
+college <- read.csv("data/College.csv")
+#college
+
+```
+# Read Fix  College name column 
+```{r problem_8b, message=FALSE}
+#rownames(college) = college[,1]
+college_orig <- college
+college =college [,-1]
+#fix(college)
+#college
+```
+# Summary
+```{r problem_8c_i, message=FALSE}
+summary(college)
+```
+
+# pairs() function
+```{r problem_8c_ii, message=FALSE}
+pairs(college[,1:10])
+pairs(∼ Apps + Accept + Enroll + Top10perc + Top25perc + F.Undergrad + 
+         P.Undergrad + Outstate + Room.Board + Books, college)
+```
+
+```{r problem_8c_ii_explicit_variables, message=FALSE}
+pairs(college[,1:10])
+pairs(∼ Apps + Accept + Enroll + Top10perc + Top25perc + F.Undergrad + 
+         P.Undergrad + Outstate + Room.Board + Books, college)
+```
+
+# plot function
+```{r problem_8c_iii, message=FALSE}
+plot(college$Private, college$Outstate, 
+     xlab = "Private University", ylab ="Out of State", main = "Outstate versus Private")
+```
+
+# Elite
+```{r problem_8c_iv, message=FALSE}
+Elite = rep("No",nrow(college))
+Elite[college$Top10perc > 50]= "Yes"
+Elite = as.factor (Elite)
+college = data.frame(college, Elite)
+summary(college)
+summary(college$Elite)
+plot(college$Elite, college$Outstate, 
+     xlab = "Elite University", ylab ="Out of State", main = "Outstate versus Private")
+```
+
+# Histograms
+```{r problem_8c_v, message=FALSE}
+par(mfrow=c(3,2))
+hist(college$Apps, col = 2, xlab = "Number of applications", ylab = "Count", main = "Distribution of applications")
+hist(college$Accept, col = 4, xlab = "Number of Accepted applicatons", ylab = "Count", main = "Distribution of college acceptance")
+hist(college$Enroll, col = 4, xlab = "Number of Enrollments", ylab = "Count", main = "Distribution of college enrollment")
+hist(college$Grad.Rate, col = 5, xlab = "Graduation Rate", ylab = "Count", main = "Distribution of graduation rates")
+hist(college$PhD, col = 6, xlab = "PhD", ylab = "Count", main = "Distribution of Phd's")
+hist(college$Books, col = 7, xlab = "Books", ylab = "Count", main = "Distribution of Books cost")
+```
+
+# Continue exploring the data, and provide a brief summary of what you discover.
+```{r problem_8c_vi, message=FALSE}
+college$rejected <- college$Apps - college$Accept
+hist(college$rejected, col = 2, xlab = "Number of rejected", ylab = "Count", main = "Distribution of applications")
+summary(college$rejected)
+
+colleges_rejected_5000 <- college %>%
+  filter(college$rejected > 5000)
+nrow(colleges_rejected_5000)
+
+colleges_rejected_20000 <- college %>%
+  filter(college$rejected > 20000)
+colleges_rejected_20000
+
+colleges_with_high_reject <- college_orig %>%
+  filter(Apps == 48094)
+colleges_with_high_reject
+
+summary(college$Outstate)
+
+hist(college$Outstate, col = 3, xlab = "Out-of-state tuition", ylab = "Count", main = "Distribution of Out-of-state tuition cost")
+
+```
+
+1. Difference between number of applications and accepted indicates how many applications have been rejected. 
+2. Average rejected applications is 928 and median is 326. 
+3. There are 24 colleges with number of applications rejected > 5000. 
+5. "Rutgers at New Brunswick" college has the highest rejected applications as well as highest number of applications which is 48090. 
+6. College out state tuition is evenly distributed with mean and median around 10000 
+
+# Problem 10
+# Boston dataset info
+```{r problem_10a, message=FALSE}
+#?Boston
+#Boston
+nrow(Boston)
+ncol(Boston)
+```
+
+1. Dataset has 506 rows 
+2. Dataset has 14 columns.
+3. Each column represents variable for which an observation was made in 506 neighborhoods of Boston.These variables include 
+    a. crim - per capita crime rate by town. 
+    b. zn - proportion of residential land zoned for lots over 25,000 sq.ft. 
+    c. indus - proportion of non-retail business acres per town. 
+    d. chas - Charles River dummy variable (= 1 if tract bounds river; 0 otherwise). 
+    e. nox - nitrogen oxides concentration (parts per 10 million). 
+    f. rm - average number of rooms per dwelling. 
+    g. age - proportion of owner-occupied units built prior to 1940. 
+    h. dis - weighted mean of distances to five Boston employment centres. 
+    i. rad - index of accessibility to radial highways. 
+    j. tax - full-value property-tax rate per \$10,000. 
+    k. ptratio - pupil-teacher ratio by town. 
+    l. black - 1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town. 
+    n. lstat - lower status of the population (percent). 
+    o. medv - median value of owner-occupied homes in \$1000s. 
+  
+  
+# Pairwise scatterplots of the predictors
+```{r problem_10b, message=FALSE}
+pairs(∼ crim + zn + 
+       + rm
+       + age 
+       + dis 
+       + tax 
+       + ptratio
+       + black
+       + lstat
+       + medv, Boston
+       )
+pairs(crim ~ age + tax + black + medv + rad, Boston)
+pairs(nox ~ zn, Boston)
+pairs(medv ~ tax + lstat  + nox + rm, Boston)
+```
+
+1. Where Proportion of residential land zoned is less the nox levels have increased. 
+2. As lsat (lower status of the population) increases then medv(median value of owner-occupied homes) decreases.  
+3. As nox (lower status of the population) increases then medv(median value of owner-occupied homes) decreases. 
+4. As rm (average number of rooms per dwelling) increases then medv(median value of owner-occupied homes) increases. 
+
+# predictors associated with per capita crime rate?
+```{r problem_10c, message=FALSE}
+pairs(crim ~ rad, Boston)
+pairs(crim ~ age, Boston)
+pairs(crim ~ medv, Boston)
+pairs(crim ~ tax,  Boston)
+```
+
+1. A higher values of rad (index of accessibility to radial highways) contain the highest level of crime rate. 
+2. As the age (proportion of owner-occupied units built prior to 1940) has increased the crime rate has increased. 
+3. crime rate is higher in the lower median value of owner-occupied homes. 
+4. As tax rate increase, crime rate increases. 
+
+# suburbs of Boston appear to have particularly high crime rates? Tax rates? Pupil-teacher ratios
+```{r problem_10d_1, message=FALSE}
+summary(Boston$crim)
+crimeGreateThan20 <- Boston$crim[Boston$crim>20]
+crimeGreateThan30 <- Boston$crim[Boston$crim>30]
+length(crimeGreateThan20)
+length(crimeGreateThan30)
+par(mfrow=c(3,2))
+hist(Boston$crim, col = 3, xlab = "Crime rate", ylab = "Suburbs", main = "Distribution of Crime rate")
+highCrime <- Boston$crim[Boston$crim>20]
+hist(highCrime, col = 3, xlab = "Crime rate", ylab = "Suburbs", main = "Distribution of Crime rate")
+highCrime <- Boston$crim[Boston$crim>30]
+hist(highCrime, col = 3, xlab = "Crime rate", ylab = "Suburbs", main = "Distribution of Crime rate")
+```
+```{r problem_10d_2, message=FALSE}
+par(mfrow=c(1,2))
+hist(Boston$tax, col = 3, xlab = "Tax", ylab = "# Suburbs", main = "Distribution of tax")
+hist(Boston$ptratio, col = 8, xlab = "Pupil teacher ratios", ylab = "# Suburbs", main = "Distribution of Pupil-teacher ratios")
+summary(Boston$tax)
+summary(Boston$ptratio)
+length(Boston$crim[Boston$tax>600])
+length(Boston$crim[Boston$ptratio>20])
+```
+
+1. Most cities have less crime rate with average crime rate = 3.6. 
+2. There are 18 suburbs with crime rate greater than 20 and 8 suburbs with crime rate greater than 30. 
+3. Some suburbs have the highest tax with value greater than 600, there are 137 suburbs like these. These suburbs are beyond the 3rd quartile values. 
+4. Some suburbs have the highest Pupil-teacher ratios with value greater than 20, there are 201 suburbs like these. These suburbs are beyond the 3rd quartile values. 
+
+# Suburbs in this data set bound the Charles river
+```{r problem_10e, message=FALSE}
+suburbs_bound_to_river <- Boston %>%
+  filter(chas == 1)
+nrow(suburbs_bound_to_river)
+```
+
+1. Number of Suburbs bound to the Charles river is 35. 
+
+# What is the median pupil-teacher ratio among the towns in this data set?
+```{r problem_10f, message=FALSE}
+median(Boston$ptratio)
+```
+
+1. Median pupil-teacher ratio is 19.05. 
+
+
+# Which suburb of Boston has lowest median value of owneroccupied homes?
+```{r problem_10g_1, message=FALSE}
+lowestMedianValue <- Boston %>%
+  filter(medv == min(Boston$medv))
+lowestMedianValue
+```
+
+1. There are 2 suburbs with with lowest median value of 5.
+
+```{r compare_summary_function, message=FALSE}
+compare_summary_dataset <- function(dataset_orig,dataset_target) {
+  sum1 <- apply(dataset_orig,2,summary) %>% data.frame() 
+  sum2 <- apply(dataset_target,2,summary) %>% data.frame() 
+
+  names(sum1) <- paste0(names(sum1),"1")
+  names(sum2) <- paste0(names(sum2),"2")
+
+  final <- cbind(sum1,sum2)
+
+  final1 <- t(final) 
+
+  final2 <- final1[order(row.names(final1)), ]
+
+  final_1 <- t(final2) %>% data.frame()
+  final_1
+}
+```
+
+# What are the values of the other predictors for that suburb, and how do those values compare to the overall ranges for those predictors? Comment on your findings.
+```{r problem_10g_2, message=FALSE}
+t(compare_summary_dataset(Boston,lowestMedianValue))
+```
+
+1. Age of lowest median value of owner-occupied homes is higher compared to overall dataset. 
+2. Proportion of blacks is same as that of median of overall dataset, mean of these 2 suburbs is on higher side. 
+3. Crime rate is on the higher side; 2 suburbs have crime rate of 38 and 67 with average of 53 which is considerably higher than the overall dataset. 
+4. Lower status of the population (percent) is greater than mean and median of overall dataset. 
+5. nox (nitrogen oxides concentration (parts per 10 million)) is on higher side. 
+6. ptratio (pupil-teacher ratio) falls in that tower of > 20 in the above histogram.  
+7. Tax is on the higher side compared to overall dataset and it falls in the tower > 600 histogram. 
+
+
+# Suburbs average more than seven rooms per dwelling
+```{r problem_10h_1, message=FALSE}
+dwelling_7 <- Boston %>%
+  filter(rm > 7)
+nrow(dwelling_7)
+```
+
+# Suburbs average more than eight rooms per dwelling
+```{r problem_10h_2, message=FALSE}
+dwelling_8 <- Boston %>%
+  filter(rm > 8)
+nrow(dwelling_8)
+summary(dwelling_8)
+```
+
+1. Number of suburbs with more than seven rooms per dwelling is 64. 
+2. Number of suburbs with more than eight rooms per dwelling is 13. 
+
+# Suburbs that average more than eight rooms per dwelling compared to overall dataset.
+```{r problem_10h_3, message=FALSE}
+t(compare_summary_dataset(Boston,dwelling_8))
+```
+
+1. Crime rate for suburbs with more than eight rooms per dwelling is on lower side compared to overall dataset. 
+2. lstat (lower status of the population (percent)) is lower than the overall population. 
+3. medv (median value of owner-occupied homes) is on higher side than overall dataset. 
+4. tax (full-value property-tax rate per $10,000) mean is lower than that of the overall dataset. 
+
+
+
