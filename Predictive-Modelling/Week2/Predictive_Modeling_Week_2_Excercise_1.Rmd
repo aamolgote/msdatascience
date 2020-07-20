@@ -1,0 +1,221 @@
+---
+title: "Predictive Modeling Exercises Week 2"
+author: "Amol Gote"
+date: "7/18/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(MASS)
+library(tidyverse)
+library(plotly)
+library(gpairs) 
+library (MASS)
+library(ggplot2)
+```
+
+#Problem 9
+
+```{r exploare_auto_dataset, message=FALSE}
+names(Auto)
+#head(Auto)
+```
+
+# 9a - Produce a scatterplot matrix which includes all of the variables in the data set.
+```{r 9a_produce_scatter_plot, message=FALSE}
+pairs(Auto)
+```
+```{r feature_engg_auto_dataset, message=FALSE}
+auto_data <- select (Auto,-c(name))
+#auto_data
+```
+
+# 9b - Compute the matrix of correlations between the variables using the function cor(). You will need to exclude the name variable, cor() which is qualitative.
+```{r 9b_matrix_of_correlations, message=FALSE}
+cor(auto_data)
+```
+
+# 9c - Use the lm() function to perform a multiple linear regression with mpg as the response and all other variables except name as the predictors. Use the summary() function to print the results.Comment on the output
+```{r lm_multiple_linear_regression, message=FALSE}
+multiple_linear_regression = lm(mpg ~., data = auto_data)
+summary(multiple_linear_regression)
+```
+9c.i. Is there a relationship between the predictors and the response?  
+
+F-Test indicates a very low p-value, hence there is relationship between the predictors and the response.
+
+
+9c.ii. Which predictors appear to have a statistically significant relationship to the response? 
+
+  Following variables **have** statistically significant relationship to mpg 
+  
+    1. weight
+    2. year
+    3. origin
+    4. displacement 
+  
+  
+  Following variables **do not have** have statistically significant relationship to mpg 
+  
+    1. cylinders
+    2. horsepower
+    3. acceleration 
+
+  
+
+9c.iii. What does the coefficient for the year variable suggest? 
+
+  Coefficient is **0.750773**, which indicates for every passing year, mpg increases by 0.750773, so in summary cars become more fuel efficient every year by
+  0.750773 miles per gallon.
+  
+  
+  
+# 9d Use the plot() function to produce diagnostic plots of the linear regression fit. Comment on any problems you see with the fit. Do the residual plots suggest any unusually large outliers? Does the leverage plot identify any observations with unusually high leverage?
+
+```{r plot_linear_regression_fit, message=FALSE}
+par(mfrow=c(2,2))
+plot(multiple_linear_regression)
+
+```
+
+1. Residual v/s predicted (fitted) shows strong pattern in the residuals which indicates non-linearity in the data 
+2. Residual plot does show values in top right corner with values ranging from 323 to 327 which are unusally large outliers. 
+3. Leverage plot has point labelled as 14 which can serve as potential high leverage point. 
+
+
+# 9e Use the * and : symbols to fit linear regression models with interaction effects. Do any interactions appear to be statistically significant?
+
+```{r 9e_symbols_linear_regression_fit, message=FALSE}
+interactions_linear_regression_fit <- lm(mpg ~ . * ., data = auto_data)
+summary(interactions_linear_regression_fit)
+
+interactions_linear_regression_fit <- lm(mpg ~ displacement:weight + weight:year + displacement:year, data=auto_data)
+summary(interactions_linear_regression_fit)
+
+interactions_linear_regression_fit <- lm(mpg ~ displacement * weight + weight * year + displacement * year, data=auto_data)
+summary(interactions_linear_regression_fit)
+```
+
+Lower p-value indicates significances, so in this case following interactions appear to be significant 
+
+  a. displacement and year 
+  b. acceleration and year 
+  c. acceleration and origin  
+  d. displacement and weight
+
+# 9f Try a few different transformations of the variables, such as log(X), √X, X2. Comment on your findings.
+```{r 9f_different_transformations, message=FALSE}
+log_transformation <- lm(mpg ~  log(horsepower) + log(weight) + log(acceleration), data = auto_data)
+summary(log_transformation)
+
+sqrt_transformation <- lm(mpg ~  sqrt(horsepower) + sqrt(weight) + sqrt(acceleration), data = auto_data)
+summary(sqrt_transformation)
+
+square_transformation <- lm(mpg ~  horsepower^2 + weight^2 + acceleration^2, data = auto_data)
+summary(square_transformation)
+```
+
+```{r 9f_different_transformations_plots, message=FALSE}
+par(mfrow = c(3, 3))
+plot(log(auto_data$horsepower), auto_data$mpg)
+plot(sqrt(auto_data$horsepower), auto_data$mpg)
+plot((auto_data$horsepower)^2, auto_data$mpg)
+plot(log(auto_data$weight), auto_data$mpg)
+plot(sqrt(auto_data$weight), auto_data$mpg)
+plot((auto_data$weight)^2, auto_data$mpg)
+plot(log(auto_data$acceleration), auto_data$mpg)
+plot(sqrt(auto_data$acceleration), auto_data$mpg)
+plot((auto_data$acceleration)^2, auto_data$mpg)
+
+```
+
+  
+1. Log resulted in highest F-Value and R Squared value. 
+2. Based on the plots below relation indicates significance 
+    a. MPG and Horse power 
+    b. MPG and weight 
+  
+
+# Problem 10 - Carseats data set.
+
+```{r exploare_carseats_dataset, message=FALSE}
+names(Carseats)
+#head(Carseats)
+```
+
+# 10a Fit a multiple regression model to predict Sales using Price, Urban, and US.
+
+```{r 10a_regression_model}
+multiple_regression_model1 <- lm(Sales ~ Price + Urban + US, data=Carseats)
+summary(multiple_regression_model1)
+```
+
+
+# 10b Provide an interpretation of each coefficient in the model. Be careful—some of the variables in the model are qualitative!
+
+```{r 10b_interpret_each_coefficient, message=FALSE}
+attach(Carseats)
+str(data.frame(Price, Urban, US))
+```
+
+Urban and US and qualitative variables. 
+
+
+1. **Price:** Multiple regression model indicates relationship between price and sales, the t-statistic p-value is is low. The coefficient is negative which idicates that price increases sales decreases. The coefficient value is -0.054459, so if price increases by $1000, number of units sold decreases by 54.45 
+
+2. **UrbanYes:** p-value is relatively high so it is not significant as far sales concerned. There is not enough evidence for relationship between location of store in Urban area in US and sales. 
+
+3. **USYEs:** There is relationship between USYes and Sales. So if the store is in US sales increases, this positive relationship as coefficient is positive. Coefficient value is 1.200573, so if the store is in US the sales increases by 1201 units. 
+
+
+# 10c Write out the model in equation form, being careful to handle the qualitative variables properly.
+
+sales = 13.043469 + (-0.054459 * Price) + (-0.021916 * UrbanYes) + (1.200573 * USYes) 
+
+OR 
+
+sales = 13.043469 + (-0.054459 * Price) + (-0.021916 * Urban) + (1.200573 * US) 
+With Urban=1 if the store is in an urban location and 0 if not, and US=1 if the store is in the US and 0 if not. 
+
+
+# 10d For which of the predictors can you reject the null hypothesis H0 : βj = 0?
+
+We can reject the null hypothesis for Price and USYes since the p-values are significantly low. 
+
+# 10e On the basis of your response to the previous question, fit a smaller model that only uses the predictors for which there is evidence of association with the outcome.
+```{r 10e_regression_model}
+multiple_regression_model2 <- lm(Sales ~ Price + US, data=Carseats)
+summary(multiple_regression_model2)
+```
+
+
+# 10f How well do the models in (a) and (e) fit the data?
+
+```{r 10f_multi_regression_model}
+anova(multiple_regression_model1, multiple_regression_model2)
+```
+
+Based on the Residual standard error and R-squared they fit the data similarly. P-Value of F-Statistic is also not different.   
+
+# 10g Using the model from (e), obtain 95% confidence intervals for the coefficient(s).
+
+```{r 10g_confidence_interval_for_coefficient, message=FALSE}
+confint(multiple_regression_model2)
+```
+
+# 10h Is there evidence of outliers or high leverage observations in the model from (e)?
+```{r 10h_evidence_of_outliers, message=FALSE}
+plot(predict(multiple_regression_model2), rstudent(multiple_regression_model2))
+par(mfrow=c(2,2))
+plot(multiple_regression_model2)
+```
+  
+  1. All r-Student residulas are within the bounding ranges of 3 and -3, so there are no potential outliers. 
+  2. Residual vs Leverage plot does indicate the points that have high leverage (43) 
+  
+  
+```{r 10h_evidence_of_outliers_leverage, message=FALSE}
+hatvalues(multiple_regression_model2)[order(hatvalues(multiple_regression_model2), decreasing = T)][1]
+```
