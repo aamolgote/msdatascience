@@ -1,0 +1,440 @@
+---
+title: "Predictive Modeling Exercises Week 2"
+author: "Amol Gote"
+date: "7/18/2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(MASS)
+library(tidyverse)
+library(plotly)
+library(gpairs) 
+library (MASS)
+library(ggplot2)
+library(class)
+library(caret)
+library(data.table)
+```
+
+# Problem 10
+
+```{r exploare_weekly_dataset, message=FALSE}
+names(Weekly)
+```
+
+# 10a - Produce some numerical and graphical summaries of the Weekly data. Do there appear to be any patterns?
+```{r 10a_graphical_summaries_1, message=FALSE}
+summary(Weekly)
+pairs(Weekly)
+```
+
+```{r 10a_graphical_summaries_2, message=FALSE}
+weekly_dataset <- select (Weekly,-c(Direction))
+cor(weekly_dataset)
+weekly_dataset <- Weekly
+```
+
+1. Only relationship which is clearly visible is between Year and volume
+
+```{r 10a_graphical_summaries_3, message=FALSE}
+pairs(Year ~ Volume,  weekly_dataset)
+```
+
+# 10b - Use the full data set to perform a logistic regression with Direction as the response and the five lag variables plus Volume as predictors. Use the summary function to print the results. Do any of the predictors appear to be statistically significant? If so,which ones?
+
+```{r 10b_logistic_regression_with_direction_1, message=FALSE}
+logistic_regression <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = Weekly, family = binomial)
+summary(logistic_regression)
+```
+1. Lag2 appears to be statistically significant as the p-value is less than 0.05.
+
+# 10c Compute the confusion matrix and overall fraction of correct predictions. Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression. 
+```{r 10c_confusion_matrix_1, message=FALSE}
+predictions <- predict(logistic_regression, Weekly, type="response")
+predicted_direction <- as.factor(ifelse(predictions < 0.5, "Down", "Up"))
+confusion_matrix <- table(predicted_direction, 
+                            Weekly$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predicted_direction != Weekly$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+# 10d Now fit the logistic regression model using a training data period from 1990 to 2008, with Lag2 as the only predictor. Compute the confusion matrix and the overall fraction of correct predictions for the held out data (that is, the data from 2009 and 2010).
+made by logistic regression. 
+```{r 10d_logistic_regression_1, message=FALSE}
+
+weekly_dataset_lt_2009 <- (Weekly$Year < 2009)
+train_dataset <- Weekly[weekly_dataset_lt_2009, ]
+test_dataset <- Weekly[!weekly_dataset_lt_2009, ]
+
+logistic_regression <- glm(Direction ~ Lag2, data = Weekly, family = binomial, subset = weekly_dataset_lt_2009)
+predictions <- predict(logistic_regression, test_dataset, type="response")
+predicted_direction <- as.factor(ifelse(predictions < 0.5, "Down", "Up"))
+confusion_matrix <- table(predicted_direction, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predicted_direction != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+# 10e Repeat (d) using LDA.
+```{r 10e_lda_1, message=FALSE}
+lda_model <- lda(Direction ~ Lag2, data = Weekly, subset = weekly_dataset_lt_2009)
+predictions <- predict(lda_model, test_dataset, type="response")
+confusion_matrix <- table(predictions$class, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions$class != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+
+# 10f Repeat (d) using QDA.
+```{r 10f_qda_1, message=FALSE}
+qda_model <- qda(Direction ~ Lag2, data = Weekly, subset = weekly_dataset_lt_2009)
+predictions <- predict(qda_model, test_dataset, type="response")
+confusion_matrix <- table(predictions$class, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions$class != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+
+# 10g Repeat (d) using KNN with K = 1.
+```{r 10g_knn_1_1, message=FALSE}
+train_dataset_matrix <- as.matrix(train_dataset$Lag2)
+test_dataset_matrix <- as.matrix(test_dataset$Lag2)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset$Direction, 1)
+confusion_matrix <- table(predictions, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+# 10h Which of these methods appears to provide the best results on this data?
+
+1. Logistic regression and LDA methods have similar and lowest error rates, followed by QDA and then KNN (K=1).
+
+
+
+
+#10i Experiment with different combinations of predictors, including possible transformations and interactions, for each of the methods. Report the variables, method, and associated confusion matrix that appears to provide the best results on the held out data. Note that you should also experiment with values for K in the KNN classifier.
+
+1. Logistic Regression
+```{r 10h_logistic_regression_1, message=FALSE}
+logistic_regression <- glm(Direction ~ Lag1 * Lag2, data = Weekly, family = binomial, subset = weekly_dataset_lt_2009)
+predictions <- predict(logistic_regression, test_dataset, type="response")
+predicted_direction <- as.factor(ifelse(predictions < 0.5, "Down", "Up"))
+confusion_matrix <- table(predicted_direction, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predicted_direction != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+2. LDA
+```{r 10h_lda_1, message=FALSE}
+lda_model <- lda(Direction ~ Lag1 * Lag2, data = Weekly, subset = weekly_dataset_lt_2009)
+predictions <- predict(lda_model, test_dataset, type="response")
+confusion_matrix <- table(predictions$class, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions$class != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+3. QDA
+```{r 10h_qda_1, message=FALSE}
+qda_model <- qda(Direction ~ Lag1 * Lag2, data = Weekly, subset = weekly_dataset_lt_2009)
+predictions <- predict(qda_model, test_dataset, type="response")
+confusion_matrix <- table(predictions$class, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions$class != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+4. KNN (n = 10)
+```{r 10h_knn_1, message=FALSE}
+train_dataset_matrix <- as.matrix(train_dataset$Lag2)
+test_dataset_matrix <- as.matrix(test_dataset$Lag2)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset$Direction, 10)
+confusion_matrix <- table(predictions, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+5. KNN (n = 50)
+```{r 10h_knn_50, message=FALSE}
+train_dataset_matrix <- as.matrix(train_dataset$Lag2)
+test_dataset_matrix <- as.matrix(test_dataset$Lag2)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset$Direction, 50)
+confusion_matrix <- table(predictions, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+6. KNN (n = 100)
+```{r 10h_knn_100, message=FALSE}
+train_dataset_matrix <- as.matrix(train_dataset$Lag2)
+test_dataset_matrix <- as.matrix(test_dataset$Lag2)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset$Direction, 100)
+confusion_matrix <- table(predictions, 
+                            test_dataset$Direction, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions != test_dataset$Direction)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+**Out of all the combinations Logistic Regression and LDA have the best error rate performance (low error rate).**
+
+
+
+# Problem 13
+# Using the Boston data set, fit classification models in order to predict whether a given suburb has a crime rate above or below the median. Explore logistic regression, LDA, and KNN models using various subsets of the predictors. Describe your findings.
+
+# 10a Boston dataset info
+```{r 13_Boston_ds_1, message=FALSE}
+names(Boston)
+```
+
+1. Create datasets
+```{r 13_Boston_ds_2, message=FALSE}
+Boston$crime_rate_above_median <- 0
+Boston$crime_rate_above_median[Boston$crim > median(Boston$crim)] <- 1
+Boston$crime_rate_above_median <-factor(Boston$crime_rate_above_median)
+data_partition <- createDataPartition(y = Boston$crime_rate_above_median, p = 0.75, list = FALSE)
+train_dataset <- Boston[data_partition,]
+test_dataset <- Boston[-data_partition,]
+```
+
+2. Logistic Regresssion
+```{r 13_Boston_ds_logistic_regression_3, message=FALSE}
+logistic_regression <- glm(crime_rate_above_median ~ indus + nox + rad + tax + lstat, data = train_dataset, family = binomial)
+predictions <- predict(logistic_regression, test_dataset, type="response")
+predicted_direction <- as.factor(ifelse(predictions > 0.5, 1, 0))
+confusion_matrix <- table(predicted_direction, 
+                            test_dataset$crime_rate_above_median, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predicted_direction != test_dataset$crime_rate_above_median)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+3. LDA
+```{r 13_Boston_ds_lda_4, message=FALSE}
+lda_model <- lda(crime_rate_above_median ~ indus + nox + rad + tax + lstat, data = train_dataset)
+predictions <- predict(lda_model, test_dataset, type="response")
+confusion_matrix <- table(predictions$class, 
+                            test_dataset$crime_rate_above_median, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions$class != test_dataset$crime_rate_above_median)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+
+5. KNN (n=1)
+```{r 13_Boston_ds_knn_1_6}
+train_dataset_matrix <- as.matrix(train_dataset$indus,train_dataset$nox,train_dataset$rad,train_dataset$tax,train_dataset$lstat)
+test_dataset_matrix <- as.matrix(test_dataset$indus,test_dataset$nox,test_dataset$rad,test_dataset$tax,test_dataset$lstat)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset$crime_rate_above_median, 1)
+confusion_matrix <- table(predictions, 
+                            test_dataset$crime_rate_above_median, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions != test_dataset$crime_rate_above_median)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+6. KNN (n=10)
+```{r 13_Boston_ds_knn_10_6}
+train_dataset_matrix <- as.matrix(train_dataset$indus,train_dataset$nox,train_dataset$rad,train_dataset$tax,train_dataset$lstat)
+test_dataset_matrix <- as.matrix(test_dataset$indus,test_dataset$nox,test_dataset$rad,test_dataset$tax,test_dataset$lstat)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset$crime_rate_above_median, 10)
+confusion_matrix <- table(predictions, 
+                            test_dataset$crime_rate_above_median, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions != test_dataset$crime_rate_above_median)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+7. KNN (n=100)
+```{r 13_Boston_ds_knn_100_7}
+train_dataset_matrix <- as.matrix(train_dataset$indus,train_dataset$nox,train_dataset$rad,train_dataset$tax,train_dataset$lstat)
+test_dataset_matrix <- as.matrix(test_dataset$indus,test_dataset$nox,test_dataset$rad,test_dataset$tax,test_dataset$lstat)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset$crime_rate_above_median, 100)
+confusion_matrix <- table(predictions, 
+                            test_dataset$crime_rate_above_median, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate <- mean(predictions != test_dataset$crime_rate_above_median)
+correct_prediction <- 1 - error_rate
+false_positive <- confusion_matrix[2,1] / sum(confusion_matrix[,1])
+false_negative <- confusion_matrix[1,2] / sum(confusion_matrix[,2])
+cat("\n") 
+cat("Error rate or training error rate is:", error_rate * 100, "%\n")
+cat("Correct prediction rate is:          ", 100 * (1 - error_rate), "%\n")
+cat("False positive Rate:                 ", 100 * false_positive, "%\n")
+cat("False negative Rate:                 ", 100 * false_negative, "%\n")
+```
+
+**With following sub predictors indus,nox,rad,tax,lstat, we got the lowest error rate with KNN with n = 1.**
