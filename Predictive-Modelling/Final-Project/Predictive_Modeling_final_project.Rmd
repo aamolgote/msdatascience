@@ -1,0 +1,799 @@
+---
+title: "Final Project - Predictive Modelling"
+author: "Amol Gote"
+date: "08/28/2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(MASS)
+library(boot)
+library(glmnet)
+library(leaps)
+library(pls)
+library(sqldf)
+library(data.table)
+library(ggplot2) 
+library(readr) 
+library(gridExtra)
+library(tidyverse)
+library(sf)
+library(maps)
+library(caret)
+library(class)
+library(tree)
+library(gbm)
+library(randomForest)
+library(ggfortify)
+library(factoextra)
+```
+
+```{r, read_full_dateset}
+lendingClubLoanData <- fread("data/Lending_club_dataset.csv", header = TRUE)
+```
+
+```{r, adjust_issue_date}
+nrow(lendingClubLoanData)
+lendingClubLoanData$orig_year<-substr(lendingClubLoanData$issue_d,5,8)
+```
+
+```{r, filter_2018_data}
+lendingClubLoanData_2018 <- lendingClubLoanData %>%
+  filter(orig_year == 2018)
+```
+
+```{r, 2018_number_rows}
+nrow(lendingClubLoanData_2018)
+```
+
+
+```{r, write_2018_file}
+nrow(lendingClubLoanData_2018)
+write.csv(lendingClubLoanData_2018, file = "data/lending_club_loan_data_2018_final.csv", row.names=FALSE)
+```
+
+
+```{r final_dateset}
+final_dataset <- fread("data/lending_club_loan_data_2018_final.csv", header = TRUE)
+drops <- c("id","member_id", "url", "desc")
+final_dataset[ , !(names(final_dataset) %in% drops)]
+```
+
+
+
+```{r, final_dateset_names}
+names(final_dataset)
+```
+
+```{r}
+ds_lc <- final_dataset[,c("loan_amnt",
+  "funded_amnt",
+  "funded_amnt_inv",
+  "term",
+  "int_rate",
+  "installment",
+  "grade",
+  "sub_grade",
+  "home_ownership",
+  "annual_inc",
+  "loan_status",
+  "dti",
+  "delinq_2yrs",
+  "fico_range_low",
+  "fico_range_high",
+  "inq_last_6mths",
+  "mths_since_last_delinq",
+  "mths_since_last_record",
+  "open_acc",
+  "pub_rec",
+  "revol_bal",
+  "revol_util",
+  "total_acc",
+  "out_prncp",
+  "out_prncp_inv",
+  "total_pymnt",
+  "total_pymnt_inv",
+  "total_rec_prncp",
+  "total_rec_int",
+  "total_rec_late_fee",
+  "recoveries",
+  "collection_recovery_fee",
+  "last_fico_range_high",
+  "last_fico_range_low",
+  "mths_since_last_major_derog",
+  "acc_now_delinq",
+  "avg_cur_bal"
+  )]
+
+
+
+ds_lc <- final_dataset[,c(
+  "loan_amnt",
+  "term",
+  "int_rate",
+  "installment",
+  "grade",
+  "sub_grade",
+  "home_ownership",
+  "annual_inc",
+  "loan_status",
+  "dti",
+  "delinq_2yrs",
+  "fico_range_low",
+  "fico_range_high",
+  "inq_last_6mths",
+  "open_acc",
+  "pub_rec"
+  )]
+```
+
+
+```{r, clean_up_dataset}
+nrow(ds_lc)
+ds_lc <- na.omit(ds_lc, cols = c("dti", "int_rate"))
+nrow(ds_lc)
+levels(factor(ds_lc$loan_status))
+levels(factor(ds_lc$grade))
+levels(factor(ds_lc$sub_grade))
+levels(factor(ds_lc$home_ownership))
+ds_lc$term <- as.integer(as.factor(ds_lc$term)) 
+ds_lc$grade <- as.integer(as.factor(ds_lc$grade))
+ds_lc$sub_grade <- as.integer(as.factor(ds_lc$sub_grade))
+ds_lc$home_ownership <- as.integer(as.factor(ds_lc$home_ownership))
+ds_lc$int_rate <- as.numeric(ds_lc$int_rate)
+#ds_lc$mths_since_last_record[is.na(ds_lc$mths_since_last_record)] <- 0
+#ds_lc$mths_since_last_major_derog[is.na(ds_lc$mths_since_last_major_derog)] <- 0
+#ds_lc$revol_util[is.na(ds_lc$revol_util)] <- mean(ds_lc$revol_util, na.rm = T)
+ds_lc$loan_status <- as.integer(as.factor(ds_lc$loan_status))
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 1] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 2] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 3] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 4] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 5] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 6] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 7] <- 1
+ds_lc$is_acct_delinquent <- factor(ds_lc$is_acct_delinquent)
+levels(factor(ds_lc$is_acct_delinquent))
+ds_lc = subset(ds_lc, select = -c(loan_status))
+#ds_lc = subset(ds_lc, select = -c(loan_status,
+                                  #mths_since_last_delinq,
+  #mths_since_last_record,
+  #open_acc,
+  #pub_rec,
+  #revol_bal,
+  #revol_util,
+  #total_acc,
+  #out_prncp,
+  #out_prncp_inv,
+  #total_pymnt,
+  #total_pymnt_inv,
+  #total_rec_prncp,
+  #total_rec_int,
+  #total_rec_late_fee,
+  #recoveries
+  #collection_recovery_fee,
+  #last_fico_range_high,
+  #last_fico_range_low,
+  #mths_since_last_major_derog,
+  #acc_now_delinq
+  #avg_cur_bal
+  #))
+#ds_lc$is_acct_delinquent
+
+
+#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 1] <- 1
+#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 2] <- 0
+#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 3] <- 0
+#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 4] <- 0
+#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 5] <- 0
+#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 6] <- 0
+#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 7] <- 0
+#ds_lc$is_acct_chargedoff <- factor(ds_lc$is_acct_chargedoff)
+#levels(factor(ds_lc$is_acct_chargedoff))
+#ds_lc$is_acct_chargedoff
+#ds_lc$int_rate
+```
+
+```{r, check_data_type}
+str(ds_lc)
+```
+
+```{r, summary }
+summary(ds_lc)
+```
+
+
+```{r}
+corr_ds_subset <- sample(nrow(ds_lc), 100)
+corr_ds = ds_lc[corr_ds_subset, ]
+pairs(~ 
+                          loan_amnt + 
+                          term + 
+                          int_rate + 
+                          installment + 
+                          grade + 
+                          sub_grade + 
+                          home_ownership
+      , corr_ds)
+```
+
+
+
+
+
+
+
+```{r}
+head(ds_lc)
+```
+
+
+
+
+```{r validation_set_error_1, message=FALSE}
+sample_set<-sample(nrow(ds_lc),nrow(ds_lc)*0.6)
+training_dataset <- ds_lc[sample_set,]
+test_dataset <- ds_lc[-sample_set,]
+regression_model <- glm(is_acct_delinquent ~ 
+                          loan_amnt + 
+                          term + 
+                          int_rate + 
+                          installment + 
+                          grade + 
+                          sub_grade + 
+                          home_ownership + 
+                          annual_inc + 
+                          dti + 
+                          delinq_2yrs + 
+                          fico_range_low + 
+                          fico_range_high + 
+                          inq_last_6mths + 
+                          open_acc + 
+                          pub_rec,
+                          data = training_dataset, family = "binomial")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5, 1, 0)
+validation_error_rate1 <- mean(prediction != test_dataset$is_acct_delinquent)
+validation_error_rate1
+```
+
+
+```{r validation_set_error_2, message=FALSE}
+sample_set<-sample(nrow(ds_lc),nrow(ds_lc)*0.7)
+training_dataset <- ds_lc[sample_set,]
+test_dataset <- ds_lc[-sample_set,]
+regression_model <- glm(is_acct_delinquent ~ 
+                          loan_amnt + 
+                          term + 
+                          int_rate + 
+                          installment + 
+                          grade + 
+                          sub_grade + 
+                          home_ownership + 
+                          annual_inc + 
+                          dti + 
+                          delinq_2yrs + 
+                          fico_range_low + 
+                          fico_range_high + 
+                          inq_last_6mths + 
+                          open_acc + 
+                          pub_rec,
+                          data = training_dataset, family = "binomial")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5, 1, 0)
+validation_error_rate2 <- mean(prediction != test_dataset$is_acct_delinquent)
+validation_error_rate2
+```
+
+```{r validation_set_error_3, message=FALSE}
+sample_set<-sample(nrow(ds_lc),nrow(ds_lc)*0.75)
+training_dataset <- ds_lc[sample_set,]
+test_dataset <- ds_lc[-sample_set,]
+regression_model <- glm(is_acct_delinquent ~ 
+                          loan_amnt + 
+                          term + 
+                          int_rate + 
+                          installment + 
+                          grade + 
+                          sub_grade + 
+                          home_ownership + 
+                          annual_inc + 
+                          dti + 
+                          delinq_2yrs + 
+                          fico_range_low + 
+                          fico_range_high + 
+                          inq_last_6mths + 
+                          open_acc + 
+                          pub_rec,
+                          data = training_dataset, family = "binomial")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5, 1, 0)
+validation_error_rate3 <- mean(prediction != test_dataset$is_acct_delinquent)
+validation_error_rate3
+```
+
+
+
+```{r validation_set_error_4, message=FALSE}
+sample_set<-sample(nrow(ds_lc),nrow(ds_lc)*0.8)
+training_dataset <- ds_lc[sample_set,]
+test_dataset <- ds_lc[-sample_set,]
+regression_model <- glm(is_acct_delinquent ~ 
+                          loan_amnt + 
+                          term + 
+                          int_rate + 
+                          installment + 
+                          grade + 
+                          sub_grade + 
+                          home_ownership + 
+                          annual_inc + 
+                          dti + 
+                          delinq_2yrs + 
+                          fico_range_low + 
+                          fico_range_high + 
+                          inq_last_6mths + 
+                          open_acc + 
+                          pub_rec,
+                          data = training_dataset, family = "binomial")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5, 1, 0)
+validation_error_rate4 <- mean(prediction != test_dataset$is_acct_delinquent)
+validation_error_rate4
+```
+
+Following is the data split in training and test data ration along with validation error rate/misclassification 
+  
+    1. Tranining : Test -> 60 : 40, validation error rate `r validation_error_rate1`. or `r validation_error_rate1 * 100`%  
+    2. Tranining : Test -> 70 : 30, validation error rate `r validation_error_rate2`. or `r validation_error_rate2 * 100`%  
+    3. Tranining : Test -> 75 : 25, validation error rate `r validation_error_rate3`. or `r validation_error_rate3 * 100`%  
+    3. Tranining : Test -> 80 : 20, validation error rate `r validation_error_rate3`. or `r validation_error_rate4 * 100`%  
+    
+    
+  Validation error rate is different for different sample splits of taining and test dataset. This indicates that validation error rate varies by which 
+  observations are in the training/validation sets.
+
+
+```{r partition_dataset, message=FALSE}
+data_partition <- createDataPartition(y = ds_lc$is_acct_delinquent, p = 0.75, list = FALSE)
+train_dataset <- ds_lc[data_partition,]
+test_dataset <- ds_lc[-data_partition,]
+```
+
+```{r}
+nrow(train_dataset)
+nrow(test_dataset)
+```
+
+
+```{r logistic_regression, message=FALSE}
+logistic_regression <- glm(is_acct_delinquent ~ 
+                          loan_amnt + 
+                          term + 
+                          int_rate + 
+                          installment + 
+                          grade + 
+                          sub_grade + 
+                          home_ownership + 
+                          annual_inc + 
+                          dti + 
+                          delinq_2yrs + 
+                          fico_range_low + 
+                          fico_range_high + 
+                          inq_last_6mths + 
+                          open_acc + 
+                          pub_rec
+                          ,data = train_dataset, family = binomial)
+
+predictions <- predict(logistic_regression, test_dataset, type="response")
+predicted_direction <- ifelse(predictions > 0.5, 1, 0)
+error_rate_lr <- mean(predicted_direction != test_dataset$is_acct_delinquent)
+error_rate_lr
+```
+
+```{r lda, message=FALSE}
+lda_model <- lda(is_acct_delinquent ~ 
+                          loan_amnt + 
+                          term + 
+                          int_rate + 
+                          installment + 
+                          grade + 
+                          sub_grade + 
+                          home_ownership + 
+                          annual_inc + 
+                          dti + 
+                          delinq_2yrs + 
+                          fico_range_low + 
+                          fico_range_high + 
+                          inq_last_6mths + 
+                          open_acc + 
+                          pub_rec
+                          ,data = train_dataset)
+predictions <- predict(lda_model, test_dataset, type="response")
+confusion_matrix <- table(predictions$class, 
+                            test_dataset$is_acct_delinquent, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate_lda <- mean(predictions$class != test_dataset$is_acct_delinquent)
+error_rate_lda
+```
+```{r tree}
+tree_lc <- tree(is_acct_delinquent ~ .,train_dataset)
+summary(tree_lc)
+tree_lc
+plot(tree_lc)
+text(tree_lc, pretty=0)
+prediction <- predict(tree_lc, test_dataset, type="class")
+error_rate_tree <- mean(prediction != test_dataset$is_acct_delinquent)
+error_rate_tree
+```
+
+
+```{r determine_optimal_tree_size}
+optimal_tree <- cv.tree(tree_lc, FUN = prune.tree)
+optimal_tree
+```
+
+```{r plot_treee_size_error_rate}
+tree_plot <- data.frame(x=optimal_tree$size, y=optimal_tree$dev)
+ggplot(tree_plot, aes(x=x,y=y)) + 
+  geom_point() + 
+  geom_line() + 
+  xlab("Tree Size") + 
+  ylab("Deviance")
+```
+```{r pruned_tree_optimal_tree_size}
+pruned_tree <- prune.tree(tree_lc, best = 2)
+```
+
+```{r summary_prunned_tree}
+summary(pruned_tree)
+summary(tree_lc)
+```
+
+```{r pruned_test_error_rate}
+test_error_rate_pruned <- mean(predict(pruned_tree, test_dataset, type = "class") != test_dataset$is_acct_delinquent)
+test_error_rate_pruned
+```
+
+# Predicting the Interest Rate
+```{r interest_rate_mse}
+test_interest_mean <- mean(test_dataset$int_rate)
+test_interest_mse <-  mean((test_dataset$int_rate - test_interest_mean)^2)
+test_interest_mean
+test_interest_mse
+```
+
+# 9b Fit a linear model using least squares on the training set, and report the test error obtained.
+```{r lm_least_Square_interest_rates}
+lm_fit <- lm(int_rate ~ . , data = train_dataset)
+lm_predictions <- predict(lm_fit, test_dataset)
+lm_mse <- mean((lm_predictions - test_dataset$int_rate)^2)
+lm_mse
+```
+```{r ridge_regression_model_interest_rates}
+train_ds_matrix <- model.matrix(int_rate ~ ., data = train_dataset)
+test_ds_matrix <- model.matrix(int_rate ~ ., data = test_dataset)
+
+grid <- 10 ^ seq(4, -2, length = 100)
+
+ridge_reg_model <- cv.glmnet(train_ds_matrix, train_dataset$int_rate, alpha = 0, lambda = grid, thresh = 1e-12)
+ridge_reg_predictions <- predict(ridge_reg_model, test_ds_matrix, s = ridge_reg_model$lambda.min)
+ridge_mse <- mean((test_dataset$int_rate - ridge_reg_predictions)^2)
+ridge_mse
+```
+
+```{r lasso_model_interest_rates}
+lasso_model <- cv.glmnet(train_ds_matrix, train_dataset$int_rate, alpha = 1, lambda = grid, thresh = 1e-12)
+lasso_predictions <- predict(lasso_model, test_ds_matrix, s = lasso_model$lambda.min)
+lasso_mse <- mean((test_dataset$int_rate - lasso_predictions)^2)
+lasso_rmse <- sqrt(mean((test_dataset$int_rate - lasso_predictions)^2))
+lasso_mse
+```
+```{r pcr_model_interest_rates}
+pcr_model <- pcr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
+validationplot(pcr_model, val.type = "MSEP")
+pcr_predictions <- predict(pcr_model, test_dataset, ncomp = 10)
+pcr_mse <- mean((test_dataset$int_rate - pcr_predictions)^2)
+pcr_rmse <- sqrt(mean((test_dataset$int_rate - pcr_predictions)^2))
+```
+
+
+```{r pls_model_interest_rates}
+pls_model <- plsr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
+validationplot(pls_model, val.type = "MSEP")
+pls_predictions <- predict(pls_model, test_dataset, ncomp = 10)
+pls_mse <- mean((test_dataset$int_rate  - pls_predictions)^2)
+pls_rmse <- sqrt(mean((test_dataset$int_rate  - pls_predictions)^2))
+pls_mse
+```
+
+```{r modela_comparison}
+lm_test_r2 <- (1 - (lm_mse/test_interest_mse))
+ridge_test_r2 <- (1 - (ridge_mse/test_interest_mse))
+lasso_test_r2 <- (1 - (lasso_mse/test_interest_mse))
+pcr_test_r2 <- (1 - (pcr_mse/test_interest_mse))
+pls_test_r2 <- (1 - (pls_mse/test_interest_mse))
+
+cat("R square with linear model : ", lm_test_r2, "\n")
+cat("R square with ridge model :  ", ridge_test_r2, "\n")
+cat("R square with lasso model :  ", lasso_test_r2, "\n")
+cat("R square with pcr :          ", pcr_test_r2, "\n")
+cat("R square with pls :          ", pls_test_r2, "\n")
+
+barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2),
+        names.arg = c("LM", "Ridge", "Lasso", "PCR", "PLS"))
+
+```
+
+```{r, boosting}
+train_dataset_mini <- train_dataset[1:5000,]
+test_dataset_mini <- test_dataset[(1:5000),]
+
+pows <- seq(-10, -0.2, by = 0.1)
+lambdas <- 10^pows
+training_errors <- rep(NA, length(lambdas))
+
+
+for (i in 1:length(lambdas)) {
+  boosting_model <- gbm(int_rate ~ . , data = train_dataset_mini, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = lambdas[i])
+  
+  training_predictions <- predict(boosting_model, train_dataset_mini, n.trees = 1000)
+  training_errors[i] <- mean((training_predictions - train_dataset_mini$int_rate)^2)
+}
+
+plot(lambdas, training_errors, xlab = "Shrinkage Values", ylab = "Training set MSE", type = "b", pch = 20)
+```
+
+
+```{r, boosting_plot}
+test_errors <- rep(NA, length(lambdas))
+
+
+for (i in 1:length(lambdas)) {
+  boosting_model <- gbm(int_rate ~ . , data = train_dataset_mini, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = lambdas[i])
+  
+  test_predictions <- predict(boosting_model, test_dataset_mini, n.trees = 1000)
+  test_errors[i] <- mean((test_predictions - test_dataset_mini$int_rate)^2)
+}
+
+plot(lambdas, test_errors, xlab = "Shrinkage Values", ylab = "Training set MSE", type = "b", pch = 20)
+min(test_errors)
+min_test_err <- min(test_errors)
+min_test_err_at <- lambdas[which.min(test_errors)]
+```
+
+Both regression approaches lm and lasso have higher MSE compared to that of boosting.
+
+
+```{r, important_varaible_predictor_boosting}
+boosting_model <- gbm(int_rate ~ . , data = train_dataset_mini, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = min_test_err)
+summary(boosting_model)
+```
+
+```{r, 10g_apply_bagging}
+random_forest_model <- randomForest(int_rate ~ . , data = train_dataset_mini, ntree = 500, mtry = ncol(train_dataset_mini)-1)
+random_forest_predictions <- predict(random_forest_model, test_dataset_mini)
+
+random_forest_test_mse <- mean((random_forest_predictions - test_dataset_mini$int_rate)^2)
+random_forest_test_mse
+```
+
+Test MSE for bagging is `r random_forest_test_mse` which is better than `r min_test_err` which is best MSE from boosting
+
+# Unspervised Learning - PCA
+```{r, unspervised_learning_pca}
+ds_lc_pca <- ds_lc[,c(
+  "loan_amnt",
+  "term",
+  "int_rate",
+  "installment",
+  "grade",
+  "sub_grade",
+  "home_ownership",
+  "annual_inc",
+  "dti",
+  "delinq_2yrs",
+  "fico_range_low",
+  "fico_range_high",
+  "inq_last_6mths",
+  "open_acc",
+  "pub_rec"
+  )]
+ds_lc_pca_subset <- sample(nrow(ds_lc), 1000)
+ds_lc_pca = ds_lc_pca[ds_lc_pca_subset, ]
+
+str(ds_lc_pca)
+pr.out <- prcomp (ds_lc_pca, scale =TRUE)
+names(pr.out)
+pr.out$center
+pr.out$scale
+pr.out$rotation
+biplot(pr.out)
+```
+
+```{r,  unspervised_learning_pca_plot}
+pr.out$rotation=-pr.out$rotation
+pr.out$x=-pr.out$x
+biplot (pr.out , scale =0)
+#pr.out$sdev
+pr.var =pr.out$sdev ^2
+pve=pr.var/sum(pr.var )
+pve
+plot(pve , xlab="Principal Component ", ylab="Proportion of Variance Explained ", ylim=c(0,1) ,type="b")
+plot(cumsum (pve ), xlab="Principal Component ", ylab ="Cumulative Proportion of Variance Explained ", ylim=c(0,1) , type="b")
+```
+
+```{r,  unspervised_learning_pca_bar_chart}
+#autoplot(pr.out)
+biplot (pr.out , scale =0)
+fviz_eig(pr.out, addlabels = TRUE, ylim = c(0, 50))
+```
+
+PCA does not bring in much value. Very dimension were identified with PCA.
+
+```{r,  unspervised_learning_kmean}
+ds_lc_kmean <- ds_lc[,c(
+  "loan_amnt",
+  "term",
+  "int_rate",
+  "installment",
+  "grade",
+  "sub_grade",
+  "home_ownership",
+  "annual_inc",
+  "dti",
+  "delinq_2yrs",
+  "fico_range_low",
+  "fico_range_high",
+  "inq_last_6mths",
+  "open_acc",
+  "pub_rec"
+  )]
+ds_lc_kmean_subset <- sample(nrow(ds_lc_kmean), 1000)
+ds_lc_kmean = ds_lc_kmean[ds_lc_kmean_subset, ]
+ds_lc_kmean_scaled <- as.data.frame(scale(ds_lc_kmean))
+```
+
+```{r, unspervised_learning_kmean_cluster_size}
+k2 <- kmeans(ds_lc_kmean_scaled, centers = 2, nstart = 25)
+k3 <- kmeans(ds_lc_kmean_scaled, centers = 3, nstart = 25)
+k4 <- kmeans(ds_lc_kmean_scaled, centers = 4, nstart = 25)
+k5 <- kmeans(ds_lc_kmean_scaled, centers = 5, nstart = 25)
+k6 <- kmeans(ds_lc_kmean_scaled, centers = 6, nstart = 25)
+k7 <- kmeans(ds_lc_kmean_scaled, centers = 7, nstart = 25)
+k8 <- kmeans(ds_lc_kmean_scaled, centers = 8, nstart = 25)
+k9 <- kmeans(ds_lc_kmean_scaled, centers = 9, nstart = 25)
+
+
+# plots to compare
+p2 <- fviz_cluster(k2, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 2")
+p3 <- fviz_cluster(k3, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 3")
+p4 <- fviz_cluster(k4, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 4")
+p5 <- fviz_cluster(k5, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 5")
+p6 <- fviz_cluster(k6, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 6")
+p7 <- fviz_cluster(k7, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 7")
+p8 <- fviz_cluster(k8, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 8")
+p9 <- fviz_cluster(k9, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 9")
+p10 <- fviz_cluster(k9, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 10")
+
+
+grid.arrange(p2, p3, p4, p5,  nrow = 2)
+grid.arrange(p6, p7, p8, p9,  nrow = 2)
+grid.arrange(p10,  nrow = 2)
+```
+
+```{r unspervised_learning_kmean_elbow, message=FALSE}
+set.seed(1234)
+#Function to compute total within cluster sum of squares 
+wss <- function(k) {
+  kmeans(ds_lc_kmean_scaled, k, nstart = 25, iter.max = 10)$tot.withinss
+}
+
+#Compute and plot the within sum of squares (wss) for k = 1 to k = 10
+k.values <- 1:15
+
+#Extract wss for 2 - 10 clusters
+wss_values <- map_dbl(k.values, wss)
+
+plot(k.values, wss_values,
+     type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of clusters K",
+     ylab = "Total within clusters sum of squares")
+
+set.seed(1234)
+fviz_nbclust(ds_lc_kmean_scaled, kmeans, method = "wss")
+```
+
+Based on the visualization 3 or 4 clusters seems to be better classification. 3 clusters have very less overlap compared to that of the 4 clusters. 
+
+```{r, unspervised_learning_kmean_asign_cluster}
+ds_lc_kmean$cluster <- k3$cluster
+```
+
+```{r assignCustomerCategories}
+ds_lc_kmean$category <- ""
+for(i in 1:nrow(ds_lc_kmean)){
+    if (ds_lc_kmean$cluster[i] == 1){
+        ds_lc_kmean$category[i] <- "Low"
+    }
+    else if (ds_lc_kmean$cluster[i] == 2){
+      ds_lc_kmean$category[i] <- "Medium"
+    }
+    else if (ds_lc_kmean$cluster[i] == 3){
+      ds_lc_kmean$category[i] <- "High"
+    }
+}
+
+low_risk_loans <- ds_lc_kmean %>%
+  filter(category == "Low")
+
+medium_risk_loans <- ds_lc_kmean %>%
+  filter(category == "Medium")
+
+high_risk_loans <- ds_lc_kmean %>%
+  filter(category == "High")
+
+```
+
+```{r, unspervised_learning_kmean_interest_rate}
+mean(low_risk_loans$int_rate)
+mean(medium_risk_loans$int_rate)
+mean(high_risk_loans$int_rate)
+```
+
+```{r, unspervised_learning_kmean_annual_income}
+mean(low_risk_loans$annual_inc)
+mean(medium_risk_loans$annual_inc)
+mean(high_risk_loans$annual_inc)
+```
+
+```{r, unspervised_learning_kmean_dti}
+mean(low_risk_loans$dti)
+mean(medium_risk_loans$dti)
+mean(high_risk_loans$dti)
+```
+
+```{r, unspervised_learning_kmean_fico_range_low}
+mean(low_risk_loans$fico_range_low)
+mean(medium_risk_loans$fico_range_low)
+mean(high_risk_loans$fico_range_low)
+```
+
+```{r, unspervised_learning_kmean_fico_range_high}
+mean(low_risk_loans$fico_range_high)
+mean(medium_risk_loans$fico_range_high)
+mean(high_risk_loans$fico_range_high)
+```
+
+```{r, unspervised_learning_kmean_inq_last_6mths}
+mean(low_risk_loans$inq_last_6mths)
+mean(medium_risk_loans$inq_last_6mths)
+mean(high_risk_loans$inq_last_6mths)
+```
+```{r, unspervised_learning_kmean_delinq_2yrs}
+mean(low_risk_loans$delinq_2yrs)
+mean(medium_risk_loans$delinq_2yrs)
+mean(high_risk_loans$delinq_2yrs)
+```
+
+```{r, unspervised_learning_kmean_grade}
+mean(low_risk_loans$grade)
+mean(medium_risk_loans$grade)
+mean(high_risk_loans$grade)
+```
+
+```{r, unspervised_learning_kmean_sub_grade}
+mean(low_risk_loans$sub_grade)
+mean(medium_risk_loans$sub_grade)
+mean(high_risk_loans$sub_grade)
+```

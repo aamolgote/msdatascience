@@ -1,0 +1,202 @@
+---
+title: "Predictive Modeling Exercises Week 4"
+author: "Amol Gote"
+date: "08/02/2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(MASS)
+library(boot)
+```
+
+# Problem 5
+In Chapter 4, we used logistic regression to predict the probability of default using income and balance on the Default data set. We will now estimate the test error of this logistic regression model using the validation set approach. Do not forget to set a random seed before beginning your analysis.
+
+# 5a - Fit a logistic regression model that uses income and balance to predict default.
+
+```{r 5a_logistic_regression_model, message=FALSE}
+regression_model <- glm(default ~ income + balance, data = Default, family = "binomial")
+summary(regression_model)
+```
+
+# 5b Using the validation set approach, estimate the test error of this model.
+
+# i. Split the sample set into a training set and a validation set.
+```{r 5b_i_split_sample_set}
+sample_set<-sample(nrow(Default),nrow(Default)/2)
+training_dataset <- Default[sample_set,]
+test_dataset <- Default[-sample_set,]
+```
+
+# ii Fit a multiple logistic regression model using only the training observations.
+```{r 5b_ii_multiple_logistic_regression_model}
+regression_model <- glm(default ~ income + balance, data = training_dataset, family = "binomial")
+summary(regression_model)
+```
+
+# iii Obtain a prediction of default status for each individual in the validation set by computing the posterior probability of default for that individual, and classifying the individual to the default category if the posterior probability is greater than 0.5.
+```{r 5b_iii_prediction_default_status, message=FALSE}
+probablity <- predict(regression_model, test_dataset, type = "response")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5,"Yes","No")
+```
+# iv Compute the validation set error, which is the fraction of the observations in the validation set that are misclassified.
+```{r 5b_iv_validation_set_error, message=FALSE}
+validation_error_rate <- mean(prediction!=test_dataset$default)
+validation_error_rate
+matrix <- table(test_dataset$default,prediction, dnn=c("Observed","Predicted"))
+matrix
+```
+  Validation set error rate is:  `r validation_error_rate`. or `r validation_error_rate * 100`%
+
+  
+# 5c Repeat the process in (b) three times, using three different splits of the observations into a training set and a validation set. Comment on the results obtained.
+
+```{r 5c_1_validation_set_error, message=FALSE}
+sample_set<-sample(nrow(Default),nrow(Default)*0.6)
+training_dataset <- Default[sample_set,]
+test_dataset <- Default[-sample_set,]
+regression_model <- glm(default ~ income + balance, data = training_dataset, family = "binomial")
+probablity <- predict(regression_model, test_dataset, type = "response")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5,"Yes","No")
+validation_error_rate1 <- mean(prediction!=test_dataset$default)
+validation_error_rate1
+```
+
+```{r 5c_2_validation_set_error, message=FALSE}
+sample_set<-sample(nrow(Default),nrow(Default)*0.7)
+training_dataset <- Default[sample_set,]
+test_dataset <- Default[-sample_set,]
+regression_model <- glm(default ~ income + balance, data = training_dataset, family = "binomial")
+probablity <- predict(regression_model, test_dataset, type = "response")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5,"Yes","No")
+validation_error_rate2 <- mean(prediction!=test_dataset$default)
+validation_error_rate2
+```
+
+
+```{r 5c_3_validation_set_error, message=FALSE}
+sample_set<-sample(nrow(Default),nrow(Default)*0.8)
+training_dataset <- Default[sample_set,]
+test_dataset <- Default[-sample_set,]
+regression_model <- glm(default ~ income + balance, data = training_dataset, family = "binomial")
+probablity <- predict(regression_model, test_dataset, type = "response")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5,"Yes","No")
+validation_error_rate3 <- mean(prediction!=test_dataset$default)
+validation_error_rate3
+```
+
+  Following is the data split in training and test data ration along with validation error rate/misclassification 
+  
+    1. Tranining : Test -> 60 : 60, validation error rate `r validation_error_rate1`. or `r validation_error_rate1 * 100`%  
+    2. Tranining : Test -> 70 : 30, validation error rate `r validation_error_rate2`. or `r validation_error_rate2 * 100`%  
+    3. Tranining : Test -> 80 : 20, validation error rate `r validation_error_rate3`. or `r validation_error_rate3 * 100`%  
+    
+    
+  Validation error rate is different for different sample splits of taining and test dataset. This indicates that validation error rate varies by which 
+  observations are in the training/validation sets.
+
+# 5d Now consider a logistic regression model that predicts the probability of default using income, balance, and a dummy variable for student. Estimate the test error for this model using the validation set approach. Comment on whether or not including a dummy variable for student leads to a reduction in the test error rate.
+
+```{r 5d_validation_set_errorwith_student, message=FALSE}
+sample_set<-sample(nrow(Default),nrow(Default)*0.8)
+training_dataset <- Default[sample_set,]
+test_dataset <- Default[-sample_set,]
+regression_model <- glm(default ~ income + balance + student, data = training_dataset, family = "binomial")
+probablity <- predict(regression_model, test_dataset, type = "response")
+probablity<-predict(regression_model,test_dataset,type="response")
+prediction<-ifelse(probablity > 0.5,"Yes","No")
+mean(prediction!=test_dataset$default)
+```
+
+  Including the the dummy variable for student did not lead to any reduction in validation set error rate.
+  
+# 9 We will now consider the Boston housing data set, from the MASS library.
+
+# 9a Based on this data set, provide an estimate for the population mean of medv. Call this estimate ˆμ.
+``` {r 9a_esitmate_population_mean_medv, message=FALSE}
+est_pop_mean_medv <- mean(Boston$medv)
+est_pop_mean_medv
+```
+  
+  Estimate for the population mean of medv: `r est_pop_mean_medv`. 
+  
+
+# 9b Provide an estimate of the standard error of ˆμ. Interpret this result.
+``` {r 9b_esitmate_se_medv, message=FALSE}
+est_se_medv <- sd(Boston$medv)/sqrt(nrow(Boston))
+est_se_medv 
+```
+  
+  The estimate of the standard error: `r est_se_medv`. 
+  
+
+#9c Now estimate the standard error of ˆμ using the bootstrap. How does this compare to your answer from (b)?
+``` {r 9c_esitmate_se_medv_bootstrap, message=FALSE}
+boot.fn = function (data ,index ){
+  mean_medv <- mean(data[index])
+  return (mean_medv)
+}
+boot(Boston$medv, boot.fn, 1000)
+```
+  Standard error obtained using bootstrap is 0.4107 which is close to `r est_se_medv` which was obtained earlier.
+  
+
+# 9d Based on your bootstrap estimate from (c), provide a 95% confidence interval for the mean of medv. Compare it to the results obtained using t.test(Boston$medv).
+
+``` {r 9d_confidence_interval, message=FALSE}
+t.test(Boston$medv)
+ci.mean_medv <- c(22.53281 - (2 * 0.4107397), 22.53281 + (2 * 0.4107397)) 
+ci.mean_medv
+```
+
+  Bootstrap confidence interval for the mean of medv is very close to that obtained using t.test(Boston$medv)
+  
+
+# 9e Based on this data set, provide an estimate, ˆμmed, for the median value of medv in the population.
+``` {r 9e_estimate_median, message=FALSE}
+est_pop_median_medv <- median(Boston$medv)
+est_pop_median_medv
+```
+
+# 9f We now would like to estimate the standard error of ˆμmed. Unfortunately, there is no simple formula for computing the standard error of the median. Instead, estimate the standard error of the median using the bootstrap. Comment on your findings.
+
+``` {r 9e_estimate_se_median_bootstrap, message=FALSE}
+boot.fn = function (data ,index ){
+  median_medv <- median(data[index])
+  return (median_medv)
+}
+boot(Boston$medv, boot.fn, 1000)
+```
+  
+  Estimated median value using bootstrap is 21.2 which is same as 9e above with standard error rate of 0.3704 which is smaller compared to median value.
+  
+  
+# 9g Based on this data set, provide an estimate for the tenth percentile of medv in Boston suburbs. Call this quantity ˆμ0.1. (You can use the quantile() function.)
+``` {r 9g_estimate_10th_percentile, message=FALSE}
+est_10th_percentile_medv <- quantile(Boston$medv, c(0.1))
+est_10th_percentile_medv
+```
+
+# 9h Use the bootstrap to estimate the standard error of ˆμ0.1. Comment on your findings.
+
+``` {r 9e_estimate_se_10th_percentile_bootstrap, message=FALSE}
+boot.fn = function (data ,index ){
+  quantile_percentile <- quantile(data[index], c(0.1))
+  return (quantile_percentile)
+}
+boot(Boston$medv, boot.fn, 1000)
+```
+
+  Estimated tenth percentile of medv using bootstrap is 12.75 which is same as 9g above with standard error rate of 0.4929676 which is smaller compared to the
+  10th percentile, this is an indication that estimate is representing population accurately 

@@ -1,0 +1,231 @@
+---
+title: "Predictive Modeling Exercises Week 5"
+author: "Amol Gote"
+date: "08/09/2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(MASS)
+library(boot)
+library(glmnet)
+library(leaps)
+library(pls)
+```
+
+# Problem 9 In this exercise, we will predict the number of applications received using the other variables in the College data set.
+
+# 9a Split the data set into a training set and a test set.
+
+```{r 9a_split_data_set}
+training_college_subset <- sample(nrow(College) * 0.75)
+training_college_ds = College[training_college_subset, ]
+test_college_ds = College[-training_college_subset, ]
+nrow(training_college_ds)
+nrow(test_college_ds)
+test_college_mean <-  mean(test_college_ds[, "Apps"])
+test_college_mse <-  mean((test_college_ds[, "Apps"] - test_college_mean)^2)
+```
+
+# 9b Fit a linear model using least squares on the training set, and report the test error obtained.
+```{r 9b_lm_least_Square}
+lm_fit <- lm(Apps ~ . , data = training_college_ds)
+lm_predictions <- predict(lm_fit, test_college_ds)
+lm_mse <- round(mean((test_college_ds[,"Apps"] - lm_predictions)^2))
+lm_rmse <- sqrt(mean((test_college_ds[,"Apps"] - lm_predictions)^2))
+lm_mse <- round(mean((test_college_ds[,"Apps"] - test_college_mean)^2))
+cat("MSE:         ", lm_mse, "\n")
+cat("RMSE:        ", lm_rmse, "\n")
+```
+
+# 9c Fit a ridge regression model on the training set, with λ chosen by cross-validation. Report the test error obtained.
+
+```{r 9c_ridge_regression_model}
+train_ds_matrix <- model.matrix(Apps ~ ., data = training_college_ds)
+test_ds_matrix <- model.matrix(Apps ~ ., data = test_college_ds)
+
+grid <- 10 ^ seq(4, -2, length = 100)
+
+ridge_reg_model <- cv.glmnet(train_ds_matrix, training_college_ds[,"Apps"], alpha = 0, lambda = grid, thresh = 1e-12)
+ridge_reg_predictions <- predict(ridge_reg_model, test_ds_matrix, s = ridge_reg_model$lambda.min)
+
+ridge_mse <- round(mean((test_college_ds[,"Apps"] - ridge_reg_predictions)^2))
+ridge_rmse <- sqrt(mean((test_college_ds[,"Apps"] - ridge_reg_predictions)^2))
+cat("MSE:         ", ridge_mse, "\n")
+cat("RMSE:        ", ridge_rmse, "\n")
+
+```
+
+# 9d Fit a lasso model on the training set, with λ chosen by crossvalidation. Report the test error obtained, along with the number of non-zero coefficient estimates.
+
+```{r 9c_fir_lasso_model}
+lasso_model <- cv.glmnet(train_ds_matrix, training_college_ds[,"Apps"], alpha = 1, lambda = grid, thresh = 1e-12)
+
+lasso_predictions <- predict(lasso_model, test_ds_matrix, s = lasso_model$lambda.min)
+
+lasso_mse <- round(mean((test_college_ds[,"Apps"] - lasso_predictions)^2))
+lasso_rmse <- sqrt(mean((test_college_ds[,"Apps"] - lasso_predictions)^2))
+cat("MSE:         ", lasso_mse, "\n")
+cat("RMSE:        ", lasso_rmse, "\n")
+```
+
+```{r 9c_lasso_model_coefficients}
+predict(lasso_model, s = lasso_model$lambda.min, type = "coefficients")
+```
+
+# 9e Fit a PCR model on the training set, with M chosen by crossvalidation. Report the test error obtained, along with the value of M selected by cross-validation.
+```{r 9e_pcr_model}
+pcr_model <- pcr(Apps ~ . , data = training_college_ds, scale=T, validation="CV")
+validationplot(pcr_model, val.type = "MSEP")
+
+```
+
+```{r 9e_pcr_model_m}
+pcr_predictions <- predict(pcr_model, test_college_ds, ncomp = 10)
+pcr_mse <- round(mean((test_college_ds[,"Apps"] - pcr_predictions)^2))
+pcr_rmse <- sqrt(mean((test_college_ds[,"Apps"] - pcr_predictions)^2))
+cat("MSE:         ", pcr_mse, "\n")
+cat("RMSE:        ", pcr_rmse, "\n")
+```
+
+# 9f Fit a PLS model on the training set, with M chosen by crossvalidation. Report the test error obtained, along with the value of M selected by cross-validation.
+```{r 9f_pls_model}
+pls_model <- plsr(Apps ~ . , data = training_college_ds, scale=T, validation="CV")
+validationplot(pls_model, val.type = "MSEP")
+```
+
+```{r 9f_pls_model_m}
+pls_predictions <- predict(pls_model, test_college_ds, ncomp = 10)
+pls_mse <- round(mean((test_college_ds[,"Apps"] - pls_predictions)^2))
+pls_rmse <- sqrt(mean((test_college_ds[,"Apps"] - pls_predictions)^2))
+cat("MSE:         ", pls_mse, "\n")
+cat("RMSE:        ", pls_rmse, "\n")
+```
+
+
+# 9g Comment on the results obtained. How accurately can we predict the number of college applications received? Is there much difference among the test errors resulting from these five approaches?
+
+```{r 9g_final_comments}
+lm_test_r2 <- (1 - (lm_mse/test_college_mse))
+ridge_test_r2 <- (1 - (ridge_mse/test_college_mse))
+lasso_test_r2 <- (1 - (lasso_mse/test_college_mse))
+pcr_test_r2 <- (1 - (pcr_mse/test_college_mse))
+pls_test_r2 <- (1 - (pls_mse/test_college_mse))
+
+cat("R square with linear model : ", lm_test_r2, "\n")
+cat("R square with ridge model :  ", ridge_test_r2, "\n")
+cat("R square with lasso model :  ", lasso_test_r2, "\n")
+cat("R square with pcr :          ", pcr_test_r2, "\n")
+cat("R square with pls :          ", pls_test_r2, "\n")
+
+barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2),
+        names.arg = c("LM", "Ridge", "Lasso", "PCR", "PLS"))
+
+```
+
+  All models have R Square values near to 0.9. All models predict college applications with high accuracy, pcr has lesser accuracy than others.
+  
+
+# Problem 11 We will now try to predict per capita crime rate in the Boston data set.
+
+# 11a Try out some of the regression methods explored in this chapter, such as best subset selection, the lasso, ridge regression, and PCR. Present and discuss results for the approaches that you consider.
+
+```{r 11_a_regression__best_subset}
+#nrow(Boston)
+#head(Boston)
+#Boston <- subset(Boston, select = -c(resp))
+
+predict.regsubsets <-  function(object, newdata, id, ...) {
+    form <-  as.formula(object$call[[2]])
+    model_matrix <-  model.matrix(form, newdata)
+    coefficient <-  coef(object, id = id)
+    model_matrix[, names(coefficient)] %*% coefficient
+}
+
+k <-  10
+p <-  ncol(Boston)-1
+folds <-  sample(rep(1:k, length = nrow(Boston)))
+cv.errors <-  matrix(NA, k, p)
+
+for (i in 1:k) {
+  best.fit <-  regsubsets(crim ~ . , data = Boston[folds!=i,], nvmax = p)
+  for (j in 1:p) {
+    pred <-  predict(best.fit, Boston[folds==i,], id = j)
+    cv.errors[i,j] <-  mean((Boston$crim[folds==i] - pred)^2)
+  }
+}
+
+rmse_cv <-  sqrt(apply(cv.errors, 2, mean))
+plot(rmse_cv, pch = 19, type = "b")
+best_subset_index_min_rmse <- which.min(rmse_cv)
+best_subset_min_rmse <- rmse_cv[which.min(rmse_cv)]
+cat("Best subset minumum rmse Index : ", best_subset_index_min_rmse, "\n")
+cat("Best subset minumum rmse :       ", best_subset_min_rmse, "\n")
+best_fit_rmse <- best_subset_min_rmse
+```
+
+```{r 11_a_regression_lasso}
+model_matrix <- model.matrix(crim ~ ., data = Boston)
+lasso_cv <- cv.glmnet(model_matrix, Boston$crim, type.measure = "mse", alpha = 1)
+plot(lasso_cv)
+coef(lasso_cv)
+lasso_rmse <- sqrt(lasso_cv$cvm[lasso_cv$lambda == lasso_cv$lambda.1se])
+lasso_rmse
+```
+
+```{r 11_a_regression_ridge}
+model_matrix <- model.matrix(crim ~ . -1, data = Boston)
+ridge_cv <- cv.glmnet(model_matrix, Boston$crim, type.measure = "mse", alpha = 0)
+plot(ridge_cv)
+coef(ridge_cv)
+ridge_rmse <- sqrt(ridge_cv$cvm[ridge_cv$lambda == ridge_cv$lambda.1se])
+ridge_rmse
+```
+
+```{r 11_a_pcr}
+pcr_model <- pcr(crim ~ . , data = Boston, scale = TRUE, validation = "CV")
+summary(pcr_model)
+cverr <- RMSEP(pcr_model)$val[1,,]
+pcr_num_components <- which.min(cverr) - 1
+```
+
+ `r pcr_num_components` component PCR fit has lowest RMSE value.
+
+
+```{r 11_a_pls}
+pls_model <- plsr(crim ~ . , data = Boston, scale = TRUE, validation = "CV")
+summary(pls_model)
+```
+
+```{r 11_a_result}
+cat("RMSE with Best Fit:", best_fit_rmse, "\n")
+cat("RMSE with lasso:   ", lasso_rmse, "\n")
+cat("RMSE with ridge:   ", ridge_rmse, "\n")
+cat("RMSE with pcr:     ", "6.517", "\n")
+```
+
+# 11b Propose a model (or set of models) that seem to perform well on this data set, and justify your answer. Make sure that you are evaluating model performance using validation set error, crossvalidation, or some other reasonable alternative, as opposed to using training error.
+
+  Models indicate that best fit and PCR with 14 components give the best results, with PCR performing marginally better. RMSE values for the best fit PCR and 
+  very close.
+  
+
+# 11c  Does your chosen model involve all of the features in the data set? Why or why not?
+  Based on the RMSE value chosen models would be 
+  
+    1. PCR with `r pcr_num_components` components 
+    
+    2. `r best_subset_index_min_rmse` parameter best subset model 
+    
+  PCR model with `r pcr_num_components` components comprises of all the predictor variables. Weightage of each predictor variable for every component is given
+  by scores. `r best_subset_index_min_rmse` parameter best subset model also contains all the predictor variables. This confrims that all the predictor
+  variables are contributing in predicting the response variable
+  
+
+

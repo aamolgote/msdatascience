@@ -1,0 +1,223 @@
+---
+title: "Assignment: Chapter 8 Exercises (Week 7)"
+author: "Amol Gote"
+date: "08/23/2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(MASS)
+library(boot)
+library(glmnet)
+library(leaps)
+library(pls)
+library(tree)
+library(ggplot2)
+library(tidyverse)
+library(gbm)
+library(randomForest)
+```
+
+# Problem 9 This problem involves the OJ data set which is part of the ISLR package.
+
+```{r 9a_split_data_set}
+training_oj_subset <- sample(nrow(OJ), 800)
+training_oj_ds = OJ[training_oj_subset, ]
+test_oj_ds = OJ[-training_oj_subset, ]
+nrow(training_oj_ds)
+nrow(test_oj_ds)
+```
+
+```{r 9b_fit_tree}
+tree_oj <- tree(Purchase∼., OJ ,subset = training_oj_subset )
+```
+
+```{r 9e_full_predict_response}
+prediction <- predict(tree_oj, test_oj_ds, type="class")
+table(prediction, test_oj_ds$Purchase)
+test_error_rate <- mean(prediction != test_oj_ds$Purchase)
+test_error_rate_percentage <- test_error_rate * 100
+test_error_rate_percentage
+test_accuracy_rate <- mean(prediction == test_oj_ds$Purchase)
+test_accuracy_rate_percentage <- test_accuracy_rate * 100
+test_accuracy_rate_percentage
+```
+
+```{r 9f_determine_optimal_tree_size}
+optimal_tree <- cv.tree(tree_oj, FUN = prune.tree)
+```
+
+# 9g Produce a plot with tree size on the x-axis and cross-validated classification error rate on the y-axis.
+```{r 9f_plot_treee_size_error_rate}
+tree_plot <- data.frame(x=optimal_tree$size, y=optimal_tree$dev)
+ggplot(tree_plot, aes(x=x,y=y)) + 
+  geom_point() + 
+  geom_line() + 
+  xlab("Tree Size") + 
+  ylab("Deviance")
+```
+
+
+# 9h Which tree size corresponds to the lowest cross-validated classification error rate?
+
+  Tree size which corresponds to the lowest cross-validated classification error rate is: 7
+  
+  
+# 9i Produce a pruned tree corresponding to the optimal tree size obtained using cross-validation. If cross-validation does not lead to selection of a pruned tree, then create a pruned tree with five terminal nodes.
+
+```{r 9i_pruned_tree_optimal_tree_size}
+pruned_tree <- prune.tree(tree_oj, best = 7)
+```
+
+
+# 9j Compare the training error rates between the pruned and unpruned trees. Which is higher?
+```{r 9j_1_summary_prunned_tree}
+summary(pruned_tree)
+```
+
+```{r 9j_2_summary_unprunned_tree}
+summary(tree_oj)
+```
+
+  Misclassification rate on pruned tree is is higher
+
+# 9k Compare the test error rates between the pruned and unpruned trees. Which is higher?
+
+```{r 9k_1_pruned_test_error_rate}
+test_error_rate_pruned <- mean(predict(pruned_tree, test_oj_ds, type = "class") != test_oj_ds$Purchase)
+test_error_rate_pruned
+```
+
+```{r 9k_2_unpruned_test_error_rate}
+test_error_rate_unpruned <- mean(prediction != test_oj_ds$Purchase)
+test_error_rate_unpruned
+```
+
+  Test error rate of pruned tree is `r test_error_rate_pruned` and unpruned tree is `r test_error_rate_unpruned`.
+  Pruned tree error rate ishigher.
+  
+
+# Problem 10 - We now use boosting to predict Salary in the Hitters data set.
+
+# 10a Remove the observations for whom the salary information is unknown, and then log-transform the salaries.
+
+```{r 10a_remove_unknown_salary}
+hitters_ds <- Hitters 
+no_salary <- hitters_ds %>%
+    filter(is.na(Salary))
+no_salary_row_count <- nrow(no_salary)
+
+
+filtered_hitters_ds <- hitters_ds %>%
+    filter(!is.na(Salary))
+filtered_hitters_ds$Salary <- log(filtered_hitters_ds$Salary)
+```
+
+# 10b Create a training set consisting of the first 200 observations, and a test set consisting of the remaining observations.
+
+```{r, 10b_training_dataset}
+hitters_ds_training <- filtered_hitters_ds[1:200,]
+hitters_ds_testing <- filtered_hitters_ds[-(1:200),]
+```
+
+# 10c Perform boosting on the training set with 1,000 trees for a range of values of the shrinkage parameter λ. Produce a plot with different shrinkage values on the x-axis and the corresponding training set MSE on the y-axis.
+
+```{r, 10c_boosting}
+pows <- seq(-10, -0.2, by = 0.1)
+lambdas <- 10^pows
+training_errors <- rep(NA, length(lambdas))
+
+
+for (i in 1:length(lambdas)) {
+  boosting_model <- gbm(Salary ~ . , data = hitters_ds_training, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = lambdas[i])
+  
+  training_predictions <- predict(boosting_model, hitters_ds_training, n.trees = 1000)
+  training_errors[i] <- mean((training_predictions - hitters_ds_training$Salary)^2)
+}
+
+plot(lambdas, training_errors, xlab = "Shrinkage Values", ylab = "Training set MSE", type = "b", pch = 20)
+
+```
+
+# 10d Produce a plot with different shrinkage values on the x-axis and the corresponding test set MSE on the y-axis.
+
+```{r, 10d_plot}
+test_errors <- rep(NA, length(lambdas))
+
+
+for (i in 1:length(lambdas)) {
+  boosting_model <- gbm(Salary ~ . , data = hitters_ds_training, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = lambdas[i])
+  
+  test_predictions <- predict(boosting_model, hitters_ds_testing, n.trees = 1000)
+  test_errors[i] <- mean((test_predictions - hitters_ds_testing$Salary)^2)
+}
+
+plot(lambdas, test_errors, xlab = "Shrinkage Values", ylab = "Training set MSE", type = "b", pch = 20)
+min(test_errors)
+min_test_err <- min(test_errors)
+min_test_err_at <- lambdas[which.min(test_errors)]
+```
+
+ Minimum test error is obtained at λ = `r min_test_err_at`
+
+
+
+# 10e Compare the test MSE of boosting to the test MSE that results from applying two of the regression approaches seen in Chapters 3 and 6
+
+```{r, 10e_linear_model_test_mse}
+lm_model <- lm(Salary ~ . , data = hitters_ds_training)
+lm_model_predictions <- predict(lm_model, hitters_ds_testing)
+lm_model_test_mse <- mean((lm_model_predictions - hitters_ds_testing$Salary)^2)
+lm_model_test_mse
+```
+
+```{r, 10e_lasso_model_test_mse}
+lasso_model <- lm(Salary ~ . , data = hitters_ds_training)
+
+hitters_ds_training_matrix <- model.matrix(Salary ~ . , data = hitters_ds_training)
+hitters_ds_testing_matrix <- model.matrix(Salary ~ . , data = hitters_ds_testing)
+
+lasso_model <- glmnet(hitters_ds_training_matrix, hitters_ds_training$Salary, alpha = 1)
+lasso_model_predictions <- predict(lasso_model, s=0.01, newx=hitters_ds_testing_matrix)
+
+
+lasso_model_test_mse <- mean((lasso_model_predictions - hitters_ds_testing$Salary)^2)
+lasso_model_test_mse
+```
+
+  Both regression approaches lm and lasso have higher MSE compared to that of boosting.
+  
+# 10f Which variables appear to be the most important predictors in the boosted model?
+
+```{r, 10f_important_varaible_predictor}
+boosting_model <- gbm(Salary ~ . , data = hitters_ds_training, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = min_test_err)
+summary(boosting_model)
+```
+
+  Variables that appear to be most important predictors are 
+  1. CAtBat
+  2. PutOuts
+  3. CWalks
+
+# 10g Now apply bagging to the training set. What is the test set MSE for this approach?
+
+```{r, 10g_apply_bagging}
+random_forest_model <- randomForest(Salary ~ . , data = hitters_ds_training, ntree = 500, mtry = ncol(hitters_ds_training)-1)
+random_forest_predictions <- predict(random_forest_model, hitters_ds_testing)
+
+random_forest_test_mse <- mean((random_forest_predictions - hitters_ds_testing$Salary)^2)
+random_forest_test_mse
+```
+  
+  Test MSE for bagging is `r random_forest_test_mse` which is better than `r min_test_err` which is best MSE from boosting
+  
+  
