@@ -1,34 +1,13 @@
 ---
-title: "Final Project"
+title: "Final Project - Predictive Modelling"
 author: "Amol Gote"
-date: "08/09/2020"
+date: "08/28/2020"
 output:
   word_document: default
   html_document:
     df_print: paged
   pdf_document: default
 ---
-
-# Dataset Info
-  1. For this project will be using the lending loan club dataset, located at https://www.kaggle.com/wordsforthewise/lending-club
-  2. Since this datasize is huge and due to comouting constraints, will using the data for 2018 only. Only approved loans dataset will be in scope for this project. 
-  3. Effective dataset size if of 495,242 observations/loans 
-
-# About lending club
-  The Lending Club is a peer-to-peer lending service (it lends money to customers by matching lenders to borrowers), based in the United States. This company enables
-  borrowers to create loan listings on its website by supplying details about themselves and the loans that they would like to request.
-
-# Dataset Attributes 
-  1. Dataset contains various attributes based on which the credit lending decision takes place, this includes Debt to income ratio, annual income, home ownership type
-  (Rented,Mortgage, Owned), employment details.  Dataset also contains geographical information like state and zip code. It also has issued loan details like funded Loan
-  Amount, issued month and year, loan Term (36 or 60 months) and interest rate. Post loan has been issued, loan performance needs to be tracked, and this dataset
-  also contains those details loan Status (Current, Paid Off, Charged Off, Delinquent), loan Grades and delinquency details. 
-
-# Research Objectives
-  1. Qualitative - Build a model which will indicate if the loan would ever be delinquent, the delinquency could be of 30, 60, 90 or 120 days. 
-  2. Quantitative - Build a model which will provide the interest rate when the person applies for the loan.
-  3. Unsupervised - Identify correlation between various credit decisioning variables like fico, dti, annual income etc using PCA and K-Mean.
-  
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -53,18 +32,12 @@ library(gbm)
 library(randomForest)
 library(ggfortify)
 library(factoextra)
-set.seed(123456)
 ```
 
-
-# Feature engineering 
-
-Load the whole dataset 
 ```{r, read_full_dateset}
 lendingClubLoanData <- fread("data/Lending_club_dataset.csv", header = TRUE)
 ```
 
-Create a origination year fild on the dataset, so that all loans which have originated in 2018 can be extracted. 
 ```{r, adjust_issue_date}
 nrow(lendingClubLoanData)
 lendingClubLoanData$orig_year<-substr(lendingClubLoanData$issue_d,5,8)
@@ -75,21 +48,17 @@ lendingClubLoanData_2018 <- lendingClubLoanData %>%
   filter(orig_year == 2018)
 ```
 
-
 ```{r, 2018_number_rows}
-lc_ds_size <- nrow(lendingClubLoanData_2018)
-lc_ds_size
+nrow(lendingClubLoanData_2018)
 ```
 
-Dataset which will used for this analysis would comprise of `r lc_ds_size` observations.
 
-Create file for all loans which originated in 2018
 ```{r, write_2018_file}
 nrow(lendingClubLoanData_2018)
 write.csv(lendingClubLoanData_2018, file = "data/lending_club_loan_data_2018_final.csv", row.names=FALSE)
 ```
 
-Load the final data set for analysis
+
 ```{r final_dateset}
 final_dataset <- fread("data/lending_club_loan_data_2018_final.csv", header = TRUE)
 drops <- c("id","member_id", "url", "desc")
@@ -97,16 +66,12 @@ drops <- c("id","member_id", "url", "desc")
 ```
 
 
-List down all varibales in the dataset
+
 ```{r, final_dateset_names}
 names(final_dataset)
 ```
 
-```{r, summary_all_attributes}
-summary(final_dataset)
-```
-
-```{r final_datset_attrib_filtering}
+```{r}
 ds_lc <- final_dataset[,c("loan_amnt",
   "funded_amnt",
   "funded_amnt_inv",
@@ -164,22 +129,11 @@ ds_lc <- final_dataset[,c(
   "fico_range_high",
   "inq_last_6mths",
   "open_acc",
-  "pub_rec",
-  "total_acc",
-  "last_fico_range_high", 
-  "last_fico_range_low", 
-  "inq_last_12m",    
-  "num_tl_30dpd",      
-  "num_tl_90g_dpd_24m", 
-  "tot_hi_cred_lim",   
-  "num_rev_accts"    
+  "pub_rec"
   )]
 ```
 
-## Clean up the datset 
-  1. convert all categorical variables to factors
-  2. Remove the NA values
-  3. Convert variables to numeric or integer
+
 ```{r, clean_up_dataset}
 nrow(ds_lc)
 ds_lc <- na.omit(ds_lc, cols = c("dti", "int_rate"))
@@ -301,15 +255,7 @@ regression_model <- glm(is_acct_delinquent ~
                           fico_range_high + 
                           inq_last_6mths + 
                           open_acc + 
-                          pub_rec +
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts,    
+                          pub_rec,
                           data = training_dataset, family = "binomial")
 probablity<-predict(regression_model,test_dataset,type="response")
 prediction<-ifelse(probablity > 0.5, 1, 0)
@@ -338,14 +284,6 @@ regression_model <- glm(is_acct_delinquent ~
                           inq_last_6mths + 
                           open_acc + 
                           pub_rec,
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts,    
                           data = training_dataset, family = "binomial")
 probablity<-predict(regression_model,test_dataset,type="response")
 prediction<-ifelse(probablity > 0.5, 1, 0)
@@ -373,14 +311,6 @@ regression_model <- glm(is_acct_delinquent ~
                           inq_last_6mths + 
                           open_acc + 
                           pub_rec,
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts,    
                           data = training_dataset, family = "binomial")
 probablity<-predict(regression_model,test_dataset,type="response")
 prediction<-ifelse(probablity > 0.5, 1, 0)
@@ -410,14 +340,6 @@ regression_model <- glm(is_acct_delinquent ~
                           inq_last_6mths + 
                           open_acc + 
                           pub_rec,
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts,    
                           data = training_dataset, family = "binomial")
 probablity<-predict(regression_model,test_dataset,type="response")
 prediction<-ifelse(probablity > 0.5, 1, 0)
@@ -465,15 +387,7 @@ logistic_regression <- glm(is_acct_delinquent ~
                           fico_range_high + 
                           inq_last_6mths + 
                           open_acc + 
-                          pub_rec +
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts    
+                          pub_rec
                           ,data = train_dataset, family = binomial)
 
 predictions <- predict(logistic_regression, test_dataset, type="response")
@@ -498,15 +412,7 @@ lda_model <- lda(is_acct_delinquent ~
                           fico_range_high + 
                           inq_last_6mths + 
                           open_acc + 
-                          pub_rec +
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts
+                          pub_rec
                           ,data = train_dataset)
 predictions <- predict(lda_model, test_dataset, type="response")
 confusion_matrix <- table(predictions$class, 
@@ -517,57 +423,6 @@ confusion_matrix
 error_rate_lda <- mean(predictions$class != test_dataset$is_acct_delinquent)
 error_rate_lda
 ```
-```{r 10f_qda_1, message=FALSE}
-qda_model <- qda(is_acct_delinquent ~ 
-                          loan_amnt + 
-                          term + 
-                          int_rate + 
-                          installment + 
-                          grade + 
-                          sub_grade + 
-                          home_ownership + 
-                          annual_inc + 
-                          dti + 
-                          delinq_2yrs + 
-                          fico_range_low + 
-                          fico_range_high + 
-                          inq_last_6mths + 
-                          open_acc + 
-                          pub_rec +
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts, 
-                          data = train_dataset)
-predictions <- predict(qda_model, test_dataset, type="response")
-confusion_matrix <- table(predictions$class, 
-                            test_dataset$is_acct_delinquent, 
-                            dnn = c("Predicted Status", "Observed Status"))
-confusion_matrix
-
-error_rate_qda <- mean(predictions$class != test_dataset$is_acct_delinquent)
-error_rate_qda
-```
-
-```{r 10g_knn_1_1, message=FALSE}
-train_dataset_matrix <- as.matrix(head(train_dataset, 80000))
-test_dataset_matrix <- as.matrix(head(test_dataset, 80000))
-train_dataset_mini <- head(train_dataset, 80000)
-predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset_mini$is_acct_delinquent, 10)
-confusion_matrix <- table(predictions, 
-                            train_dataset_mini$is_acct_delinquent, 
-                            dnn = c("Predicted Status", "Observed Status"))
-confusion_matrix
-
-error_rate_knn <- mean(predictions != train_dataset_mini$is_acct_delinquent)
-error_rate_knn
-```
-
-
 ```{r tree}
 tree_lc <- tree(is_acct_delinquent ~ .,train_dataset)
 summary(tree_lc)
@@ -594,7 +449,7 @@ ggplot(tree_plot, aes(x=x,y=y)) +
   ylab("Deviance")
 ```
 ```{r pruned_tree_optimal_tree_size}
-pruned_tree <- prune.tree(tree_lc, best = 4)
+pruned_tree <- prune.tree(tree_lc, best = 2)
 ```
 
 ```{r summary_prunned_tree}
@@ -609,11 +464,6 @@ test_error_rate_pruned
 
 # Predicting the Interest Rate
 ```{r interest_rate_mse}
-train_dataset_subset <- sample(nrow(ds_lc) * 0.75)
-train_dataset <- ds_lc[train_dataset_subset, ]
-test_dataset <- ds_lc[-train_dataset_subset, ]
-nrow(train_dataset)
-nrow(test_dataset)
 test_interest_mean <- mean(test_dataset$int_rate)
 test_interest_mse <-  mean((test_dataset$int_rate - test_interest_mean)^2)
 test_interest_mean
@@ -649,17 +499,16 @@ lasso_mse
 ```{r pcr_model_interest_rates}
 pcr_model <- pcr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
 validationplot(pcr_model, val.type = "MSEP")
-pcr_predictions <- predict(pcr_model, test_dataset, ncomp = 15)
+pcr_predictions <- predict(pcr_model, test_dataset, ncomp = 10)
 pcr_mse <- mean((test_dataset$int_rate - pcr_predictions)^2)
 pcr_rmse <- sqrt(mean((test_dataset$int_rate - pcr_predictions)^2))
-pcr_mse
 ```
 
 
 ```{r pls_model_interest_rates}
 pls_model <- plsr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
 validationplot(pls_model, val.type = "MSEP")
-pls_predictions <- predict(pls_model, test_dataset, ncomp = 15)
+pls_predictions <- predict(pls_model, test_dataset, ncomp = 10)
 pls_mse <- mean((test_dataset$int_rate  - pls_predictions)^2)
 pls_rmse <- sqrt(mean((test_dataset$int_rate  - pls_predictions)^2))
 pls_mse
@@ -684,8 +533,8 @@ barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2),
 ```
 
 ```{r, boosting}
-train_dataset_mini <- train_dataset[1:1000,]
-test_dataset_mini <- test_dataset[(1:1000),]
+train_dataset_mini <- train_dataset[1:5000,]
+test_dataset_mini <- test_dataset[(1:5000),]
 
 pows <- seq(-10, -0.2, by = 0.1)
 lambdas <- 10^pows
@@ -704,7 +553,7 @@ plot(lambdas, training_errors, xlab = "Shrinkage Values", ylab = "Training set M
 ```
 
 
-```{r, boosting_plot, message=FALSE}
+```{r, boosting_plot}
 test_errors <- rep(NA, length(lambdas))
 
 
@@ -758,13 +607,7 @@ ds_lc_pca <- ds_lc[,c(
   "fico_range_high",
   "inq_last_6mths",
   "open_acc",
-  "pub_rec",
-  "total_acc",
-  "last_fico_range_high", 
-  "last_fico_range_low", 
-  "inq_last_12m",    
-  "tot_hi_cred_lim",   
-  "num_rev_accts"    
+  "pub_rec"
   )]
 ds_lc_pca_subset <- sample(nrow(ds_lc), 1000)
 ds_lc_pca = ds_lc_pca[ds_lc_pca_subset, ]
@@ -814,13 +657,7 @@ ds_lc_kmean <- ds_lc[,c(
   "fico_range_high",
   "inq_last_6mths",
   "open_acc",
-  "pub_rec",
-  "total_acc",
-  "last_fico_range_high", 
-  "last_fico_range_low", 
-  "inq_last_12m",    
-  "tot_hi_cred_lim",   
-  "num_rev_accts"    
+  "pub_rec"
   )]
 ds_lc_kmean_subset <- sample(nrow(ds_lc_kmean), 1000)
 ds_lc_kmean = ds_lc_kmean[ds_lc_kmean_subset, ]
@@ -880,7 +717,7 @@ fviz_nbclust(ds_lc_kmean_scaled, kmeans, method = "wss")
 Based on the visualization 3 or 4 clusters seems to be better classification. 3 clusters have very less overlap compared to that of the 4 clusters. 
 
 ```{r, unspervised_learning_kmean_asign_cluster}
-ds_lc_kmean$cluster <- k4$cluster
+ds_lc_kmean$cluster <- k3$cluster
 ```
 
 ```{r assignCustomerCategories}
@@ -890,21 +727,15 @@ for(i in 1:nrow(ds_lc_kmean)){
         ds_lc_kmean$category[i] <- "Low"
     }
     else if (ds_lc_kmean$cluster[i] == 2){
-      ds_lc_kmean$category[i] <- "Low-Medium"
-    }
-    else if (ds_lc_kmean$cluster[i] == 3){
       ds_lc_kmean$category[i] <- "Medium"
     }
-    else if (ds_lc_kmean$cluster[i] == 4){
+    else if (ds_lc_kmean$cluster[i] == 3){
       ds_lc_kmean$category[i] <- "High"
     }
 }
 
 low_risk_loans <- ds_lc_kmean %>%
   filter(category == "Low")
-
-low_medium_risk_loans <- ds_lc_kmean %>%
-  filter(category == "Low-Medium")
 
 medium_risk_loans <- ds_lc_kmean %>%
   filter(category == "Medium")
@@ -916,62 +747,53 @@ high_risk_loans <- ds_lc_kmean %>%
 
 ```{r, unspervised_learning_kmean_interest_rate}
 mean(low_risk_loans$int_rate)
-mean(low_medium_risk_loans$int_rate)
 mean(medium_risk_loans$int_rate)
 mean(high_risk_loans$int_rate)
 ```
 
 ```{r, unspervised_learning_kmean_annual_income}
 mean(low_risk_loans$annual_inc)
-mean(low_medium_risk_loans$annual_inc)
 mean(medium_risk_loans$annual_inc)
 mean(high_risk_loans$annual_inc)
 ```
 
 ```{r, unspervised_learning_kmean_dti}
 mean(low_risk_loans$dti)
-mean(low_medium_risk_loans$dti)
 mean(medium_risk_loans$dti)
 mean(high_risk_loans$dti)
 ```
 
 ```{r, unspervised_learning_kmean_fico_range_low}
 mean(low_risk_loans$fico_range_low)
-mean(low_medium_risk_loans$fico_range_low)
 mean(medium_risk_loans$fico_range_low)
 mean(high_risk_loans$fico_range_low)
 ```
 
 ```{r, unspervised_learning_kmean_fico_range_high}
 mean(low_risk_loans$fico_range_high)
-mean(low_medium_risk_loans$fico_range_high)
 mean(medium_risk_loans$fico_range_high)
 mean(high_risk_loans$fico_range_high)
 ```
 
 ```{r, unspervised_learning_kmean_inq_last_6mths}
 mean(low_risk_loans$inq_last_6mths)
-mean(low_medium_risk_loans$inq_last_6mths)
 mean(medium_risk_loans$inq_last_6mths)
 mean(high_risk_loans$inq_last_6mths)
 ```
 ```{r, unspervised_learning_kmean_delinq_2yrs}
 mean(low_risk_loans$delinq_2yrs)
-mean(low_medium_risk_loans$delinq_2yrs)
 mean(medium_risk_loans$delinq_2yrs)
 mean(high_risk_loans$delinq_2yrs)
 ```
 
 ```{r, unspervised_learning_kmean_grade}
 mean(low_risk_loans$grade)
-mean(low_medium_risk_loans$grade)
 mean(medium_risk_loans$grade)
 mean(high_risk_loans$grade)
 ```
 
 ```{r, unspervised_learning_kmean_sub_grade}
 mean(low_risk_loans$sub_grade)
-mean(low_medium_risk_loans$sub_grade)
 mean(medium_risk_loans$sub_grade)
 mean(high_risk_loans$sub_grade)
 ```
