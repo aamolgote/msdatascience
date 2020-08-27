@@ -25,9 +25,14 @@ output:
   also contains those details loan Status (Current, Paid Off, Charged Off, Delinquent), loan Grades and delinquency details. 
 
 # Research Objectives
-  1. Qualitative - Build a model which will indicate if the loan would ever be delinquent, the delinquency could be of 30, 60, 90 or 120 days. 
-  2. Quantitative - Build a model which will provide the interest rate when the person applies for the loan.
-  3. Unsupervised - Identify correlation between various credit decisioning variables like fico, dti, annual income etc using PCA and K-Mean.
+  1. Qualitative - Build a model which will indicate if the loan would ever be delinquent, the delinquency could be of 30, 60, 90 or 120 days.  
+  2. Quantitative - Build a model which will provide the interest rate when the person applies for the loan. 
+  3. Unsupervised - Identify correlation between various credit decisioning variables like fico, dti, annual income etc using PCA and K-Mean. 
+  
+  
+  Please note that some of the research objective have changed than what were quoted in the project out line document in Week-5,  
+    a. Instead of loan amount, now predicting interest rate. 
+    b. For qualitative predicting only delinquency and not charge offs. 
   
 
 ```{r setup, include=FALSE}
@@ -101,10 +106,16 @@ List down all varibales in the dataset
 ```{r, final_dateset_names}
 names(final_dataset)
 ```
-
+Summary of all the varibales in the dataset
 ```{r, summary_all_attributes}
 summary(final_dataset)
 ```
+
+
+## Variable Selection
+  1. Dataset contains lot of variables, these variables are attributes associated with existing loans and what we are trying to predict is when loan gets originated,
+  at that point in time identify in its life time whether loan would get delinquent at any point in time. So selecting attributes which are available only when loan gets
+  onboarded. Most of these attributes come from customers credit bureau report.
 
 ```{r final_datset_attrib_filtering}
 ds_lc <- final_dataset[,c("loan_amnt",
@@ -143,12 +154,79 @@ ds_lc <- final_dataset[,c("loan_amnt",
   "last_fico_range_low",
   "mths_since_last_major_derog",
   "acc_now_delinq",
-  "avg_cur_bal"
+  "avg_cur_bal",
+  "inq_last_12m", "num_tl_30dpd", "num_tl_90g_dpd_24m", "tot_hi_cred_lim", "num_rev_accts"
   )]
+```
 
+## Clean up the datset 
+  1. convert all categorical variables to factors
+  2. Remove the NA values
+  3. Convert variables to numeric or integer
+  4. Create a delinquent account flag, loan account becomes deliquent when loan status turns to either of the following (is_acct_delinquent = 1)
+    a. Late (16-30 days)
+    b. Late (31-120 days)
+    c. Charged Off
+    d. Default
+    e. In Grace Period
+    
+    Loan status with following is one which is not delinquent (is_acct_delinquent = 0)
+    a. Current
+    b. Fully Paid
+    
+```{r, clean_up_dataset}
+nrow(ds_lc)
+ds_lc <- na.omit(ds_lc, cols = c("dti", "int_rate"))
+nrow(ds_lc)
+levels(factor(ds_lc$loan_status))
+levels(factor(ds_lc$grade))
+levels(factor(ds_lc$sub_grade))
+levels(factor(ds_lc$home_ownership))
+ds_lc$term <- as.integer(as.factor(ds_lc$term)) 
+ds_lc$grade <- as.integer(as.factor(ds_lc$grade))
+ds_lc$sub_grade <- as.integer(as.factor(ds_lc$sub_grade))
+ds_lc$home_ownership <- as.integer(as.factor(ds_lc$home_ownership))
+ds_lc$int_rate <- as.numeric(ds_lc$int_rate)
+ds_lc$loan_status <- as.integer(as.factor(ds_lc$loan_status))
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 1] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 2] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 3] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 4] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 5] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 6] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 7] <- 1
+ds_lc$is_acct_delinquent <- factor(ds_lc$is_acct_delinquent)
+levels(factor(ds_lc$is_acct_delinquent))
+ds_lc = subset(ds_lc, select = -c(loan_status))
+```
 
+Perform regular subset varibale selection test
+```{r regular_subset}
+regular_subset_full <- regsubsets(is_acct_delinquent∼.,ds_lc, nvmax = 25)
+regular_subset_full_summary <- summary(regular_subset_full)
+regular_subset_full_summary
+regular_subset_full_summary$rsq
+par(mfrow =c(2,2))
+plot(regular_subset_full_summary$rss ,xlab=" Number of Variables", ylab=" RSS", type="l")
+plot(regular_subset_full_summary$adjr2 ,xlab =" Number of Variables", ylab=" Adjusted RSq",type="l")
+points (which.max(regular_subset_full_summary$adjr2), regular_subset_full_summary$adjr2[which.max(regular_subset_full_summary$adjr2)], col ="red",cex =2, pch =20)
+plot(regular_subset_full_summary$cp ,xlab =" Number of Variables ",ylab="Cp", type="l")
+points (which.min (regular_subset_full_summary$cp ), regular_subset_full_summary$cp [which.min (regular_subset_full_summary$cp )], col ="red",cex =2, pch =20)
+plot(regular_subset_full_summary$bic ,xlab=" Number of Variables ",ylab="BIC", type="l")
+points(which.min (regular_subset_full_summary$bic), regular_subset_full_summary$bic[which.min(regular_subset_full_summary$bic )], col ="red",cex =2, pch =20)
+```
 
-ds_lc <- final_dataset[,c(
+Forward and backward subset selection test.
+```{r regular_forward_backward_subset}
+forward_subset_full <- regsubsets(is_acct_delinquent∼., ds_lc, nvmax = 25, method="forward")
+summary(forward_subset_full)
+backward_subset_full <- regsubsets(is_acct_delinquent∼., ds_lc, nvmax = 25, method="backward")
+summary(backward_subset_full)
+```
+
+Based on the above subset selection test, identified following set of final variables.
+```{r, dataset_with_final_variables}
+ds_lc <- ds_lc[,c(
   "loan_amnt",
   "term",
   "int_rate",
@@ -157,7 +235,7 @@ ds_lc <- final_dataset[,c(
   "sub_grade",
   "home_ownership",
   "annual_inc",
-  "loan_status",
+  "is_acct_delinquent",
   "dti",
   "delinq_2yrs",
   "fico_range_low",
@@ -176,88 +254,20 @@ ds_lc <- final_dataset[,c(
   )]
 ```
 
-## Clean up the datset 
-  1. convert all categorical variables to factors
-  2. Remove the NA values
-  3. Convert variables to numeric or integer
-```{r, clean_up_dataset}
-nrow(ds_lc)
-ds_lc <- na.omit(ds_lc, cols = c("dti", "int_rate"))
-nrow(ds_lc)
-levels(factor(ds_lc$loan_status))
-levels(factor(ds_lc$grade))
-levels(factor(ds_lc$sub_grade))
-levels(factor(ds_lc$home_ownership))
-ds_lc$term <- as.integer(as.factor(ds_lc$term)) 
-ds_lc$grade <- as.integer(as.factor(ds_lc$grade))
-ds_lc$sub_grade <- as.integer(as.factor(ds_lc$sub_grade))
-ds_lc$home_ownership <- as.integer(as.factor(ds_lc$home_ownership))
-ds_lc$int_rate <- as.numeric(ds_lc$int_rate)
-#ds_lc$mths_since_last_record[is.na(ds_lc$mths_since_last_record)] <- 0
-#ds_lc$mths_since_last_major_derog[is.na(ds_lc$mths_since_last_major_derog)] <- 0
-#ds_lc$revol_util[is.na(ds_lc$revol_util)] <- mean(ds_lc$revol_util, na.rm = T)
-ds_lc$loan_status <- as.integer(as.factor(ds_lc$loan_status))
-ds_lc$is_acct_delinquent[ds_lc$loan_status == 1] <- 1
-ds_lc$is_acct_delinquent[ds_lc$loan_status == 2] <- 0
-ds_lc$is_acct_delinquent[ds_lc$loan_status == 3] <- 1
-ds_lc$is_acct_delinquent[ds_lc$loan_status == 4] <- 0
-ds_lc$is_acct_delinquent[ds_lc$loan_status == 5] <- 1
-ds_lc$is_acct_delinquent[ds_lc$loan_status == 6] <- 0
-ds_lc$is_acct_delinquent[ds_lc$loan_status == 7] <- 1
-ds_lc$is_acct_delinquent <- factor(ds_lc$is_acct_delinquent)
-levels(factor(ds_lc$is_acct_delinquent))
-ds_lc = subset(ds_lc, select = -c(loan_status))
-#ds_lc = subset(ds_lc, select = -c(loan_status,
-                                  #mths_since_last_delinq,
-  #mths_since_last_record,
-  #open_acc,
-  #pub_rec,
-  #revol_bal,
-  #revol_util,
-  #total_acc,
-  #out_prncp,
-  #out_prncp_inv,
-  #total_pymnt,
-  #total_pymnt_inv,
-  #total_rec_prncp,
-  #total_rec_int,
-  #total_rec_late_fee,
-  #recoveries
-  #collection_recovery_fee,
-  #last_fico_range_high,
-  #last_fico_range_low,
-  #mths_since_last_major_derog,
-  #acc_now_delinq
-  #avg_cur_bal
-  #))
-#ds_lc$is_acct_delinquent
-
-
-#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 1] <- 1
-#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 2] <- 0
-#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 3] <- 0
-#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 4] <- 0
-#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 5] <- 0
-#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 6] <- 0
-#ds_lc$is_acct_chargedoff[ds_lc$loan_status == 7] <- 0
-#ds_lc$is_acct_chargedoff <- factor(ds_lc$is_acct_chargedoff)
-#levels(factor(ds_lc$is_acct_chargedoff))
-#ds_lc$is_acct_chargedoff
-#ds_lc$int_rate
-```
-
+Check data types for all variables is int or numeric
 ```{r, check_data_type}
 str(ds_lc)
 ```
 
+Summary for all variables in the dataset along with NA check.
 ```{r, summary }
 summary(ds_lc)
 ```
 
 
-```{r}
-corr_ds_subset <- sample(nrow(ds_lc), 100)
-corr_ds = ds_lc[corr_ds_subset, ]
+```{r, correlation_plot_1}
+corr_ds_subset <- sample(nrow(ds_lc), 1000)
+corr_ds <- ds_lc[corr_ds_subset, ]
 pairs(~ 
                           loan_amnt + 
                           term + 
@@ -268,55 +278,37 @@ pairs(~
                           home_ownership
       , corr_ds)
 ```
-
-
-
-
-
-
-
+```{r, correlation_plot_2}
+pairs(~ 
+    annual_inc + 
+    delinq_2yrs +
+    fico_range_low +
+    fico_range_high +
+    inq_last_6mths +
+    open_acc +
+    pub_rec
+    ,corr_ds)
+```
+```{r, correlation_plot_3}
+pairs(~ 
+    total_acc +
+    last_fico_range_high +
+    last_fico_range_low +
+    inq_last_12m +
+    num_tl_30dpd +      
+    num_tl_90g_dpd_24m +
+    tot_hi_cred_lim +
+    num_rev_accts 
+    ,corr_ds)
+```
+Peak at initial set of records.
 ```{r}
 head(ds_lc)
 ```
 
 
-
-
-```{r validation_set_error_1, message=FALSE}
-sample_set<-sample(nrow(ds_lc),nrow(ds_lc)*0.6)
-training_dataset <- ds_lc[sample_set,]
-test_dataset <- ds_lc[-sample_set,]
-regression_model <- glm(is_acct_delinquent ~ 
-                          loan_amnt + 
-                          term + 
-                          int_rate + 
-                          installment + 
-                          grade + 
-                          sub_grade + 
-                          home_ownership + 
-                          annual_inc + 
-                          dti + 
-                          delinq_2yrs + 
-                          fico_range_low + 
-                          fico_range_high + 
-                          inq_last_6mths + 
-                          open_acc + 
-                          pub_rec +
-                          total_acc +
-                          last_fico_range_high +
-                          last_fico_range_low +
-                          inq_last_12m +
-                          num_tl_30dpd +     
-                          num_tl_90g_dpd_24m +
-                          tot_hi_cred_lim + 
-                          num_rev_accts,    
-                          data = training_dataset, family = "binomial")
-probablity<-predict(regression_model,test_dataset,type="response")
-prediction<-ifelse(probablity > 0.5, 1, 0)
-validation_error_rate1 <- mean(prediction != test_dataset$is_acct_delinquent)
-validation_error_rate1
-```
-
+## Validation set
+Identify whats right the subset distribution for training and test dataset
 
 ```{r validation_set_error_2, message=FALSE}
 sample_set<-sample(nrow(ds_lc),nrow(ds_lc)*0.7)
@@ -427,16 +419,15 @@ validation_error_rate4
 
 Following is the data split in training and test data ration along with validation error rate/misclassification 
   
-    1. Tranining : Test -> 60 : 40, validation error rate `r validation_error_rate1`. or `r validation_error_rate1 * 100`%  
-    2. Tranining : Test -> 70 : 30, validation error rate `r validation_error_rate2`. or `r validation_error_rate2 * 100`%  
-    3. Tranining : Test -> 75 : 25, validation error rate `r validation_error_rate3`. or `r validation_error_rate3 * 100`%  
+    1. Tranining : Test -> 70 : 30, validation error rate `r validation_error_rate2`. or `r validation_error_rate2 * 100`%  
+    2. Tranining : Test -> 75 : 25, validation error rate `r validation_error_rate3`. or `r validation_error_rate3 * 100`%  
     3. Tranining : Test -> 80 : 20, validation error rate `r validation_error_rate3`. or `r validation_error_rate4 * 100`%  
     
     
   Validation error rate is different for different sample splits of taining and test dataset. This indicates that validation error rate varies by which 
   observations are in the training/validation sets.
 
-
+Partition the dataset based on results of above validation set approach.
 ```{r partition_dataset, message=FALSE}
 data_partition <- createDataPartition(y = ds_lc$is_acct_delinquent, p = 0.75, list = FALSE)
 train_dataset <- ds_lc[data_partition,]
@@ -448,7 +439,7 @@ nrow(train_dataset)
 nrow(test_dataset)
 ```
 
-
+## Logistic Regression
 ```{r logistic_regression, message=FALSE}
 logistic_regression <- glm(is_acct_delinquent ~ 
                           loan_amnt + 
@@ -482,6 +473,7 @@ error_rate_lr <- mean(predicted_direction != test_dataset$is_acct_delinquent)
 error_rate_lr
 ```
 
+## LDA - Linear Discriminant analysis
 ```{r lda, message=FALSE}
 lda_model <- lda(is_acct_delinquent ~ 
                           loan_amnt + 
@@ -517,6 +509,8 @@ confusion_matrix
 error_rate_lda <- mean(predictions$class != test_dataset$is_acct_delinquent)
 error_rate_lda
 ```
+
+## QDA - Quadratic Discriminant Analysis
 ```{r 10f_qda_1, message=FALSE}
 qda_model <- qda(is_acct_delinquent ~ 
                           loan_amnt + 
@@ -553,6 +547,7 @@ error_rate_qda <- mean(predictions$class != test_dataset$is_acct_delinquent)
 error_rate_qda
 ```
 
+## KNN
 ```{r 10g_knn_1_1, message=FALSE}
 train_dataset_matrix <- as.matrix(head(train_dataset, 80000))
 test_dataset_matrix <- as.matrix(head(test_dataset, 80000))
@@ -567,7 +562,7 @@ error_rate_knn <- mean(predictions != train_dataset_mini$is_acct_delinquent)
 error_rate_knn
 ```
 
-
+## Tree
 ```{r tree}
 tree_lc <- tree(is_acct_delinquent ~ .,train_dataset)
 summary(tree_lc)
@@ -578,12 +573,15 @@ prediction <- predict(tree_lc, test_dataset, type="class")
 error_rate_tree <- mean(prediction != test_dataset$is_acct_delinquent)
 error_rate_tree
 ```
-
+ The prime indicator/factor  for is loan account delinquent is last_fico_range_high 
+ When high fico reaches below 581, then probablity of loan account becoming delinquent is high.
+ 
 
 ```{r determine_optimal_tree_size}
 optimal_tree <- cv.tree(tree_lc, FUN = prune.tree)
 optimal_tree
 ```
+  OPtimal tree size is 4.
 
 ```{r plot_treee_size_error_rate}
 tree_plot <- data.frame(x=optimal_tree$size, y=optimal_tree$dev)
@@ -591,10 +589,14 @@ ggplot(tree_plot, aes(x=x,y=y)) +
   geom_point() + 
   geom_line() + 
   xlab("Tree Size") + 
-  ylab("Deviance")
+  ylab("Deviance") +
+  theme_minimal()
 ```
 ```{r pruned_tree_optimal_tree_size}
 pruned_tree <- prune.tree(tree_lc, best = 4)
+optimal_tree
+#optimal_tree <- cv.tree(tree_lc, FUN = prune.tree)
+#optimal_tree
 ```
 
 ```{r summary_prunned_tree}
@@ -606,8 +608,27 @@ summary(tree_lc)
 test_error_rate_pruned <- mean(predict(pruned_tree, test_dataset, type = "class") != test_dataset$is_acct_delinquent)
 test_error_rate_pruned
 ```
+```{r 9k_2_unpruned_test_error_rate}
+test_error_rate_unpruned <- mean(prediction != test_dataset$is_acct_delinquent)
+test_error_rate_unpruned
+```
+
+  Test error rate of pruned tree is `r test_error_rate_pruned` and unpruned tree is `r test_error_rate_unpruned`. 
+  
+  Tree error rate is `r test_error_rate_pruned`.
+  Logistic regression error rate is `r error_rate_lr`.
+  LDA error rate is `r error_rate_lda`.
+  QDA error rate is `r error_rate_qda`.
+  KNN error rate is `r error_rate_knn`.
+  
+  All the error rates are almost identical except QDA and KNN, but KNN did not run agains full dataset, so ignoring KNN based models, QDA error rate is bit on higher side,
+  so models to predict loan account delinquency would be logistic regression, LDA or Tree
+  
+  
 
 # Predicting the Interest Rate
+
+## Data Preparation, reset the training and test dataset, identify the interest mean for test dataset
 ```{r interest_rate_mse}
 train_dataset_subset <- sample(nrow(ds_lc) * 0.75)
 train_dataset <- ds_lc[train_dataset_subset, ]
@@ -620,13 +641,15 @@ test_interest_mean
 test_interest_mse
 ```
 
-# 9b Fit a linear model using least squares on the training set, and report the test error obtained.
+## Fit a linear model using least squares on the training set, and identify the test error obtained.
 ```{r lm_least_Square_interest_rates}
 lm_fit <- lm(int_rate ~ . , data = train_dataset)
 lm_predictions <- predict(lm_fit, test_dataset)
 lm_mse <- mean((lm_predictions - test_dataset$int_rate)^2)
 lm_mse
 ```
+
+## Fit a ridge regression model and identify the test error obtained.
 ```{r ridge_regression_model_interest_rates}
 train_ds_matrix <- model.matrix(int_rate ~ ., data = train_dataset)
 test_ds_matrix <- model.matrix(int_rate ~ ., data = test_dataset)
@@ -639,6 +662,7 @@ ridge_mse <- mean((test_dataset$int_rate - ridge_reg_predictions)^2)
 ridge_mse
 ```
 
+## Fit a Lasso model and identify the test error obtained.
 ```{r lasso_model_interest_rates}
 lasso_model <- cv.glmnet(train_ds_matrix, train_dataset$int_rate, alpha = 1, lambda = grid, thresh = 1e-12)
 lasso_predictions <- predict(lasso_model, test_ds_matrix, s = lasso_model$lambda.min)
@@ -646,6 +670,8 @@ lasso_mse <- mean((test_dataset$int_rate - lasso_predictions)^2)
 lasso_rmse <- sqrt(mean((test_dataset$int_rate - lasso_predictions)^2))
 lasso_mse
 ```
+
+## Fit a PCR model and identify the test error obtained.
 ```{r pcr_model_interest_rates}
 pcr_model <- pcr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
 validationplot(pcr_model, val.type = "MSEP")
@@ -656,6 +682,7 @@ pcr_mse
 ```
 
 
+## Fit a PLS model and identify the test error obtained.
 ```{r pls_model_interest_rates}
 pls_model <- plsr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
 validationplot(pls_model, val.type = "MSEP")
@@ -665,7 +692,8 @@ pls_rmse <- sqrt(mean((test_dataset$int_rate  - pls_predictions)^2))
 pls_mse
 ```
 
-```{r modela_comparison}
+Compare R2 values for various models
+```{r model_comparison}
 lm_test_r2 <- (1 - (lm_mse/test_interest_mse))
 ridge_test_r2 <- (1 - (ridge_mse/test_interest_mse))
 lasso_test_r2 <- (1 - (lasso_mse/test_interest_mse))
@@ -683,6 +711,10 @@ barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2),
 
 ```
 
+  All models have R Square values near to 0.9. All models predict interest rate with high accuracy, pcr has lesser accuracy than others.
+
+## Boosting 
+  Changed the dataset size due to systme constraints
 ```{r, boosting}
 train_dataset_mini <- train_dataset[1:1000,]
 test_dataset_mini <- test_dataset[(1:1000),]
@@ -731,6 +763,14 @@ boosting_model <- gbm(int_rate ~ . , data = train_dataset_mini, distribution = "
 summary(boosting_model)
 ```
 
+ Variables that appear to be most important predictors are 
+  1. sub_grade
+  2. grade
+  3. open_acc
+  4. num_rev_Accts
+  5. annual_inc
+
+## Bagging
 ```{r, 10g_apply_bagging}
 random_forest_model <- randomForest(int_rate ~ . , data = train_dataset_mini, ntree = 500, mtry = ncol(train_dataset_mini)-1)
 random_forest_predictions <- predict(random_forest_model, test_dataset_mini)
