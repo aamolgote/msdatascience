@@ -1,7 +1,7 @@
 ---
-title: "Final Project"
+title: "Final Project - Predictive Modelling"
 author: "Amol Gote"
-date: "08/09/2020"
+date: "08/28/2020"
 output:
   word_document: default
   html_document:
@@ -10,10 +10,10 @@ output:
 ---
 
 # Dataset Info
-  1. For this project will be using the lending loan club dataset, located at https://www.kaggle.com/wordsforthewise/lending-club
+  1. For this project we will be using the lending loan club dataset, located at https://www.kaggle.com/wordsforthewise/lending-club
   2. Since this datasize is huge and due to computing constraints, for this project we will be using the data for loans which have originated in 2018. Only approved
   loans dataset will be in scope for this project. 
-  3. Effective dataset size if of 495,242 observations/loans 
+  3. Effective dataset size is of 495,242 observations/loans 
   4. Attached is the data dictionary file which describes all the variables for this dataset LCDataDictionary.xlsx
 
 # About lending club
@@ -22,8 +22,10 @@ output:
 
 # Dataset Attributes 
   1. Dataset contains various attributes based on which the credit lending decision takes place, this includes Debt to income ratio, annual income, home ownership type
-  (Rented,Mortgage, Owned), employment details.  Dataset also contains geographical information like state and zip code. It also has issued loan details like funded 
-  Loan Amount, issued month and year, loan Term (36 or 60 months) and interest rate. Post loan has been issued, loan performance needs to be tracked, and this dataset
+  (Rented, Mortgage, Owned), employment details.  
+  2. Dataset also contains geographical information like state and zip code. It also has issued loan details like funded 
+  Loan Amount, issued month and year, loan Term (36 or 60 months) and interest rate. 
+  3. Post loan has been issued, loan performance needs to be tracked, and this dataset
   also contains those details loan Status (Current, Paid Off, Charged Off, Delinquent), loan Grades and delinquency details. 
 
 # Research Objectives
@@ -117,7 +119,7 @@ summary(final_dataset)
 
 
 ## Variable Selection
-  1. Dataset contains lot of variables, some of these varibales are associated with secondary applicant, so excluding those variables. Some other varibales contain
+  1. Dataset contains lot of variables, some of these varibales are associated with secondary applicant, so excluding those variables. Some other variables contain
   lot of NA values so dropped those variables.  
 
 ```{r final_datset_attrib_filtering}
@@ -173,9 +175,10 @@ ds_lc <- final_dataset[,c("loan_amnt",
     d. Default
     e. In Grace Period
     
-    Loan status with following is one which is not delinquent (is_acct_delinquent = 0)
-    a. Current
-    b. Fully Paid
+    Loan status with following is one which is not delinquent (is_acct_delinquent = 0) 
+    a. Current 
+    b. Fully Paid 
+    
     
 ```{r, clean_up_dataset}
 nrow(ds_lc)
@@ -388,7 +391,7 @@ Following is the data split in training and test data ration along with validati
   observations are in the training/validation sets.
 
 
-Partition the dataset based on results of above validation set approach.
+Partition the dataset based on results of above validation set approach. For all the 3 validation set validation error rate was marginally different, so going with 0.75 distribution.
 ```{r partition_dataset, message=FALSE}
 data_partition <- createDataPartition(y = ds_lc$is_acct_delinquent, p = 0.75, list = FALSE)
 train_dataset <- ds_lc[data_partition,]
@@ -437,12 +440,13 @@ error_rate_lr
 summary(logistic_regression)
 ```
 
-  Following variables are statitically significant 
-    1. loan_amnt , term, int_rate, installment, annual_inc, fico_range_high, open_acc, pub_rec, total_acc, out_prncp, total_pymnt, total_rec_int, total_rec_late_fee,
-    last_fico_range_high.
+  Following variables are statistically significant 
+  loan_amnt , term, int_rate, installment, annual_inc, fico_range_high, open_acc, pub_rec, total_acc, out_prncp, total_pymnt, total_rec_int, total_rec_late_fee,
+  last_fico_range_high.
+  
   
   Following are less significant 
-    1. delinq_2yrs, home_ownership, revol_bal, inq_last_6mths
+  delinq_2yrs, home_ownership, revol_bal, inq_last_6mths
   
 
 ## LDA - Linear Discriminant analysis
@@ -574,7 +578,7 @@ error_rate_knn_20 <- mean(predictions != train_dataset_mini$is_acct_delinquent)
 error_rate_knn_20
 ```
 
-For KNN after 10 centers the error rate is very marginally dropping, so will go with n = 10 as baseline for comparison with other models
+For KNN after 10 centers the error rate is marginally dropping, so will go with n = 10 as baseline for comparison with other models
 
 ## Tree
 ```{r tree}
@@ -588,8 +592,10 @@ error_rate_tree <- mean(prediction != test_dataset$is_acct_delinquent)
 error_rate_tree
 ```
 
-  The prime indicator/factor  for is loan account delinquent is last_fico_range_high, out_prncp  and total_rec_late_fee 
-  When last_fico_range_high  < 621.5 out_prncp < 158.355 , then probablity of loan account becoming delinquent is high.
+  1. The prime indicator/factor  for is loan account delinquent is last_fico_range_high, out_prncp  and total_rec_late_fee.  
+  2. When last_fico_range_high  < 621.5 out_prncp < 158.355 , then probablity of loan account becoming delinquent is high. 
+  3. All other terminal nodes point towards not delinquent.  
+  
   
 ```{r determine_optimal_tree_size}
 optimal_tree <- cv.tree(tree_lc, FUN = prune.tree)
@@ -626,7 +632,7 @@ test_error_rate_unpruned <- mean(prediction != test_dataset$is_acct_delinquent)
 test_error_rate_unpruned
 ```
 
-Test error rate of pruned tree is `r test_error_rate_pruned` and unpruned tree is `r test_error_rate_unpruned`. 
+  Test error rate of pruned tree is `r test_error_rate_pruned` and unpruned tree is `r test_error_rate_unpruned`. 
 
 
   Logistic regression error rate is `r error_rate_lr`.
@@ -650,6 +656,7 @@ regular_subset_full_summary
 regular_subset_full_summary$rsq
 ```
 
+Drop variables based on best subset selection for interest rate
 ```{r, drop_variables_based_on_subset_int_rate}
 ds_lc = subset(ds_lc, select = -c(open_acc, revol_bal, total_pymnt, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq, num_tl_30dpd, total_rec_int, out_prncp, out_prncp_inv, is_acct_delinquent))
 ```
@@ -665,6 +672,8 @@ test_interest_mse <-  mean((test_dataset$int_rate - test_interest_mean)^2)
 test_interest_mean
 test_interest_mse
 ```
+
+
 ## Fit a linear model using least squares on the training set, and identify the test error obtained.
 ```{r lm_least_Square_interest_rates}
 lm_fit <- lm(int_rate ~ . , data = train_dataset)
@@ -689,7 +698,7 @@ ridge_mse <- mean((test_dataset$int_rate - ridge_reg_predictions)^2)
 ridge_mse
 coef(ridge_reg_model)
 ```
-Coefficients of all the variables are significant. All the features are important predictors. 
+Coefficients of all the variables are significant, all the features are important predictors. 
 
 
 ## Fit a Lasso model and identify the test error obtained.
@@ -710,7 +719,13 @@ pcr_model <- pcr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
 summary (pcr_model)
 validationplot(pcr_model, val.type = "MSEP")
 ```
-The lowest cross-validation error occurs when M = 8 component are used. 77.79% of the variation (or information) contained in the predictors are captured by 8 principal components. So compute the test MSE as follows.
+
+
+  1. The lowest cross-validation error occurs when M = 8 component are used.  
+  2. 77.79% of the variation (or information) contained in the predictors are captured by 8 principal components.   
+
+
+Compute the test MSE.
 ```{r pcr_prediction}
 pcr_predictions <- predict(pcr_model, test_dataset, ncomp = 8)
 pcr_mse <- mean((test_dataset$int_rate - pcr_predictions)^2)
@@ -724,7 +739,12 @@ pls_model <- plsr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
 summary (pls_model)
 validationplot(pls_model, val.type = "MSEP")
 ```
-The lowest cross-validation error occurs when M = 8 component are used, after M = 8 the error reduces marginally. 65.72 % of the variation (or information) contained in the predictors are captured by 8 principal components. So compute the test MSE as follows.
+
+  1. The lowest cross-validation error occurs when M = 8 component are used, after M = 8 the error reduces marginally. 
+  2. 65.72 % of the variation (or information) contained in the predictors are captured by 8 principal components.
+  
+
+Compute the test MSE.
 ```{r, pls_prediction}
 pls_predictions <- predict(pls_model, test_dataset, ncomp = 8)
 pls_mse <- mean((test_dataset$int_rate  - pls_predictions)^2)
@@ -808,14 +828,20 @@ cat("R square with boosting :     ", boosting_min_test_err_r2, "\n")
 cat("R square with random forest :", random_forest_r2, "\n")
 
 barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2, boosting_min_test_err_r2, random_forest_r2),
-        names.arg = c("LM", "Ridge", "Lasso", "PCR", "PLS", "Boosting", "RandomForest"))
+        names.arg = c("LM", "Ri", "Las", "PCR", "PLS", "Boost", "RF"))
 
 ```
 
-  All models have R Square values near to 0.6. All models predict interest rate with high accuracy, pcr has less accuracy than others.
+  All models have R Square values near to 0.6. All models except PCR predict interest rate, pcr has less accuracy than others.
 
 
-# Unsupervised Learning - PCA
+# Unsupervised Learning
+
+## PCA
+
+### Data preparation for PCA 
+
+Some of the variables contain majority constant values so removing those variables.
 ```{r, unspervised_learning_pca}
 ds_lc_pca <- ds_lc_after_correlation
 ds_lc_pca = subset(ds_lc_pca, select = -c(is_acct_delinquent,pub_rec, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq,
@@ -837,41 +863,52 @@ pr.out$x=-pr.out$x
 biplot (pr.out , scale =0)
 pr.var =pr.out$sdev ^2
 pve=pr.var/sum(pr.var )
-pve
 plot(pve , xlab="Principal Component ", ylab="Proportion of Variance Explained ", ylim=c(0,1) ,type="b")
 plot(cumsum (pve ), xlab="Principal Component ", ylab ="Cumulative Proportion of Variance Explained ", ylim=c(0,1) , type="b")
 ```
 
+Component variance distribution
 ```{r,  unspervised_learning_pca_bar_chart}
 biplot (pr.out , scale =0)
 fviz_eig(pr.out, addlabels = TRUE, ylim = c(0, 50))
 ```
 
-Based on the above plot first 5 components cover 60% of the variance, so baselining further analysis 
+Based on the above plot first 6 components cover 66-70% of the variance, so baselining further analysis 
 
+
+Output for PCA
 ```{r, pca_outpur}
 pr.out
 ```
 
+Choose first 6 components 
 ```{r, pca_csv_output}
-pr.out$rotation[1:21,1:5]
-write.csv(pr.out$rotation[1:21,1:5], file = "data/pca_output.csv", row.names=FALSE)
+pr.out$rotation[1:21,1:6]
+write.csv(pr.out$rotation[1:21,1:6], file = "data/pca_output.csv", row.names=FALSE)
 ```
 
 Based on the weights of variables across 5 components, here are the composition of variables across five components, in each of these componenets variables listed below are correlated with each other
 
-PC1 => total_pymnt, num_rev_accts, term, open_acc, total_acc, annual_inc,revol_bal, tot_hi_cred_lim, total_rec_int, out_prncp, installment, loan_amnt
+  PC1 => total_pymnt, num_rev_accts, term, open_acc, total_acc, annual_inc,revol_bal, tot_hi_cred_lim, total_rec_int, out_prncp, installment, loan_amnt
 
-PC2 => inq_last_6mths, tot_hi_cred_lim,open_acc, total_acc, num_rev_accts, total_rec_int, int_rate,out_prncp, out_prncp_inv, loan_amnt, installment
+  PC2 => inq_last_6mths, tot_hi_cred_lim,open_acc, total_acc, num_rev_accts, total_rec_int, int_rate,out_prncp, out_prncp_inv, loan_amnt, installment
 
-PC3 => total_acc,total_rec_int,delinq_2yrs,dti,inq_last_12m,int_rate,fico_range_high,last_fico_range_high
+  PC3 => total_acc,total_rec_int,delinq_2yrs,dti,inq_last_12m,int_rate,fico_range_high,last_fico_range_high
 
-PC4 => delinq_2yrs,dti,revol_bal, inq_last_12m, inq_last_6mths, total_pymnt, fico_range_high
+  PC4 => delinq_2yrs,dti,revol_bal, inq_last_12m, inq_last_6mths, total_pymnt, fico_range_high
 
-PC5 => annual_inc,tot_hi_cred_lim, delinq_2yrs,total_acc, total_rec_int, num_rev_accts, total_pymnt, fico_range_high, open_acc, home_ownership, last_fico_range_high,dti
+  PC5 => annual_inc,tot_hi_cred_lim, delinq_2yrs,total_acc, total_rec_int, num_rev_accts, total_pymnt, fico_range_high, open_acc, home_ownership,
+  last_fico_range_high,dti
+  
+  PC6 => total_pymnt, installment, home_ownership, delinq_2yrs, loan_amnt, revol_bal, inq_last_12m, inq_last_6mths, out_prncp_inv, out_prncp, term
 
 
 
+## K-Mean
+
+### Data preparation for K-Mean
+
+Some of the dataset variables contain constant values, so removing those variables.
 ```{r,  unspervised_learning_kmean}
 ds_lc_kmean <- ds_lc_after_correlation
 ds_lc_kmean = subset(ds_lc_kmean, select = -c(is_acct_delinquent,pub_rec, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq,
@@ -938,15 +975,15 @@ gap_stat <- clusGap(ds_lc_kmean_scaled, FUN = kmeans, nstart = 25, K.max = 10, B
 fviz_gap_stat(gap_stat)
 ```
 
-Based on the visualization and GAP statistic method 2 or 3 cluster seem to be of optimal size. 3 clusters seems to be providing better classification based on the visualization.
+  Based on the elbow method and GAP statistic method 6 number of clusters seem to be of optimal size. 
 
 ```{r, unspervised_learning_kmean_asign_cluster}
-ds_lc_kmean$cluster <- k3$cluster
-print(k3)
+ds_lc_kmean$cluster <- k6$cluster
+print(k6)
 ```
 
 ```{r, unspervised_learning_kmean_final_cluster_viz}
-fviz_cluster(k3, data = ds_lc_kmean)
+fviz_cluster(k6, data = ds_lc_kmean)
 ```
 
 Descriptive statistics at the cluster level

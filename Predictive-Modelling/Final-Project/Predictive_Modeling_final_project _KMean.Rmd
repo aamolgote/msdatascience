@@ -1,0 +1,230 @@
+---
+title: "Final Project"
+author: "Amol Gote"
+date: "08/28/2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(MASS)
+library(boot)
+library(glmnet)
+library(leaps)
+library(pls)
+library(sqldf)
+library(data.table)
+library(ggplot2) 
+library(readr) 
+library(gridExtra)
+library(tidyverse)
+library(sf)
+library(maps)
+library(caret)
+library(class)
+library(tree)
+library(gbm)
+library(randomForest)
+library(ggfortify)
+library(factoextra)
+library(cluster)
+set.seed(123456)
+```
+
+
+
+Load the final data set for analysis
+```{r final_dateset}
+final_dataset <- fread("data/lending_club_loan_data_2018_final.csv", header = TRUE)
+drops <- c("id","member_id", "url", "desc")
+#final_dataset[ , !(names(final_dataset) %in% drops)]
+```
+
+
+List down all variables in the dataset
+```{r, final_dateset_names}
+names(final_dataset)
+```
+Summary of all the variables in the dataset
+```{r, summary_all_attributes}
+summary(final_dataset)
+```
+
+
+## Variable Selection
+  1. Dataset contains lot of variables, some of these varibales are associated with secondary applicant, so excluding those variables. Some other variables contain
+  lot of NA values so dropped those variables.  
+
+```{r final_datset_attrib_filtering}
+ds_lc <- final_dataset[,c("loan_amnt",
+  "funded_amnt",
+  "funded_amnt_inv",
+  "term",
+  "int_rate",
+  "installment",
+  "grade",
+  "sub_grade",
+  "home_ownership",
+  "annual_inc",
+  "loan_status",
+  "dti",
+  "delinq_2yrs",
+  "fico_range_low",
+  "fico_range_high",
+  "inq_last_6mths",
+  "mths_since_last_delinq",
+  "mths_since_last_record",
+  "open_acc",
+  "pub_rec",
+  "revol_bal",
+  "revol_util",
+  "total_acc",
+  "out_prncp",
+  "out_prncp_inv",
+  "total_pymnt",
+  "total_pymnt_inv",
+  "total_rec_prncp",
+  "total_rec_int",
+  "total_rec_late_fee",
+  "recoveries",
+  "collection_recovery_fee",
+  "last_fico_range_high",
+  "last_fico_range_low",
+  "mths_since_last_major_derog",
+  "acc_now_delinq",
+  "avg_cur_bal",
+  "inq_last_12m", "num_tl_30dpd", "num_tl_90g_dpd_24m", "tot_hi_cred_lim", "num_rev_accts"
+  )]
+```
+
+```{r, clean_up_dataset}
+nrow(ds_lc)
+ds_lc <- na.omit(ds_lc, cols = c("dti", "int_rate"))
+nrow(ds_lc)
+levels(factor(ds_lc$loan_status))
+levels(factor(ds_lc$grade))
+levels(factor(ds_lc$sub_grade))
+levels(factor(ds_lc$home_ownership))
+ds_lc$term <- as.integer(as.factor(ds_lc$term)) 
+ds_lc$grade <- as.integer(as.factor(ds_lc$grade))
+ds_lc$sub_grade <- as.integer(as.factor(ds_lc$sub_grade))
+ds_lc$home_ownership <- as.integer(as.factor(ds_lc$home_ownership))
+ds_lc$int_rate <- as.numeric(ds_lc$int_rate)
+ds_lc$loan_status <- as.integer(as.factor(ds_lc$loan_status))
+```
+
+```{r dataset_correlation_matrix}
+cor(ds_lc)
+```
+
+
+```{r drop_variables_on_correlation}
+ds_lc = subset(ds_lc, select = -c(funded_amnt, funded_amnt_inv, grade, sub_grade, fico_range_low, last_fico_range_low, total_pymnt_inv, total_rec_prncp, mths_since_last_delinq, mths_since_last_record, mths_since_last_major_derog, avg_cur_bal, revol_util))
+```
+
+```{r create_loan_delinquent_variable}
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 1] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 2] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 3] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 4] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 5] <- 1
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 6] <- 0
+ds_lc$is_acct_delinquent[ds_lc$loan_status == 7] <- 1
+ds_lc$is_acct_delinquent <- factor(ds_lc$is_acct_delinquent)
+levels(factor(ds_lc$is_acct_delinquent))
+ds_lc = subset(ds_lc, select = -c(loan_status))
+ds_lc_after_correlation <- ds_lc
+```
+
+## K-Mean
+
+### Data preparation for K-Mean
+
+Some of the dataset variables contain constant values, so removing those variables.
+```{r,  unspervised_learning_kmean}
+ds_lc_kmean <- ds_lc_after_correlation
+ds_lc_kmean = subset(ds_lc_kmean, select = -c(is_acct_delinquent,pub_rec, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq,
+                                          num_tl_30dpd,num_tl_90g_dpd_24m))
+ds_lc_kmean_subset <- sample(nrow(ds_lc_kmean), 1000)
+ds_lc_kmean = ds_lc_kmean[ds_lc_kmean_subset, ]
+ds_lc_kmean_scaled <- as.data.frame(scale(ds_lc_kmean))
+```
+
+```{r, unspervised_learning_kmean_cluster_size}
+set.seed(123456)
+k2 <- kmeans(ds_lc_kmean_scaled, centers = 2, nstart = 25)
+k3 <- kmeans(ds_lc_kmean_scaled, centers = 3, nstart = 25)
+k4 <- kmeans(ds_lc_kmean_scaled, centers = 4, nstart = 25)
+k5 <- kmeans(ds_lc_kmean_scaled, centers = 5, nstart = 25)
+k6 <- kmeans(ds_lc_kmean_scaled, centers = 6, nstart = 25)
+k7 <- kmeans(ds_lc_kmean_scaled, centers = 7, nstart = 25)
+k8 <- kmeans(ds_lc_kmean_scaled, centers = 8, nstart = 25)
+k9 <- kmeans(ds_lc_kmean_scaled, centers = 9, nstart = 25)
+
+
+# plots to compare
+p2 <- fviz_cluster(k2, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 2")
+p3 <- fviz_cluster(k3, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 3")
+p4 <- fviz_cluster(k4, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 4")
+p5 <- fviz_cluster(k5, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 5")
+p6 <- fviz_cluster(k6, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 6")
+p7 <- fviz_cluster(k7, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 7")
+p8 <- fviz_cluster(k8, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 8")
+p9 <- fviz_cluster(k9, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 9")
+p10 <- fviz_cluster(k9, geom = "point",  data = ds_lc_kmean_scaled, ggtheme = theme_minimal()) + ggtitle("k = 10")
+
+
+grid.arrange(p2, p3, p4, p5,  nrow = 2)
+grid.arrange(p6, p7, p8, p9,  nrow = 2)
+grid.arrange(p10,  nrow = 2)
+```
+
+```{r unspervised_learning_kmean_elbow, message=FALSE}
+set.seed(123456)
+#Function to compute total within cluster sum of squares 
+wss <- function(k) {
+  kmeans(ds_lc_kmean_scaled, k, nstart = 25, iter.max = 10)$tot.withinss
+}
+
+#Compute and plot the within sum of squares (wss) for k = 1 to k = 10
+k.values <- 1:15
+
+#Extract wss for 2 - 10 clusters
+wss_values <- map_dbl(k.values, wss)
+
+plot(k.values, wss_values,
+     type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of clusters K",
+     ylab = "Total within clusters sum of squares")
+
+set.seed(123456)
+fviz_nbclust(ds_lc_kmean_scaled, kmeans, method = "wss")
+```
+
+```{r Gap_Statistic_Method_optimal_clusters }
+set.seed(123456)
+gap_stat <- clusGap(ds_lc_kmean_scaled, FUN = kmeans, nstart = 25, K.max = 10, B = 50)
+fviz_gap_stat(gap_stat)
+```
+
+  Based on the elbow method and GAP statistic method 6 number of clusters seem to be of optimal size. 
+
+```{r, unspervised_learning_kmean_asign_cluster}
+ds_lc_kmean$cluster <- k6$cluster
+print(k6)
+```
+
+```{r, unspervised_learning_kmean_final_cluster_viz}
+fviz_cluster(k6, data = ds_lc_kmean)
+```
+
+Descriptive statistics at the cluster level
+```{r, kmean_descriptive_stats}
+ds_lc_kmean %>%
+  group_by(cluster) %>%
+  summarise_all("mean")
+```
