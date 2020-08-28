@@ -228,6 +228,7 @@ ds_lc$is_acct_delinquent[ds_lc$loan_status == 7] <- 1
 ds_lc$is_acct_delinquent <- factor(ds_lc$is_acct_delinquent)
 levels(factor(ds_lc$is_acct_delinquent))
 ds_lc = subset(ds_lc, select = -c(loan_status))
+ds_lc_after_correlation <- ds_lc
 ```
 
 Perform regular subset varibale selection test
@@ -441,7 +442,7 @@ error_rate_lr
 summary(logistic_regression)
 ```
 
-  Following varibales are statitically significant 
+  Following variables are statitically significant 
     1. loan_amnt , term, int_rate, installment, annual_inc, fico_range_high, open_acc, pub_rec, total_acc, out_prncp, total_pymnt, total_rec_int, total_rec_late_fee,
     last_fico_range_high.
     2. Following are less significant delinq_2yrs, home_ownership, revol_bal, inq_last_6mths
@@ -597,3 +598,197 @@ Test error rate of pruned tree is `r test_error_rate_pruned` and unpruned tree i
   LDA error rate is `r error_rate_lda`.
   QDA error rate is `r error_rate_qda`.
   KNN error rate is `r error_rate_knn`.
+  
+  
+# Predicting the Interest Rate
+
+## Data Preparation, reset the training and test dataset, identify the interest mean for test dataset
+
+Perform regular subset varibale selection test
+```{r regular_subset_int_rate}
+ds_lc <- ds_lc_after_correlation
+regular_subset_full <- regsubsets(int_rate ~ ., ds_lc, nvmax = 40)
+regular_subset_full_summary <- summary(regular_subset_full)
+regular_subset_full_summary
+regular_subset_full_summary$rsq
+```
+
+```{r, drop_variables_based_on_subset_int_rate}
+ds_lc = subset(ds_lc, select = -c(open_acc, revol_bal, total_pymnt, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq, num_tl_30dpd, total_rec_int, out_prncp, out_prncp_inv))
+```
+
+```{r interest_rate_mse}
+train_dataset_subset <- sample(nrow(ds_lc) * 0.75)
+train_dataset <- ds_lc[train_dataset_subset, ]
+test_dataset <- ds_lc[-train_dataset_subset, ]
+nrow(train_dataset)
+nrow(test_dataset)
+test_interest_mean <- mean(test_dataset$int_rate)
+test_interest_mse <-  mean((test_dataset$int_rate - test_interest_mean)^2)
+test_interest_mean
+test_interest_mse
+```
+## Fit a linear model using least squares on the training set, and identify the test error obtained.
+```{r lm_least_Square_interest_rates}
+lm_fit <- lm(int_rate ~ . , data = train_dataset)
+lm_predictions <- predict(lm_fit, test_dataset)
+lm_mse <- mean((lm_predictions - test_dataset$int_rate)^2)
+lm_mse
+```
+## Fit a ridge regression model and identify the test error obtained.
+```{r ridge_regression_model_interest_rates}
+train_ds_matrix <- model.matrix(int_rate ~ ., data = train_dataset)
+test_ds_matrix <- model.matrix(int_rate ~ ., data = test_dataset)
+
+grid <- 10 ^ seq(4, -2, length = 100)
+
+ridge_reg_model <- cv.glmnet(train_ds_matrix, train_dataset$int_rate, alpha = 0, lambda = grid, thresh = 1e-12)
+ridge_reg_predictions <- predict(ridge_reg_model, test_ds_matrix, s = ridge_reg_model$lambda.min)
+ridge_mse <- mean((test_dataset$int_rate - ridge_reg_predictions)^2)
+ridge_mse
+```
+
+## Fit a Lasso model and identify the test error obtained.
+```{r lasso_model_interest_rates}
+lasso_model <- cv.glmnet(train_ds_matrix, train_dataset$int_rate, alpha = 1, lambda = grid, thresh = 1e-12)
+lasso_predictions <- predict(lasso_model, test_ds_matrix, s = lasso_model$lambda.min)
+lasso_mse <- mean((test_dataset$int_rate - lasso_predictions)^2)
+lasso_rmse <- sqrt(mean((test_dataset$int_rate - lasso_predictions)^2))
+lasso_mse
+```
+
+## Fit a PCR model and identify the test error obtained.
+```{r pcr_model_interest_rates}
+pcr_model <- pcr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
+validationplot(pcr_model, val.type = "MSEP")
+pcr_predictions <- predict(pcr_model, test_dataset, ncomp = 15)
+pcr_mse <- mean((test_dataset$int_rate - pcr_predictions)^2)
+pcr_rmse <- sqrt(mean((test_dataset$int_rate - pcr_predictions)^2))
+pcr_mse
+```
+
+
+## Fit a PLS model and identify the test error obtained.
+```{r pls_model_interest_rates}
+pls_model <- plsr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
+validationplot(pls_model, val.type = "MSEP")
+pls_predictions <- predict(pls_model, test_dataset, ncomp = 15)
+pls_mse <- mean((test_dataset$int_rate  - pls_predictions)^2)
+pls_rmse <- sqrt(mean((test_dataset$int_rate  - pls_predictions)^2))
+pls_mse
+```
+
+Compare R2 values for various models
+```{r model_comparison}
+lm_test_r2 <- (1 - (lm_mse/test_interest_mse))
+ridge_test_r2 <- (1 - (ridge_mse/test_interest_mse))
+lasso_test_r2 <- (1 - (lasso_mse/test_interest_mse))
+pcr_test_r2 <- (1 - (pcr_mse/test_interest_mse))
+pls_test_r2 <- (1 - (pls_mse/test_interest_mse))
+
+cat("R square with linear model : ", lm_test_r2, "\n")
+cat("R square with ridge model :  ", ridge_test_r2, "\n")
+cat("R square with lasso model :  ", lasso_test_r2, "\n")
+cat("R square with pcr :          ", pcr_test_r2, "\n")
+cat("R square with pls :          ", pls_test_r2, "\n")
+
+barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2),
+        names.arg = c("LM", "Ridge", "Lasso", "PCR", "PLS"))
+
+```
+
+  All models have R Square values near to 0.6. All models predict interest rate with high accuracy, pcr has lesser accuracy than others.
+  
+
+## Boosting 
+  Changed the dataset size due to systme constraints
+```{r, boosting}
+train_dataset_mini <- train_dataset[1:1000,]
+test_dataset_mini <- test_dataset[(1:1000),]
+
+pows <- seq(-10, -0.2, by = 0.1)
+lambdas <- 10^pows
+training_errors <- rep(NA, length(lambdas))
+
+
+for (i in 1:length(lambdas)) {
+  boosting_model <- gbm(int_rate ~ . , data = train_dataset_mini, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = lambdas[i])
+  
+  training_predictions <- predict(boosting_model, train_dataset_mini, n.trees = 1000)
+  training_errors[i] <- mean((training_predictions - train_dataset_mini$int_rate)^2)
+}
+
+plot(lambdas, training_errors, xlab = "Shrinkage Values", ylab = "Training set MSE", type = "b", pch = 20)
+```
+
+
+```{r, boosting_plot, message=FALSE}
+test_errors <- rep(NA, length(lambdas))
+for (i in 1:length(lambdas)) {
+  boosting_model <- gbm(int_rate ~ . , data = train_dataset_mini, distribution = "gaussian", 
+                       n.trees = 1000, shrinkage = lambdas[i])
+  
+  test_predictions <- predict(boosting_model, test_dataset_mini, n.trees = 1000)
+  test_errors[i] <- mean((test_predictions - test_dataset_mini$int_rate)^2)
+}
+
+plot(lambdas, test_errors, xlab = "Shrinkage Values", ylab = "Training set MSE", type = "b", pch = 20)
+min(test_errors)
+min_test_err <- min(test_errors)
+min_test_err_at <- lambdas[which.min(test_errors)]
+```
+
+Both regression approaches lm and lasso have higher MSE compared to that of boosting.
+
+## Bagging
+```{r, 10g_apply_bagging}
+random_forest_model <- randomForest(int_rate ~ . , data = train_dataset_mini, ntree = 500, mtry = ncol(train_dataset_mini)-1)
+random_forest_predictions <- predict(random_forest_model, test_dataset_mini)
+
+random_forest_test_mse <- mean((random_forest_predictions - test_dataset_mini$int_rate)^2)
+random_forest_test_mse
+```
+
+Test MSE for bagging is `r random_forest_test_mse` which is better than `r min_test_err` which is best MSE from boosting
+
+
+# Unspervised Learning - PCA
+```{r, unspervised_learning_pca}
+ds_lc_pca <- ds_lc_after_correlation
+ds_lc_pca = subset(ds_lc_pca, select = -c(is_acct_delinquent,pub_rec, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq,
+                                          num_tl_30dpd,num_tl_90g_dpd_24m))
+ds_lc_pca_subset <- sample(nrow(ds_lc), 1000)
+ds_lc_pca = ds_lc_pca[ds_lc_pca_subset, ]
+str(ds_lc_pca)
+pr.out <- prcomp (ds_lc_pca, scale =TRUE)
+names(pr.out)
+pr.out$center
+pr.out$scale
+pr.out$rotation
+biplot(pr.out)
+```
+
+```{r,  unspervised_learning_pca_plot}
+pr.out$rotation=-pr.out$rotation
+pr.out$x=-pr.out$x
+biplot (pr.out , scale =0)
+#pr.out$sdev
+pr.var =pr.out$sdev ^2
+pve=pr.var/sum(pr.var )
+pve
+plot(pve , xlab="Principal Component ", ylab="Proportion of Variance Explained ", ylim=c(0,1) ,type="b")
+plot(cumsum (pve ), xlab="Principal Component ", ylab ="Cumulative Proportion of Variance Explained ", ylim=c(0,1) , type="b")
+```
+
+```{r,  unspervised_learning_pca_bar_chart}
+#autoplot(pr.out)
+biplot (pr.out , scale =0)
+fviz_eig(pr.out, addlabels = TRUE, ylim = c(0, 50))
+```
+
+```{r}
+pr.out
+```
+
+PCA does not bring in much value. Very dimension were identified with PCA.
