@@ -27,7 +27,7 @@ output:
 # Research Objectives
   1. Qualitative - Build a model which will indicate if the loan would ever be delinquent, the delinquency could be of 30, 60, 90 or 120 days.  
   2. Quantitative - Build a model which will provide the interest rate when the person applies for the loan. 
-  3. Unsupervised - Identify correlation between various credit decisioning variables like fico, dti, annual income etc using PCA and K-Mean. 
+  3. Unsupervised - Identify correlation between various credit decisioning variables like fico, dti, annual income,  etc using PCA and K-Mean. 
   
   
   Please note that some of the research objective have changed than what were quoted in the project out line document in Week-5,  
@@ -187,16 +187,6 @@ ds_lc$sub_grade <- as.integer(as.factor(ds_lc$sub_grade))
 ds_lc$home_ownership <- as.integer(as.factor(ds_lc$home_ownership))
 ds_lc$int_rate <- as.numeric(ds_lc$int_rate)
 ds_lc$loan_status <- as.integer(as.factor(ds_lc$loan_status))
-#ds_lc$is_acct_delinquent[ds_lc$loan_status == 1] <- 1
-#ds_lc$is_acct_delinquent[ds_lc$loan_status == 2] <- 0
-#ds_lc$is_acct_delinquent[ds_lc$loan_status == 3] <- 1
-#ds_lc$is_acct_delinquent[ds_lc$loan_status == 4] <- 0
-#ds_lc$is_acct_delinquent[ds_lc$loan_status == 5] <- 1
-#ds_lc$is_acct_delinquent[ds_lc$loan_status == 6] <- 0
-#ds_lc$is_acct_delinquent[ds_lc$loan_status == 7] <- 1
-#ds_lc$is_acct_delinquent <- factor(ds_lc$is_acct_delinquent)
-#levels(factor(ds_lc$is_acct_delinquent))
-#ds_lc = subset(ds_lc, select = -c(loan_status))
 ```
 
 ```{r dataset_correlation_matrix}
@@ -485,6 +475,9 @@ error_rate_lda
 ```{r}
 lda_model
 ```
+
+Based on the coefficient values, all the features are important predictors and significant. 
+
 
 ## QDA - Quadratic Discriminant Analysis
 ```{r 10f_qda_1, message=FALSE}
