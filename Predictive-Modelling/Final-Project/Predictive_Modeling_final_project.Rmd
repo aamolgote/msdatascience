@@ -517,19 +517,57 @@ qda_model
 
 
 ## KNN
-```{r 10g_knn_1_1, message=FALSE}
+```{r knn_5, message=FALSE}
 train_dataset_matrix <- as.matrix(head(train_dataset, 80000))
 test_dataset_matrix <- as.matrix(head(test_dataset, 80000))
 train_dataset_mini <- head(train_dataset, 80000)
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset_mini$is_acct_delinquent, 5)
+confusion_matrix <- table(predictions, 
+                            train_dataset_mini$is_acct_delinquent, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate_knn_5 <- mean(predictions != train_dataset_mini$is_acct_delinquent)
+error_rate_knn_5
+```
+
+
+```{r knn_10, MESSAGE=FALSE}
 predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset_mini$is_acct_delinquent, 10)
 confusion_matrix <- table(predictions, 
                             train_dataset_mini$is_acct_delinquent, 
                             dnn = c("Predicted Status", "Observed Status"))
 confusion_matrix
 
-error_rate_knn <- mean(predictions != train_dataset_mini$is_acct_delinquent)
-error_rate_knn
+error_rate_knn_10 <- mean(predictions != train_dataset_mini$is_acct_delinquent)
+error_rate_knn_10
 ```
+
+
+```{r knn_15, MESSAGE=FALSE}
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset_mini$is_acct_delinquent, 15)
+confusion_matrix <- table(predictions, 
+                            train_dataset_mini$is_acct_delinquent, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate_knn_15 <- mean(predictions != train_dataset_mini$is_acct_delinquent)
+error_rate_knn_15
+```
+
+
+```{r knn_20, MESSAGE=FALSE}
+predictions <- knn(train_dataset_matrix, test_dataset_matrix, train_dataset_mini$is_acct_delinquent, 20)
+confusion_matrix <- table(predictions, 
+                            train_dataset_mini$is_acct_delinquent, 
+                            dnn = c("Predicted Status", "Observed Status"))
+confusion_matrix
+
+error_rate_knn_20 <- mean(predictions != train_dataset_mini$is_acct_delinquent)
+error_rate_knn_20
+```
+
+For KNN after 10 centers the error rate is very marginally dropping, so will go with n = 10 as baseline for comparison with other models
 
 ## Tree
 ```{r tree}
@@ -546,12 +584,11 @@ error_rate_tree
   The prime indicator/factor  for is loan account delinquent is last_fico_range_high, out_prncp  and total_rec_late_fee 
   When last_fico_range_high  < 621.5 out_prncp < 158.355 , then probablity of loan account becoming delinquent is high.
   
-  
 ```{r determine_optimal_tree_size}
 optimal_tree <- cv.tree(tree_lc, FUN = prune.tree)
 optimal_tree
 ```
-  Optimal tree size is 4.
+  Optimal tree size is 5.
 
 ```{r plot_treee_size_error_rate}
 tree_plot <- data.frame(x=optimal_tree$size, y=optimal_tree$dev)
@@ -562,6 +599,7 @@ ggplot(tree_plot, aes(x=x,y=y)) +
   ylab("Deviance") +
   theme_minimal()
 ```
+
 ```{r pruned_tree_optimal_tree_size}
 pruned_tree <- prune.tree(tree_lc, best = 5)
 optimal_tree
@@ -589,7 +627,7 @@ Test error rate of pruned tree is `r test_error_rate_pruned` and unpruned tree i
   Logistic regression error rate is `r error_rate_lr`.
   LDA error rate is `r error_rate_lda`.
   QDA error rate is `r error_rate_qda`.
-  KNN error rate is `r error_rate_knn`.
+  KNN error rate is `r error_rate_knn_10`.
   Tree error rate is `r test_error_rate_pruned`.
   Unpruned tree error rate is `r test_error_rate_unpruned`.
   
@@ -911,8 +949,3 @@ ds_lc_kmean %>%
   group_by(cluster) %>%
   summarise_all("mean")
 ```
-
-
-
-
-
