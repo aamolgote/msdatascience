@@ -11,28 +11,31 @@ output:
 
 # Dataset Info
   1. For this project will be using the lending loan club dataset, located at https://www.kaggle.com/wordsforthewise/lending-club
-  2. Since this datasize is huge and due to comouting constraints, will using the data for 2018 only. Only approved loans dataset will be in scope for this project. 
+  2. Since this datasize is huge and due to computing constraints, for this project we will be using the data for loans which have originated in 2018. Only approved
+  loans dataset will be in scope for this project. 
   3. Effective dataset size if of 495,242 observations/loans 
+  4. Attached is the data dictionary file which describes all the variables for this dataset LCDataDictionary.xlsx
 
 # About lending club
-  The Lending Club is a peer-to-peer lending service (it lends money to customers by matching lenders to borrowers), based in the United States. This company enables
-  borrowers to create loan listings on its website by supplying details about themselves and the loans that they would like to request.
+  The Lending Club is a peer-to-peer lending service (it lends money to customers by matching lenders to borrowers). It enables borrowers to create loan listings on
+  its website by supplying details about themselves and the loans that they would like to request.
 
 # Dataset Attributes 
   1. Dataset contains various attributes based on which the credit lending decision takes place, this includes Debt to income ratio, annual income, home ownership type
-  (Rented,Mortgage, Owned), employment details.  Dataset also contains geographical information like state and zip code. It also has issued loan details like funded Loan
-  Amount, issued month and year, loan Term (36 or 60 months) and interest rate. Post loan has been issued, loan performance needs to be tracked, and this dataset
+  (Rented,Mortgage, Owned), employment details.  Dataset also contains geographical information like state and zip code. It also has issued loan details like funded 
+  Loan Amount, issued month and year, loan Term (36 or 60 months) and interest rate. Post loan has been issued, loan performance needs to be tracked, and this dataset
   also contains those details loan Status (Current, Paid Off, Charged Off, Delinquent), loan Grades and delinquency details. 
 
 # Research Objectives
   1. Qualitative - Build a model which will indicate if the loan would ever be delinquent, the delinquency could be of 30, 60, 90 or 120 days.  
   2. Quantitative - Build a model which will provide the interest rate when the person applies for the loan. 
-  3. Unsupervised - Identify correlation between various credit decisioning variables like fico, dti, annual income,  etc using PCA and K-Mean. 
+  3. Unsupervised - Identify correlation between various credit decisioning variables like fico, dti, annual income,open_acc,total_acc, tot_hi_cred_lim, installment,
+  loan_amnt, etc. using PCA and K-Mean. 
   
   
-  Please note that some of the research objective have changed than what were quoted in the project out line document in Week-5,  
-    a. Instead of loan amount, now predicting interest rate. 
-    b. For qualitative predicting only delinquency and not charge offs. 
+  Please note that some of the research objective have changed than what were quoted in the project out line document in Week-5,   
+    a. For quantitative instead of loan amount, now predicting interest rate.  
+    b. For qualitative predicting only delinquency. 
   
 
 ```{r setup, include=FALSE}
@@ -58,6 +61,7 @@ library(gbm)
 library(randomForest)
 library(ggfortify)
 library(factoextra)
+library(cluster)
 set.seed(123456)
 ```
 
@@ -69,7 +73,7 @@ Load the whole dataset
 lendingClubLoanData <- fread("data/Lending_club_dataset.csv", header = TRUE)
 ```
 
-Create a origination year fild on the dataset, so that all loans which have originated in 2018 can be extracted. 
+Create a origination year field on the dataset, so that all loans which have originated in 2018 can be extracted. 
 ```{r, adjust_issue_date}
 nrow(lendingClubLoanData)
 lendingClubLoanData$orig_year<-substr(lendingClubLoanData$issue_d,5,8)
@@ -102,19 +106,19 @@ drops <- c("id","member_id", "url", "desc")
 ```
 
 
-List down all varibales in the dataset
+List down all variables in the dataset
 ```{r, final_dateset_names}
 names(final_dataset)
 ```
-Summary of all the varibales in the dataset
+Summary of all the variables in the dataset
 ```{r, summary_all_attributes}
 summary(final_dataset)
 ```
 
 
 ## Variable Selection
-  1. Dataset contains lot of variables, some of these varibales are associated with secondary applicant,  so excluding those variables. Some other varibales contian
-  lot of NA values so dropped those variables 
+  1. Dataset contains lot of variables, some of these varibales are associated with secondary applicant, so excluding those variables. Some other varibales contain
+  lot of NA values so dropped those variables.  
 
 ```{r final_datset_attrib_filtering}
 ds_lc <- final_dataset[,c("loan_amnt",
@@ -159,10 +163,10 @@ ds_lc <- final_dataset[,c("loan_amnt",
 ```
 
 ## Clean up the datset 
-  1. convert all categorical variables to factors
+  1. Convert all categorical variables to factors
   2. Remove the NA values
   3. Convert variables to numeric or integer
-  4. Create a delinquent account flag, loan account becomes deliquent when loan status turns to either of the following (is_acct_delinquent = 1)
+  4. Create a delinquent account flag, loan account becomes deliquent (is_acct_delinquent = 1) when loan status turns to either of the following 
     a. Late (16-30 days)
     b. Late (31-120 days)
     c. Charged Off
@@ -200,7 +204,7 @@ Based on the above correlation matrix, following variables are highly collinear
   4. last_fico_range_high, last_fico_range_low
   5. total_pymnt, total_pymnt_inv, total_rec_prncp
   
-Dropping following varibales due to NA values 
+Dropping following variables due to NA values 
 mths_since_last_delinq, mths_since_last_record, mths_since_last_major_derog, avg_cur_bal
   
 ```{r drop_variables_on_correlation}
@@ -221,7 +225,7 @@ ds_lc = subset(ds_lc, select = -c(loan_status))
 ds_lc_after_correlation <- ds_lc
 ```
 
-Perform regular subset varibale selection test
+## Regular subset variable selection test
 ```{r regular_subset}
 regular_subset_full <- regsubsets(is_acct_delinquent ~ ., ds_lc, nvmax = 40)
 regular_subset_full_summary <- summary(regular_subset_full)
@@ -240,7 +244,7 @@ plot(regular_subset_full_summary$bic ,xlab=" Number of Variables ",ylab="BIC", t
 points(which.min (regular_subset_full_summary$bic), regular_subset_full_summary$bic[which.min(regular_subset_full_summary$bic )], col ="red",cex =2, pch =20)
 ```
 
-Forward and backward subset selection test.
+## Forward and backward subset selection test.
 ```{r regular_forward_backward_subset}
 forward_subset_full <- regsubsets(is_acct_delinquent ~ ., ds_lc, nvmax = 40, method="forward")
 summary(forward_subset_full)
@@ -248,6 +252,7 @@ backward_subset_full <- regsubsets(is_acct_delinquent ~ ., ds_lc, nvmax = 40, me
 summary(backward_subset_full)
 ```
 
+Based on the best subset selection dropping all the below variables 
 ```{r, drop_varibales_based_on_subset}
 ds_lc = subset(ds_lc, select = -c(out_prncp_inv,num_tl_30dpd,num_tl_90g_dpd_24m,num_rev_accts,acc_now_delinq,  recoveries, collection_recovery_fee))
 ```
@@ -269,7 +274,7 @@ head(ds_lc)
 
 
 ## Validation set
-Identify whats right the subset distribution for training and test dataset
+Identify what's right the subset distribution for training and test dataset
 
 ```{r validation_set_error_1, message=FALSE}
 sample_set<-sample(nrow(ds_lc),nrow(ds_lc)*0.7)
@@ -435,7 +440,9 @@ summary(logistic_regression)
   Following variables are statitically significant 
     1. loan_amnt , term, int_rate, installment, annual_inc, fico_range_high, open_acc, pub_rec, total_acc, out_prncp, total_pymnt, total_rec_int, total_rec_late_fee,
     last_fico_range_high.
-    2. Following are less significant delinq_2yrs, home_ownership, revol_bal, inq_last_6mths
+  
+  Following are less significant 
+    1. delinq_2yrs, home_ownership, revol_bal, inq_last_6mths
   
 
 ## LDA - Linear Discriminant analysis
@@ -603,8 +610,6 @@ ggplot(tree_plot, aes(x=x,y=y)) +
 ```{r pruned_tree_optimal_tree_size}
 pruned_tree <- prune.tree(tree_lc, best = 5)
 optimal_tree
-#optimal_tree <- cv.tree(tree_lc, FUN = prune.tree)
-#optimal_tree
 ```
 
 ```{r summary_prunned_tree}
@@ -731,7 +736,8 @@ pls_mse
   
 
 ## Boosting 
-  Changed the dataset size due to system constraints
+
+Changed the dataset size due to computing constraints
 ```{r, boosting}
 train_dataset_mini <- train_dataset[1:1000,]
 test_dataset_mini <- test_dataset[(1:1000),]
@@ -809,7 +815,7 @@ barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2, bo
   All models have R Square values near to 0.6. All models predict interest rate with high accuracy, pcr has less accuracy than others.
 
 
-# Unspervised Learning - PCA
+# Unsupervised Learning - PCA
 ```{r, unspervised_learning_pca}
 ds_lc_pca <- ds_lc_after_correlation
 ds_lc_pca = subset(ds_lc_pca, select = -c(is_acct_delinquent,pub_rec, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq,
@@ -840,6 +846,8 @@ plot(cumsum (pve ), xlab="Principal Component ", ylab ="Cumulative Proportion of
 biplot (pr.out , scale =0)
 fviz_eig(pr.out, addlabels = TRUE, ylim = c(0, 50))
 ```
+
+Based on the above plot first 5 components cover 60% of the variance, so baselining further analysis 
 
 ```{r, pca_outpur}
 pr.out
@@ -874,7 +882,7 @@ ds_lc_kmean_scaled <- as.data.frame(scale(ds_lc_kmean))
 ```
 
 ```{r, unspervised_learning_kmean_cluster_size}
-set.seed (12345)
+set.seed(123456)
 k2 <- kmeans(ds_lc_kmean_scaled, centers = 2, nstart = 25)
 k3 <- kmeans(ds_lc_kmean_scaled, centers = 3, nstart = 25)
 k4 <- kmeans(ds_lc_kmean_scaled, centers = 4, nstart = 25)
@@ -903,7 +911,7 @@ grid.arrange(p10,  nrow = 2)
 ```
 
 ```{r unspervised_learning_kmean_elbow, message=FALSE}
-set.seed(12345)
+set.seed(123456)
 #Function to compute total within cluster sum of squares 
 wss <- function(k) {
   kmeans(ds_lc_kmean_scaled, k, nstart = 25, iter.max = 10)$tot.withinss
@@ -920,18 +928,17 @@ plot(k.values, wss_values,
      xlab = "Number of clusters K",
      ylab = "Total within clusters sum of squares")
 
-set.seed(1234)
+set.seed(123456)
 fviz_nbclust(ds_lc_kmean_scaled, kmeans, method = "wss")
 ```
 
 ```{r Gap_Statistic_Method_optimal_clusters }
-set.seed(12345)
-library(cluster)
+set.seed(123456)
 gap_stat <- clusGap(ds_lc_kmean_scaled, FUN = kmeans, nstart = 25, K.max = 10, B = 50)
 fviz_gap_stat(gap_stat)
 ```
 
-Based on the visualization abd GAP statistic method 2 or 3 cluster seem to be of optimal size. 3 clusters seems to be providing better classification based on the visualization.
+Based on the visualization and GAP statistic method 2 or 3 cluster seem to be of optimal size. 3 clusters seems to be providing better classification based on the visualization.
 
 ```{r, unspervised_learning_kmean_asign_cluster}
 ds_lc_kmean$cluster <- k3$cluster
@@ -943,7 +950,6 @@ fviz_cluster(k3, data = ds_lc_kmean)
 ```
 
 Descriptive statistics at the cluster level
-
 ```{r, kmean_descriptive_stats}
 ds_lc_kmean %>%
   group_by(cluster) %>%
