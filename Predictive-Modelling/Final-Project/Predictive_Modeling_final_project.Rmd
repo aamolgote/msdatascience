@@ -593,11 +593,12 @@ test_error_rate_unpruned
 Test error rate of pruned tree is `r test_error_rate_pruned` and unpruned tree is `r test_error_rate_unpruned`. 
 
 
-  Tree error rate is `r test_error_rate_pruned`.
   Logistic regression error rate is `r error_rate_lr`.
   LDA error rate is `r error_rate_lda`.
   QDA error rate is `r error_rate_qda`.
   KNN error rate is `r error_rate_knn`.
+  Tree error rate is `r test_error_rate_pruned`.
+  Unpruned tree error rate is `r test_error_rate_unpruned`.
   
   
 # Predicting the Interest Rate
@@ -614,7 +615,7 @@ regular_subset_full_summary$rsq
 ```
 
 ```{r, drop_variables_based_on_subset_int_rate}
-ds_lc = subset(ds_lc, select = -c(open_acc, revol_bal, total_pymnt, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq, num_tl_30dpd, total_rec_int, out_prncp, out_prncp_inv))
+ds_lc = subset(ds_lc, select = -c(open_acc, revol_bal, total_pymnt, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq, num_tl_30dpd, total_rec_int, out_prncp, out_prncp_inv, is_acct_delinquent))
 ```
 
 ```{r interest_rate_mse}
@@ -634,7 +635,11 @@ lm_fit <- lm(int_rate ~ . , data = train_dataset)
 lm_predictions <- predict(lm_fit, test_dataset)
 lm_mse <- mean((lm_predictions - test_dataset$int_rate)^2)
 lm_mse
+summary(lm_fit)
+
 ```
+All the features are important predictors. 
+
 ## Fit a ridge regression model and identify the test error obtained.
 ```{r ridge_regression_model_interest_rates}
 train_ds_matrix <- model.matrix(int_rate ~ ., data = train_dataset)
@@ -646,7 +651,10 @@ ridge_reg_model <- cv.glmnet(train_ds_matrix, train_dataset$int_rate, alpha = 0,
 ridge_reg_predictions <- predict(ridge_reg_model, test_ds_matrix, s = ridge_reg_model$lambda.min)
 ridge_mse <- mean((test_dataset$int_rate - ridge_reg_predictions)^2)
 ridge_mse
+coef(ridge_reg_model)
 ```
+Coefficients of all the variables are significant. All the features are important predictors. 
+
 
 ## Fit a Lasso model and identify the test error obtained.
 ```{r lasso_model_interest_rates}
@@ -655,53 +663,44 @@ lasso_predictions <- predict(lasso_model, test_ds_matrix, s = lasso_model$lambda
 lasso_mse <- mean((test_dataset$int_rate - lasso_predictions)^2)
 lasso_rmse <- sqrt(mean((test_dataset$int_rate - lasso_predictions)^2))
 lasso_mse
+coef(lasso_model)
 ```
+Apart for loan_amnt and total_acc all other variable/feature coefficients are statistically significant.
 
-## Fit a PCR model and identify the test error obtained.
+
+## PCR model
 ```{r pcr_model_interest_rates}
 pcr_model <- pcr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
+summary (pcr_model)
 validationplot(pcr_model, val.type = "MSEP")
-pcr_predictions <- predict(pcr_model, test_dataset, ncomp = 15)
+```
+The lowest cross-validation error occurs when M = 8 component are used. 77.79% of the variation (or information) contained in the predictors are captured by 8 principal components. So compute the test MSE as follows.
+```{r pcr_prediction}
+pcr_predictions <- predict(pcr_model, test_dataset, ncomp = 8)
 pcr_mse <- mean((test_dataset$int_rate - pcr_predictions)^2)
 pcr_rmse <- sqrt(mean((test_dataset$int_rate - pcr_predictions)^2))
 pcr_mse
 ```
 
-
-## Fit a PLS model and identify the test error obtained.
+## PLS model
 ```{r pls_model_interest_rates}
 pls_model <- plsr(int_rate ~ . , data = train_dataset, scale=T, validation="CV")
+summary (pls_model)
 validationplot(pls_model, val.type = "MSEP")
-pls_predictions <- predict(pls_model, test_dataset, ncomp = 15)
+```
+The lowest cross-validation error occurs when M = 8 component are used, after M = 8 the error reduces marginally. 65.72 % of the variation (or information) contained in the predictors are captured by 8 principal components. So compute the test MSE as follows.
+```{r, pls_prediction}
+pls_predictions <- predict(pls_model, test_dataset, ncomp = 8)
 pls_mse <- mean((test_dataset$int_rate  - pls_predictions)^2)
 pls_rmse <- sqrt(mean((test_dataset$int_rate  - pls_predictions)^2))
 pls_mse
 ```
 
-Compare R2 values for various models
-```{r model_comparison}
-lm_test_r2 <- (1 - (lm_mse/test_interest_mse))
-ridge_test_r2 <- (1 - (ridge_mse/test_interest_mse))
-lasso_test_r2 <- (1 - (lasso_mse/test_interest_mse))
-pcr_test_r2 <- (1 - (pcr_mse/test_interest_mse))
-pls_test_r2 <- (1 - (pls_mse/test_interest_mse))
 
-cat("R square with linear model : ", lm_test_r2, "\n")
-cat("R square with ridge model :  ", ridge_test_r2, "\n")
-cat("R square with lasso model :  ", lasso_test_r2, "\n")
-cat("R square with pcr :          ", pcr_test_r2, "\n")
-cat("R square with pls :          ", pls_test_r2, "\n")
-
-barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2),
-        names.arg = c("LM", "Ridge", "Lasso", "PCR", "PLS"))
-
-```
-
-  All models have R Square values near to 0.6. All models predict interest rate with high accuracy, pcr has lesser accuracy than others.
   
 
 ## Boosting 
-  Changed the dataset size due to systme constraints
+  Changed the dataset size due to system constraints
 ```{r, boosting}
 train_dataset_mini <- train_dataset[1:1000,]
 test_dataset_mini <- test_dataset[(1:1000),]
@@ -735,8 +734,8 @@ for (i in 1:length(lambdas)) {
 
 plot(lambdas, test_errors, xlab = "Shrinkage Values", ylab = "Training set MSE", type = "b", pch = 20)
 min(test_errors)
-min_test_err <- min(test_errors)
-min_test_err_at <- lambdas[which.min(test_errors)]
+boosting_min_test_err <- min(test_errors)
+boosting_min_test_err_at <- lambdas[which.min(test_errors)]
 ```
 
 Both regression approaches lm and lasso have higher MSE compared to that of boosting.
@@ -750,7 +749,33 @@ random_forest_test_mse <- mean((random_forest_predictions - test_dataset_mini$in
 random_forest_test_mse
 ```
 
-Test MSE for bagging is `r random_forest_test_mse` which is better than `r min_test_err` which is best MSE from boosting
+Test MSE for bagging is `r random_forest_test_mse` which is better than `r boosting_min_test_err` which is best MSE from boosting
+
+
+Compare R2 values for various models
+```{r model_comparison}
+lm_test_r2 <- (1 - (lm_mse/test_interest_mse))
+ridge_test_r2 <- (1 - (ridge_mse/test_interest_mse))
+lasso_test_r2 <- (1 - (lasso_mse/test_interest_mse))
+pcr_test_r2 <- (1 - (pcr_mse/test_interest_mse))
+pls_test_r2 <- (1 - (pls_mse/test_interest_mse))
+boosting_min_test_err_r2 <- (1 - (boosting_min_test_err/test_interest_mse))
+random_forest_r2 <- (1 - (random_forest_test_mse/test_interest_mse))
+
+cat("R square with linear model : ", lm_test_r2, "\n")
+cat("R square with ridge model :  ", ridge_test_r2, "\n")
+cat("R square with lasso model :  ", lasso_test_r2, "\n")
+cat("R square with pcr :          ", pcr_test_r2, "\n")
+cat("R square with pls :          ", pls_test_r2, "\n")
+cat("R square with boosting :     ", boosting_min_test_err_r2, "\n")
+cat("R square with random forest :", random_forest_r2, "\n")
+
+barplot(c(lm_test_r2, ridge_test_r2, lasso_test_r2, pcr_test_r2, pls_test_r2, boosting_min_test_err_r2, random_forest_r2),
+        names.arg = c("LM", "Ridge", "Lasso", "PCR", "PLS", "Boosting", "RandomForest"))
+
+```
+
+  All models have R Square values near to 0.6. All models predict interest rate with high accuracy, pcr has less accuracy than others.
 
 
 # Unspervised Learning - PCA
@@ -773,7 +798,6 @@ biplot(pr.out)
 pr.out$rotation=-pr.out$rotation
 pr.out$x=-pr.out$x
 biplot (pr.out , scale =0)
-#pr.out$sdev
 pr.var =pr.out$sdev ^2
 pve=pr.var/sum(pr.var )
 pve
@@ -782,31 +806,30 @@ plot(cumsum (pve ), xlab="Principal Component ", ylab ="Cumulative Proportion of
 ```
 
 ```{r,  unspervised_learning_pca_bar_chart}
-#autoplot(pr.out)
 biplot (pr.out , scale =0)
 fviz_eig(pr.out, addlabels = TRUE, ylim = c(0, 50))
 ```
 
-```{r}
+```{r, pca_outpur}
 pr.out
 ```
 
-```{r}
+```{r, pca_csv_output}
 pr.out$rotation[1:21,1:5]
 write.csv(pr.out$rotation[1:21,1:5], file = "data/pca_output.csv", row.names=FALSE)
 ```
 
-Based on the weights of variables across 5 components, here are the composition of variables across five components, in each of these componenets varibales listed below are correlated with each other
+Based on the weights of variables across 5 components, here are the composition of variables across five components, in each of these componenets variables listed below are correlated with each other
 
-PC1 => total_pymnt,num_rev_accts,term,open_acc,total_acc,annual_inc,revol_bal,tot_hi_cred_lim,total_rec_int,out_prncp,installment, loan_amnt
+PC1 => total_pymnt, num_rev_accts, term, open_acc, total_acc, annual_inc,revol_bal, tot_hi_cred_lim, total_rec_int, out_prncp, installment, loan_amnt
 
-PC2 => inq_last_6mths ,tot_hi_cred_lim ,open_acc,total_acc  ,num_rev_accts,total_rec_int  ,int_rate,out_prncp  ,out_prncp_inv,loan_amnt,installment
+PC2 => inq_last_6mths, tot_hi_cred_lim,open_acc, total_acc, num_rev_accts, total_rec_int, int_rate,out_prncp, out_prncp_inv, loan_amnt, installment
 
-PC3 => total_acc  ,total_rec_int,delinq_2yrs,dti,inq_last_12m,int_rate,fico_range_high,last_fico_range_high
+PC3 => total_acc,total_rec_int,delinq_2yrs,dti,inq_last_12m,int_rate,fico_range_high,last_fico_range_high
 
-PC4 => delinq_2yrs,dti,revol_bal  ,inq_last_12m,inq_last_6mths ,total_pymnt,fico_range_high
+PC4 => delinq_2yrs,dti,revol_bal, inq_last_12m, inq_last_6mths, total_pymnt, fico_range_high
 
-PC5 => annual_inc,tot_hi_cred_lim ,delinq_2yrs,total_acc  ,total_rec_int  ,num_rev_accts,total_pymnt,fico_range_high,open_acc,home_ownership,last_fico_range_high,dti
+PC5 => annual_inc,tot_hi_cred_lim, delinq_2yrs,total_acc, total_rec_int, num_rev_accts, total_pymnt, fico_range_high, open_acc, home_ownership, last_fico_range_high,dti
 
 
 
@@ -814,7 +837,7 @@ PC5 => annual_inc,tot_hi_cred_lim ,delinq_2yrs,total_acc  ,total_rec_int  ,num_r
 ds_lc_kmean <- ds_lc_after_correlation
 ds_lc_kmean = subset(ds_lc_kmean, select = -c(is_acct_delinquent,pub_rec, total_rec_late_fee, recoveries, collection_recovery_fee, acc_now_delinq,
                                           num_tl_30dpd,num_tl_90g_dpd_24m))
-ds_lc_kmean_subset <- sample(nrow(ds_lc_kmean), 1000)
+ds_lc_kmean_subset <- sample(nrow(ds_lc_kmean), 2000)
 ds_lc_kmean = ds_lc_kmean[ds_lc_kmean_subset, ]
 ds_lc_kmean_scaled <- as.data.frame(scale(ds_lc_kmean))
 ```
@@ -849,7 +872,7 @@ grid.arrange(p10,  nrow = 2)
 ```
 
 ```{r unspervised_learning_kmean_elbow, message=FALSE}
-set.seed(1234)
+set.seed(12345)
 #Function to compute total within cluster sum of squares 
 wss <- function(k) {
   kmeans(ds_lc_kmean_scaled, k, nstart = 25, iter.max = 10)$tot.withinss
@@ -870,71 +893,33 @@ set.seed(1234)
 fviz_nbclust(ds_lc_kmean_scaled, kmeans, method = "wss")
 ```
 
-Based on the visualization 3 clusters seems to be better classification. 3 clusters have very less overlap compared to that of the 4 clusters. 
+```{r Gap_Statistic_Method_optimal_clusters }
+set.seed(12345)
+library(cluster)
+gap_stat <- clusGap(ds_lc_kmean_scaled, FUN = kmeans, nstart = 25, K.max = 10, B = 50)
+fviz_gap_stat(gap_stat)
+```
+
+Based on the visualization abd GAP statistic method 2 or 3 cluster seem to be of optimal size. 3 clusters seems to be providing better classification based on the visualization.
 
 ```{r, unspervised_learning_kmean_asign_cluster}
 ds_lc_kmean$cluster <- k3$cluster
+print(k3)
 ```
 
-```{r assignCustomerCategories}
-ds_lc_kmean$category <- ""
-for(i in 1:nrow(ds_lc_kmean)){
-    if (ds_lc_kmean$cluster[i] == 1){
-        ds_lc_kmean$category[i] <- "Low"
-    }
-    else if (ds_lc_kmean$cluster[i] == 2){
-      ds_lc_kmean$category[i] <- "Medium"
-    }
-    else if (ds_lc_kmean$cluster[i] == 3){
-      ds_lc_kmean$category[i] <- "High"
-    }
-}
-
-low_risk_loans <- ds_lc_kmean %>%
-  filter(category == "Low")
-
-medium_risk_loans <- ds_lc_kmean %>%
-  filter(category == "Medium")
-
-high_risk_loans <- ds_lc_kmean %>%
-  filter(category == "High")
-
+```{r, unspervised_learning_kmean_final_cluster_viz}
+fviz_cluster(k3, data = ds_lc_kmean)
 ```
 
-```{r, unspervised_learning_kmean_interest_rate}
-mean(low_risk_loans$int_rate)
-mean(medium_risk_loans$int_rate)
-mean(high_risk_loans$int_rate)
+Descriptive statistics at the cluster level
+
+```{r, kmean_descriptive_stats}
+ds_lc_kmean %>%
+  group_by(cluster) %>%
+  summarise_all("mean")
 ```
 
-```{r, unspervised_learning_kmean_annual_income}
-mean(low_risk_loans$annual_inc)
-mean(medium_risk_loans$annual_inc)
-mean(high_risk_loans$annual_inc)
-```
 
-```{r, unspervised_learning_kmean_dti}
-mean(low_risk_loans$dti)
-mean(medium_risk_loans$dti)
-mean(high_risk_loans$dti)
-```
-
-```{r, unspervised_learning_kmean_fico_range_low}
-mean(low_risk_loans$fico_range_high)
-mean(medium_risk_loans$fico_range_high)
-mean(high_risk_loans$fico_range_high)
-```
-
-```{r, unspervised_learning_kmean_inq_last_6mths}
-mean(low_risk_loans$inq_last_6mths)
-mean(medium_risk_loans$inq_last_6mths)
-mean(high_risk_loans$inq_last_6mths)
-```
-```{r, unspervised_learning_kmean_delinq_2yrs}
-mean(low_risk_loans$delinq_2yrs)
-mean(medium_risk_loans$delinq_2yrs)
-mean(high_risk_loans$delinq_2yrs)
-```
 
 
 
