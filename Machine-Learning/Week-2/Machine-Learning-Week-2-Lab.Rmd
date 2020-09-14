@@ -1,0 +1,111 @@
+---
+title: "Machine Learning - Week 2 - Lab 1"
+author: "Amol Gote"
+date: "9/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library_setup}
+set.seed(123)
+library(caret)
+```
+
+```{r load_data}
+data <- read.csv("./data/data.csv")
+class(data$wilderness_area)
+class(data$soil_type)
+data$wilderness_area <- factor(data$wilderness_area)
+data$soil_type <- factor(data$soil_type)
+```
+```{r categorical_levels}
+levels(data$wilderness_area)
+levels(data$soil_type)
+```
+
+```{r training_test_dataset}
+training_ind <- createDataPartition(data$lodgepole_pine,
+p = 0.75,
+list = FALSE,
+times = 1)
+training_set <- data[training_ind, ]
+test_set <- data[-training_ind, ]
+```
+
+```{r target_encoding}
+threshold <- 250
+target_enc_train <- function(variable, level) {
+  training_set$lodgepole_pine <- as.numeric(as.vector(training_set$lodgepole_pine))
+  train_avg_target <- mean(training_set[, "lodgepole_pine"])
+  if (nrow(training_set[training_set[, variable]==level, ])==0) {
+    return(train_avg_target)
+  } else {
+    level_num_obs <- nrow(training_set[training_set[, variable]==level, ])
+    level_avg_target <- mean(training_set[training_set[, variable]==level,
+    "lodgepole_pine"])
+    return((level_num_obs*level_avg_target+threshold*train_avg_target)/(level_num_obs+threshold))
+  }
+}
+wilderness_area_target <- mapply(target_enc_train, variable = "wilderness_area",
+level = levels(training_set$wilderness_area), USE.NAMES = FALSE)
+names(wilderness_area_target) <- levels(training_set$wilderness_area)
+soil_type_target <- mapply(target_enc_train, variable = "soil_type",
+level = levels(training_set$soil_type), USE.NAMES = FALSE)
+names(soil_type_target) <- levels(training_set$soil_type)
+```
+
+```{r target_encoding_training_dataset}
+  training_set$wilderness_area_target <- 0
+for (level in levels(training_set$wilderness_area)) {
+  training_set[training_set[, "wilderness_area"]==level, "wilderness_area_target"] <-
+  wilderness_area_target[level]
+}
+training_set$soil_type_target <- 0
+for (level in levels(training_set$soil_type)) {
+  training_set[training_set[, "soil_type"]==level, "soil_type_target"] <-
+  soil_type_target[level]
+}
+```
+
+```{r target_encoding_test_dataset}
+test_set$wilderness_area_target <- 0
+for (level in levels(training_set$wilderness_area)) {
+  test_set[test_set[, "wilderness_area"]==level, "wilderness_area_target"] <-
+  wilderness_area_target[level]
+}
+test_set$soil_type_target <- 0
+for (level in levels(training_set$soil_type)) {
+  test_set[test_set[, "soil_type"]==level, "soil_type_target"] <-
+  soil_type_target[level]
+}
+```
+
+```{r one_hot_encoding}
+onehot_encoder <- dummyVars(~ wilderness_area + soil_type,
+data[, c("wilderness_area", "soil_type")],
+levelsOnly = TRUE)
+onehot_enc_training <- predict(onehot_encoder,
+training_set[, c("wilderness_area", "soil_type")])
+training_set <- cbind(training_set, onehot_enc_training)
+onehot_enc_test <- predict(onehot_encoder, test_set[, c("wilderness_area", "soil_type")])
+test_set <- cbind(test_set, onehot_enc_test)
+summary(training_set)
+```
+
+```{r numerical_feature_engg_1}
+training_set$horizontal_distance_to_hydrology_scaled <- 0
+training_set$horizontal_distance_to_hydrology_scaled <- scale(training_set$horizontal_distance_to_hydrology)
+head(training_set[, c("horizontal_distance_to_hydrology", "horizontal_distance_to_hydrology_scaled")])
+```
+
+```{r numerical_feature_engg_2}
+test_set$horizontal_distance_to_hydrology_scaled <- 0
+test_set$horizontal_distance_to_hydrology_scaled <- (test_set$horizontal_distance_to_hydrology - mean(training_set$horizontal_distance_to_hydrology))/
+                                                                                                                      sd(training_set$horizontal_distance_to_hydrology)
+
+quantile(training_set$horizontal_distance_to_hydrology)
+quantile(training_set$horizontal_distance_to_hydrology, probs = seq(0, 1, 0.1))
+```
