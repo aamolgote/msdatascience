@@ -152,6 +152,8 @@ medical_ds_3$discharge_disposition_id_enc <- factor(medical_ds_3$discharge_dispo
 medical_ds_3$max_glu_serum <- factor(medical_ds_3$max_glu_serum)
 medical_ds_3$A1Cresult <- factor(medical_ds_3$A1Cresult)
 medical_ds_3$change <- factor(medical_ds_3$change)
+medical_ds_3$metformin <- factor(medical_ds_3$metformin)
+medical_ds_3$insulin <- factor(medical_ds_3$insulin)
 ```
 
 ```{r converttonumeric}
@@ -368,6 +370,30 @@ for (level in levels(training_set$A1Cresult)) {
 #  test_set[test_set[, "change"]==level, "change_target"] <- change_target[level]
 #}
 
+metformin_target <- mapply(target_enc_train, variable = "metformin", level = levels(training_set$metformin), USE.NAMES = FALSE)
+names(metformin_target) <- levels(training_set$metformin)
+training_set$metformin_target <- 0
+for (level in levels(training_set$metformin)) {
+  training_set[training_set[, "metformin"]==level, "metformin_target"] <- metformin_target[level]
+}
+
+test_set$metformin_target <- 0
+for (level in levels(training_set$metformin)) {
+  test_set[test_set[, "metformin"]==level, "metformin_target"] <- metformin_target[level]
+}
+
+insulin_target <- mapply(target_enc_train, variable = "insulin", level = levels(training_set$insulin), USE.NAMES = FALSE)
+names(insulin_target) <- levels(training_set$insulin)
+training_set$insulin_target <- 0
+for (level in levels(training_set$insulin)) {
+  training_set[training_set[, "insulin"]==level, "insulin_target"] <- insulin_target[level]
+}
+
+test_set$insulin_target <- 0
+for (level in levels(training_set$insulin)) {
+  test_set[test_set[, "insulin"]==level, "insulin_target"] <- insulin_target[level]
+}
+
 ```
 
 ```{r one_hot_encoding, MESSAGE=FALSE}
@@ -416,6 +442,7 @@ training_subset_ds_final <- training_subset_ds[,c(
   "time_in_hospital", "num_lab_procedures",           
   "num_procedures", "num_medications","number_outpatient","number_emergency",
   "number_inpatient", "number_diagnoses",
+  "metformin_target","insulin_target",
   "gender.Female", "gender.Male", "change.Ch","change.No",
   "readmitted_enc"
   )]
@@ -430,6 +457,7 @@ test_subset_ds_final <- test_subset_ds[,c(
   "time_in_hospital", "num_lab_procedures",           
   "num_procedures", "num_medications","number_outpatient","number_emergency",
   "number_inpatient", "number_diagnoses",
+  "metformin_target","insulin_target",
   "gender.Female", "gender.Male", "change.Ch","change.No",
   "readmitted_enc"
   )]
@@ -446,7 +474,7 @@ colnames(training_subset_ds_final)
 ```{r, SCALE_VARIABLES}
 num_var_start_index <- 8
 num_var_end_index <- 15
-target_var_index <- 20
+target_var_index <- 22
 test_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(test_subset_ds_final[, num_var_start_index:num_var_end_index], 
                                        center = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, mean), 
                                        scale = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, sd))
