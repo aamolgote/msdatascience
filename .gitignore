@@ -1254,3 +1254,4 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 /Data-Exploration/Week-4/Data-DueDiligence/.Rproj.user
 /Data-Exploration/Week-4/Data-DueDiligence/.Rhistory
 /Predictive-Modelling/Final-Project/data
+/Machine-Learning/Week-3/data/data.csv

@@ -1,0 +1,43 @@
+---
+title: "Machine Learning - Week 2 - Lab 1"
+author: "Amol Gote"
+date: "9/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library_setup, MESSAGE = FALSE}
+set.seed(123)
+library(caret)
+```
+
+```{r load_data}
+medical_ds <- read.csv("./data/data.csv")
+```
+
+```{r data_summary, MESSAGE = FALSE}
+summary(medical_ds)
+```
+```{r ds_info, MESSAGE = FALSE}
+nrow(medical_ds)
+```
+
+```{r, final_dataset, MESSAGE = FALSE}
+final_medical_ds <- medical_ds[,c(
+  "age","time_in_hospital","num_lab_procedures",
+  "num_procedures","num_medications","number_outpatient","number_emergency","number_inpatient",
+  "diag_1","diag_2","diag_3","number_diagnoses","change","max_glu_serum","A1Cresult","metformin","repaglinide",
+  "nateglinide","chlorpropamide","glimepiride","glipizide","glyburide","pioglitazone","rosiglitazone",
+  "acarbose","miglitol","insulin","glyburide.metformin"
+  )]
+summary(final_medical_ds)
+```
+
+```{r dataset_na_removal}
+final_medical_ds <- na.omit(final_medical_ds, cols = c("diag_1", "diag_2", "diag_3"))
+nrow(final_medical_ds)
+summary(final_medical_ds)
+```

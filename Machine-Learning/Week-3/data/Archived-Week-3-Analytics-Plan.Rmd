@@ -505,13 +505,13 @@ rfGrid <- expand.grid(mtry = c(recommended_mtry-2, recommended_mtry, recommended
 
 ```{r random_forest_1}
 
-#rfControl <- trainControl(method = "oob", classProbs = TRUE)
-#rf_onehot_model <- train(x = training_set[, -1*c(34:34)], y = training_set[, 34],
-#                  method = "rf",
-#                  tuneGrid = rfGrid,
-#                  trControl = rfControl,
-#                  importance = TRUE,
-#                  trace = FALSE)
+rfControl <- trainControl(method = "oob", classProbs = TRUE)
+rf_onehot_model <- train(x = training_set[, -1*c(34:34)], y = training_set[, 34],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  importance = TRUE,
+                  trace = FALSE)
 
 
 ```
