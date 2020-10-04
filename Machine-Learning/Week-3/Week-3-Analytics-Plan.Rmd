@@ -387,6 +387,10 @@ medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 630 & medical_ds_3$diag_3 <= 679]
 medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 360 & medical_ds_3$diag_3 <= 389] <- 9
 medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 740 & medical_ds_3$diag_3 <= 759] <- 9
 
+medical_ds_3$readmitted_enc[medical_ds_3$readmitted == '<30'] <- "Yes"
+medical_ds_3$readmitted_enc[medical_ds_3$readmitted == '>30'] <- "Yes"
+medical_ds_3$readmitted_enc[medical_ds_3$readmitted == 'NO'] <- "No"
+
 summary(medical_ds_3$diag_3_enc)
 summary(medical_ds_3$diag_3)
 ```
@@ -413,14 +417,15 @@ head(temp)
 ```{r final_dataset_1, MESSAGE=FALSE}
 final_medical_ds <- medical_ds_3[,c(
   "age_ordinal", "race_enc", "gender_enc", "admission_type_id_enc","discharge_disposition_id_enc", "admission_source_id_enc", 
-  "diag_1_enc","diag_2_enc","diag_3_enc","max_glu_serum_enc","A1Cresult_enc","change_enc",
+  "max_glu_serum_enc","A1Cresult_enc","change_enc",
   "metformin_enc","repaglinide_enc", "nateglinide_enc","chlorpropamide_enc","glimepiride_enc",
   "glipizide_enc","glyburide_enc","pioglitazone_enc","rosiglitazone_enc",
   "acarbose_enc","miglitol_enc","insulin_enc","glyburide.metformin_enc",
   "number_diagnoses",
   "time_in_hospital","num_lab_procedures",
   "num_procedures","num_medications","number_outpatient","number_emergency","number_inpatient",
-   "readmitted"
+  "diag_1_enc","diag_2_enc","diag_3_enc",
+   "readmitted_enc"
   )]
 summary(final_medical_ds)
 ```
@@ -459,7 +464,7 @@ summary(final_medical_ds_1)
 
 ```{r data_partition, MESSAGE=FALSE}
 # split the data into training and (held-out) test sets
-training_ind <- createDataPartition(final_medical_ds_1$readmitted ,
+training_ind <- createDataPartition(final_medical_ds_1$readmitted_enc,
 p = 0.75,
 list = FALSE,
 times = 1)
@@ -480,38 +485,83 @@ onehot_enc_training <- predict(onehot_encoder, training_set[, c("diag_1_enc", "d
 training_set <- cbind(training_set, onehot_enc_training)
 onehot_enc_test <- predict(onehot_encoder, test_set[, c("diag_1_enc", "diag_2_enc", "diag_3_enc")])
 test_set <- cbind(test_set, onehot_enc_test)
-test_set[, 26:33] <- scale(test_set[, 26:33], center = apply(training_set[, 26:33], 2, mean), scale = apply(training_set[, 26:33], 2, sd))
-training_set[, 26:33] <- scale(training_set[, 26:33])
-# rename the levels of the target, so they can be used as valid R variable names
-# by the predict function in caret
-#levels(training_set$lodgepole_pine)[levels(training_set$lodgepole_pine)==0] <- "negative"
-#levels(training_set$lodgepole_pine)[levels(training_set$lodgepole_pine)==1] <- "positive"
-
-levels(training_set$readmitted)[levels(training_set$readmitted) == '<30'] <- "Yes"
-levels(training_set$readmitted)[levels(training_set$readmitted)== '>30'] <- "Yes"
-levels(training_set$readmitted)[levels(training_set$readmitted)== 'NO'] <- "No"
+test_set[, 23:30] <- scale(test_set[, 23:30], center = apply(training_set[, 23:30], 2, mean), scale = apply(training_set[, 23:30], 2, sd))
+training_set[, 23:30] <- scale(training_set[, 23:30])
+#levels(training_set$readmitted)[levels(training_set$readmitted) == '<30'] <- "Yes"
+#levels(training_set$readmitted)[levels(training_set$readmitted) == '>30'] <- "Yes"
+#levels(training_set$readmitted)[levels(training_set$readmitted) == 'NO'] <- "No"
 ```
 
 ```{r}
-test_set[, 26:33]
+#test_set$readmitted_1[test_set$readmitted == '<30'] <- "Yes"
+#test_set$readmitted_1[test_set$readmitted == '>30'] <- "Yes"
+#test_set$readmitted_1[test_set$readmitted == 'NO'] <- "No"
+#summary(test_set$readmitted)
+#head(test_set$readmitted_1)
+#test_set[, 23:30]
 ```
 
 ```{r random_forest}
 modelLookup("rf")
-recommended_mtry <- floor(sqrt(ncol(training_set[, -1*c(34:34)])))
+recommended_mtry <- floor(sqrt(ncol(training_set[, -1*c(4:34)])))
 rfGrid <- expand.grid(mtry = c(recommended_mtry-2, recommended_mtry, recommended_mtry+2))
 ```
 
 
 ```{r random_forest_1}
 
-#rfControl <- trainControl(method = "oob", classProbs = TRUE)
-#rf_onehot_model <- train(x = training_set[, -1*c(34:34)], y = training_set[, 34],
-#                  method = "rf",
-#                  tuneGrid = rfGrid,
-#                  trControl = rfControl,
-#                  importance = TRUE,
-#                  trace = FALSE)
+rfControl <- trainControl(method = "oob", classProbs = TRUE)
+rf_onehot_model <- train(x = training_set[, -1*c(31:34)], y = training_set[, 34],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 40,
+                  importance = TRUE,
+                  trace = FALSE)
+
+```
 
 
+```{r prediction}
+test_set$prediction_onehot <- predict(rf_onehot_model, newdata = test_set[, -1*c(31:34)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_set[, -1*c(31:34)], type = "prob")
+test_set$class_probabilities_onehot <- class_probabilities$Yes
+```
+
+```{r}
+#test_set$class_probabilities_onehot
+#test_set$readmitted
+```
+
+```{r evaluate}
+head(test_set)
+rocr_pred <- prediction(test_set$class_probabilities_onehot, test_set$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+
+```
+
+
+```{r auc_value}
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc <- rocr_auc@y.values[[1]]
+auc
+```
+
+```{r calibration_curve}
+calibration_curve <- calibration(readmitted_enc ~ class_probabilities_onehot,
+data = test_set,
+class = 1)
+plot(calibration_curve)
+```
+
+
+```{r feature_importance}
+rf_varImp <- varImp(rf_onehot_model, type = 2)
+plot(rf_varImp, top = 25)
 ```
