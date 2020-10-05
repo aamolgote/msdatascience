@@ -525,7 +525,7 @@ summary(test_set)
 ```
 
 ```{r, nnnet_subset}
-test_sample_size <- 2500
+test_sample_size <- 10000
 train_sample_size <- test_sample_size * 3
 training_subset_ds <- training_set[sample(nrow(training_set), train_sample_size),]
 nrow(training_subset_ds)
@@ -645,7 +645,7 @@ rf_onehot_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:ta
                   method = "rf",
                   tuneGrid = rfGrid,
                   trControl = rfControl,
-                  ntree = 10,
+                  ntree = 50,
                   importance = TRUE,
                   trace = FALSE)
 
