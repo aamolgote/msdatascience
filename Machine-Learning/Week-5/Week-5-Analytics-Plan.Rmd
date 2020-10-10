@@ -1,5 +1,5 @@
 ---
-title: "Machine Learning - Week6 preliminary results"
+title: "Machine Learning - Week 6 preliminary result"
 author: "Amol Gote"
 date: "10/11/2020"
 output:
@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 set.seed(123)
 library(tidyverse)
 library(caret)
+library(ROCR)
 ```
 
 ```{r load_data}
@@ -50,6 +51,8 @@ medical_ds_3 <- medical_ds_3 %>%
 nrow(medical_ds_3)
 summary(medical_ds_3)
 ```
+
+
 
 ```{r feature_engg_1}
 medical_ds_3$readmitted_enc[medical_ds_3$readmitted == '<30'] <- 1
@@ -588,6 +591,9 @@ auc <- rocr_auc@y.values[[1]]
 auc
 ```
 
+
+
+
 ```{r calibration_curve_random_forest}
 calibration_curve <- calibration(readmitted_enc ~ class_probabilities_onehot,
 data = test_subset_ds_final,
@@ -617,9 +623,11 @@ nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:ta
                           method = "nnet",
                           tuneGrid = nnGrid,
                           trControl = nnControl,
+                          importance = TRUE,
                           trace = FALSE,
                           MaxNWts = 800)
 ```
+
 
 ```{r neural_network_3}
 test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
@@ -652,4 +660,17 @@ data = test_subset_ds_final,
 class = 1)
 plot(calibration_curve)
 
+```
+
+
+```{r list_feature_importance_nueral_network}
+#nn_varImp
+```
+
+```{r rf_confusion_matrix}
+levels(test_subset_ds_final$readmitted_enc)[levels(test_subset_ds_final$readmitted_enc) == 1] <- "Yes"
+levels(test_subset_ds_final$readmitted_enc)[levels(test_subset_ds_final$readmitted_enc) == 0] <- "No"
+test_subset_ds_final$readmitted_enc <- factor(test_subset_ds_final$readmitted_enc)
+rf_confusion_matrix <- confusionMatrix(test_subset_ds_final$prediction_target, test_subset_ds_final$readmitted_enc, positive = "Yes")
+rf_confusion_matrix
 ```
