@@ -1,17 +1,15 @@
 ---
-title: "Machine Learning - Week6 preliminary results"
+title: "Machine Learning - Week 2 - Lab 1"
 author: "Amol Gote"
-date: "10/11/2020"
-output:
-  word_document: default
-  html_document: default
+date: "9/13/2020"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r library_setup, MESSAGE = FALSE, warning=FALSE}
+```{r library_setup, MESSAGE = FALSE}
 set.seed(123)
 library(tidyverse)
 library(caret)
@@ -28,7 +26,7 @@ summary(medical_ds)
 nrow(medical_ds)
 ```
 
-```{r, initial_dataset, MESSAGE = FALSE}
+```{r, final_dataset, MESSAGE = FALSE}
 medical_ds_1 <- medical_ds[,c(
   "age", "race", "gender", "admission_type_id","discharge_disposition_id", "admission_source_id", "time_in_hospital","num_lab_procedures",
   "num_procedures","num_medications","number_outpatient","number_emergency","number_inpatient",
@@ -122,7 +120,7 @@ medical_ds_3$admission_type_id_enc <- factor(medical_ds_3$admission_type_id_enc)
 ```
 
 
-```{r discharge_disposition_id}
+```{r admission_type_id}
 medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 6] <- "Discharged"
 medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 8] <- "Discharged"
 medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 15] <- "Discharged"
@@ -156,6 +154,43 @@ medical_ds_3$A1Cresult <- factor(medical_ds_3$A1Cresult)
 medical_ds_3$change <- factor(medical_ds_3$change)
 medical_ds_3$metformin <- factor(medical_ds_3$metformin)
 medical_ds_3$insulin <- factor(medical_ds_3$insulin)
+```
+
+```{r converttonumeric}
+#medical_ds_3$diag_1_enc <- medical_ds_3$diag_1
+#library(dplyr)
+#medical_ds_3 %>% 
+#  mutate(diag_1_enc=ifelse(diag_1_enc=='E909','001',diag_1_enc))
+
+#temp <- medical_ds_3 %>%
+#  mutate(diag_1_enc == "E909")
+
+#medical_ds_3[medical_ds_3$diag_1_enc=='5', "diag_1_enc"] <- '100'
+#medical_ds_3$diag_1_enc <- factor(medical_ds_3$diag_1_enc)
+#medical_ds_3$diag_1_enc <- as.numeric(medical_ds_3$diag_1_enc)
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "E909"] <- "001"
+##medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V25"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V26"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V43"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V45"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V51"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V53"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V54"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V55"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V56"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V57"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V58"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V60"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V63"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V66"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V67"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V70"] <- "1"
+#medical_ds_3$diag_1_enc[medical_ds_3$diag_1_enc == "V71"] <- "1"
+#summary(medical_ds_3$diag_1_enc)
+#temp <- medical_ds_3 %>%
+#  filter(diag_1_enc == "E909")
+#nrow(temp)
+#temp
 ```
 
 ```{r diagnosis_code_3_encoding, MESSAGE=FALSE}
@@ -203,7 +238,7 @@ levels(medical_ds_3$diag_1_enc)
 summary(medical_ds_3$diag_1)
 ```
 
-```{r diagnosis_code_2_encoding, MESSAGE=FALSE}
+```{r diagnosis_code_3_encoding, MESSAGE=FALSE}
 medical_ds_3$diag_2 <- as.numeric(medical_ds_3$diag_2)
 #medical_ds_3$diag_2_enc <- 0
 medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 390 & medical_ds_3$diag_2 <= 459] <- "Circulatory"
@@ -249,7 +284,7 @@ summary(medical_ds_3$diag_2)
 ```
 
 
-```{r diagnosis_code_1_encoding, MESSAGE=FALSE}
+```{r diagnosis_code_3_encoding, MESSAGE=FALSE}
 medical_ds_3$diag_3 <- as.numeric(medical_ds_3$diag_3)
 #medical_ds_3$diag_3_enc <- 0
 medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 390 & medical_ds_3$diag_3 <= 459] <- "Circulatory"
@@ -296,7 +331,7 @@ summary(medical_ds_3$diag_3)
 
 
 
-```{r final_dataset_1_and_summary}
+```{r final_dataset}
 final_medical_ds_1 <- medical_ds_3
 summary(final_medical_ds_1)
 ```
@@ -480,8 +515,17 @@ test_set <- cbind(test_set, onehot_enc_test)
 ```
 
 
+```{r summary}
+#summary(test_set)
+```
+
+```{r}
+summary(training_set)
+summary(test_set)
+```
+
 ```{r, nnnet_subset}
-test_sample_size <- 15000
+test_sample_size <- 10000
 train_sample_size <- test_sample_size * 3
 training_subset_ds <- training_set[sample(nrow(training_set), train_sample_size),]
 nrow(training_subset_ds)
@@ -489,14 +533,48 @@ nrow(training_subset_ds)
 test_subset_ds <- test_set[sample(nrow(test_set), test_sample_size),]
 nrow(test_subset_ds)
 ```
-```{r peak_data_training_test_data_set_1}
+```{r peak_data}
 head(training_subset_ds)
 head(test_subset_ds)
 ```
 
 
+```{r, remove_columns}
+colnames(training_subset_ds)
+```
+
 
 ```{r, remove_columns_1}
+# training_subset_ds_final <- training_subset_ds[,c(
+#   "age_target", "race_target", 
+#   "admission_type_id_target",
+#   "discharge_disposition_id_target",
+#   "admission_source_id_target",
+#   "max_glu_serum_target",
+#   "A1Cresult_target",
+#   "time_in_hospital", "num_lab_procedures",           
+#   "num_procedures", "num_medications","number_outpatient","number_emergency",
+#   "number_inpatient", "number_diagnoses",
+#   "metformin_target","insulin_target",
+#   "gender.Female", "gender.Male", "change.Ch","change.No",
+#   "readmitted_enc"
+#   )]
+# 
+# test_subset_ds_final <- test_subset_ds[,c(
+#   "age_target", "race_target",
+#   "admission_type_id_target",
+#   "discharge_disposition_id_target",
+#   "admission_source_id_target",
+#   "max_glu_serum_target",
+#   "A1Cresult_target",
+#   "time_in_hospital", "num_lab_procedures",           
+#   "num_procedures", "num_medications","number_outpatient","number_emergency",
+#   "number_inpatient", "number_diagnoses",
+#   "metformin_target","insulin_target",
+#   "gender.Female", "gender.Male", "change.Ch","change.No",
+#   "readmitted_enc"
+#   )]
+
 training_subset_ds_final <- training_subset_ds[, -which(names(training_subset_ds) %in% 
   c("age", "age_enc", "race", 
   "admission_type_id",
@@ -524,6 +602,11 @@ test_subset_ds_final <- test_subset_ds[, -which(names(training_subset_ds) %in%
 ```
 
 ```{r colnames}
+summary(training_subset_ds_final)
+```
+
+
+```{r colnames}
 colnames(training_subset_ds_final)
 ```
 
@@ -539,7 +622,11 @@ levels(training_subset_ds_final$readmitted_enc)[levels(training_subset_ds_final$
 levels(training_subset_ds_final$readmitted_enc)[levels(training_subset_ds_final$readmitted_enc) == 0] <- "No"
 ```
 
-```{r peak_data_training_test_2}
+```{r}
+#colnames()
+```
+
+```{r peak_data}
 head(training_subset_ds_final)
 head(test_subset_ds_final)
 ```
@@ -564,13 +651,13 @@ rf_onehot_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:ta
 
 ```
 
-```{r prediction_random_forest}
+```{r prediction}
 test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
 class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
 ```
 
-```{r evaluate_random_forest}
+```{r evaluate}
 rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
 rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
 plot(rocr_roc,
@@ -582,28 +669,25 @@ abline(a = 0, b = 1)
 
 ```
 
-```{r auc_value_rando_forest}
+```{r auc_value}
 rocr_auc <- performance(rocr_pred, measure = "auc")
 auc <- rocr_auc@y.values[[1]]
 auc
 ```
 
-```{r calibration_curve_random_forest}
+```{r calibration_curve}
 calibration_curve <- calibration(readmitted_enc ~ class_probabilities_onehot,
 data = test_subset_ds_final,
 class = 1)
 plot(calibration_curve)
 ```
 
-```{r feature_importance_random_forest}
+```{r feature_importance}
 rf_varImp <- varImp(rf_onehot_model, type = 2)
 plot(rf_varImp, top = 25)
 ```
-```{r list_important_features_random_forest}
-rf_varImp
-```
 
-```{r nueral_network_1}
+```{r nueral_network}
 modelLookup("nnet")
 nnGrid <- expand.grid(size = 8:10, decay = 0.2)
 nnControl <- trainControl(method = "repeatedcv",
@@ -612,7 +696,7 @@ nnControl <- trainControl(method = "repeatedcv",
               classProbs = TRUE)
 ```
 
-```{r nueral_network_2}
+```{r nueral_network_1}
 nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
                           method = "nnet",
                           tuneGrid = nnGrid,
@@ -621,13 +705,13 @@ nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:ta
                           MaxNWts = 800)
 ```
 
-```{r neural_network_3}
+```{r neural_network_2}
 test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
 class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
 ```
 
-```{r nueral_network_4}
+```{r nueral_network_2}
 rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
 rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
 plot(rocr_roc,
@@ -640,13 +724,13 @@ abline(a = 0, b = 1)
 
  
 
-```{r nueral_network_auc_r}
+```{r nueral_network_2}
 rocr_auc <- performance(rocr_pred, measure = "auc")
 auc <- rocr_auc@y.values[[1]]
 auc
 ```
 
-```{r neural_network_calibration_curve_1}
+```{r calibration_curve}
 calibration_curve <- calibration(readmitted_enc ~ class_probabilities_target,
 data = test_subset_ds_final,
 class = 1)
