@@ -662,11 +662,6 @@ plot(calibration_curve)
 
 ```
 
-
-```{r list_feature_importance_nueral_network}
-#nn_varImp
-```
-
 ```{r rf_confusion_matrix}
 levels(test_subset_ds_final$readmitted_enc)[levels(test_subset_ds_final$readmitted_enc) == 1] <- "Yes"
 levels(test_subset_ds_final$readmitted_enc)[levels(test_subset_ds_final$readmitted_enc) == 0] <- "No"
