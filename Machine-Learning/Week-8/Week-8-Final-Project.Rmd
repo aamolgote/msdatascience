@@ -1,0 +1,952 @@
+---
+title: "Machine Learning - Week 8 Final Project"
+author: "Amol Gote"
+date: "10/23/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library_setup, MESSAGE = FALSE, warning=FALSE}
+set.seed(123)
+library(tidyverse)
+library(caret)
+library(ROCR)
+library(gbm)
+library(ROSE)
+```
+
+```{r load_data}
+medical_ds <- read.csv("./data/data.csv")
+```
+
+```{r data_summary, MESSAGE = FALSE}
+summary(medical_ds)
+```
+```{r ds_info, MESSAGE = FALSE}
+nrow(medical_ds)
+```
+
+```{r, initial_dataset, MESSAGE = FALSE}
+medical_ds_1 <- medical_ds[,c(
+  "age", "race", "gender", "admission_type_id","discharge_disposition_id", "admission_source_id", "time_in_hospital","num_lab_procedures",
+  "num_procedures","num_medications","number_outpatient","number_emergency","number_inpatient",
+  "diag_1","diag_2","diag_3","number_diagnoses","change","max_glu_serum","A1Cresult","metformin",
+  "glimepiride","glipizide","glyburide","pioglitazone","rosiglitazone",
+  "insulin","readmitted"
+  )]
+summary(medical_ds_1)
+```
+
+```{r dataset_na_removal}
+medical_ds_2 <- na.omit(medical_ds_1, cols = c("race","gender", "diag_1", "diag_2", "diag_3"))
+nrow(medical_ds_2)
+medical_ds_3 <- medical_ds_2 %>%
+  filter(!(discharge_disposition_id %in% c(11,19,20,21)))
+nrow(medical_ds_3)
+medical_ds_3 <- medical_ds_3 %>%
+  filter(gender != 'Unknown/Invalid')
+nrow(medical_ds_3)
+summary(medical_ds_3)
+```
+
+
+
+```{r feature_engg_1}
+medical_ds_3$readmitted_enc[medical_ds_3$readmitted == '<30'] <- 1
+medical_ds_3$readmitted_enc[medical_ds_3$readmitted == '>30'] <- 1
+medical_ds_3$readmitted_enc[medical_ds_3$readmitted == 'NO'] <- 0
+medical_ds_3$readmitted_enc <- factor(medical_ds_3$readmitted_enc)
+```
+
+```{r adjust_age}
+medical_ds_3$age_enc[medical_ds_3$age == '[0-10)']   <- 'Young'
+medical_ds_3$age_enc[medical_ds_3$age == '[10-20)']  <- 'Young'
+medical_ds_3$age_enc[medical_ds_3$age == '[20-30)']  <- 'Young'
+medical_ds_3$age_enc[medical_ds_3$age == '[30-40)']  <- 'Young'
+medical_ds_3$age_enc[medical_ds_3$age == '[40-50)']  <- 'Middle-aged'
+medical_ds_3$age_enc[medical_ds_3$age == '[50-60)']  <- 'Middle-aged'
+medical_ds_3$age_enc[medical_ds_3$age == '[60-70)']  <- 'Old'
+medical_ds_3$age_enc[medical_ds_3$age == '[70-80)']  <- 'Old'
+medical_ds_3$age_enc[medical_ds_3$age == '[80-90)']  <- 'Older'
+medical_ds_3$age_enc[medical_ds_3$age == '[90-100)'] <- 'Older'
+medical_ds_3$age_enc <- factor(medical_ds_3$age_enc)
+summary(medical_ds_3)
+```
+
+
+```{r gender}
+medical_ds_3$gender <- factor(medical_ds_3$gender)
+```
+
+```{r race}
+medical_ds_3$race <- factor(medical_ds_3$race)
+```
+
+```{r admission_source}
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id <= 3] <- "Referral"
+
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 4] <- "Transfer"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 5] <- "Transfer"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 6] <- "Transfer"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 10] <- "Transfer"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 18] <- "Transfer"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 22] <- "Transfer"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 25] <- "Transfer"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 26] <- "Transfer"
+
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 11] <- "Birth"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 12] <- "Birth"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 13] <- "Birth"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 14] <- "Birth"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 23] <- "Birth"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 24] <- "Birth"
+
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 7] <- "Misc"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 8] <- "Misc"
+
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 9] <- "Unknown"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 15] <- "Unknown"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 17] <- "Unknown"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 19] <- "Unknown"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 20] <- "Unknown"
+medical_ds_3$admission_source_id_enc[medical_ds_3$admission_source_id == 21] <- "Unknown"
+medical_ds_3$admission_source_id_enc <- factor(medical_ds_3$admission_source_id_enc)
+```
+
+```{r admission_type_id}
+medical_ds_3$admission_type_id_enc[medical_ds_3$admission_type_id == 1] <- "Emergency"
+medical_ds_3$admission_type_id_enc[medical_ds_3$admission_type_id == 2] <- "Urgent"
+medical_ds_3$admission_type_id_enc[medical_ds_3$admission_type_id == 3] <- "Elective"
+medical_ds_3$admission_type_id_enc[medical_ds_3$admission_type_id >= 4] <- "Other"
+medical_ds_3$admission_type_id_enc <- factor(medical_ds_3$admission_type_id_enc)
+```
+
+
+```{r discharge_disposition_id}
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 6] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 8] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 15] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 16] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 17] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 22] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 23] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 24] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 27] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 28] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 29] <- "Discharged"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 30] <- "Discharged"
+
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 13] <- "Hospice"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 14] <- "Hospice"
+
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 7] <- "Misc"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 9] <- "Misc"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 10] <- "Misc"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 12] <- "Misc"
+
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 18] <- "Unknown"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 25] <- "Unknown"
+medical_ds_3$discharge_disposition_id_enc[medical_ds_3$discharge_disposition_id <= 26] <- "Unknown"
+medical_ds_3$discharge_disposition_id_enc <- factor(medical_ds_3$discharge_disposition_id_enc)
+```
+
+```{r factor_other}
+medical_ds_3$max_glu_serum <- factor(medical_ds_3$max_glu_serum)
+medical_ds_3$A1Cresult <- factor(medical_ds_3$A1Cresult)
+medical_ds_3$change <- factor(medical_ds_3$change)
+medical_ds_3$metformin <- factor(medical_ds_3$metformin)
+medical_ds_3$insulin <- factor(medical_ds_3$insulin)
+```
+
+```{r diagnosis_code_3_encoding, MESSAGE=FALSE}
+medical_ds_3$diag_1 <- as.numeric(medical_ds_3$diag_1)
+#medical_ds_3$diag_1_enc <- 0
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 390 & medical_ds_3$diag_1 <= 459] <- "Circulatory"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 == 785] <- "Circulatory"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 460 & medical_ds_3$diag_1 <= 519] <- "Respiratory"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 == 786] <- "Respiratory"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 520 & medical_ds_3$diag_1 <= 579] <- "Digestive"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 == 787] <- "Digestive"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 == 250] <- "Diabetes"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 250.00 & medical_ds_3$diag_1 <= 250.99] <- "Diabetes"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 800 & medical_ds_3$diag_1 <= 999] <- "Injury"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 710 & medical_ds_3$diag_1 <= 739] <- "Musculoskeletal"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 580 & medical_ds_3$diag_1 <= 629] <- "Genitourinary"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 == 788] <- "Genitourinary"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 140 & medical_ds_3$diag_1 <= 239] <- "Neoplasms"
+
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 == 780 | medical_ds_3$diag_1 == 782 | medical_ds_3$diag_1 == 781 | medical_ds_3$diag_1 == 784] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 790 & medical_ds_3$diag_1 <= 799] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 240 & medical_ds_3$diag_1 <= 249] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 251 & medical_ds_3$diag_1 <= 279] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 680 & medical_ds_3$diag_1 <= 709] <- "Other"
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 1 & medical_ds_3$diag_1 <= 139] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 290 & medical_ds_3$diag_1 <= 319] <- "Other"
+
+
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 280 & medical_ds_3$diag_1 <= 289] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 320 & medical_ds_3$diag_1 <= 359] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 630 & medical_ds_3$diag_1 <= 679] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 360 & medical_ds_3$diag_1 <= 389] <- "Other"
+medical_ds_3$diag_1_enc[medical_ds_3$diag_1 >= 740 & medical_ds_3$diag_1 <= 759] <- "Other"
+medical_ds_3$diag_1_enc <- factor(medical_ds_3$diag_1_enc)
+levels(medical_ds_3$diag_1_enc)
+summary(medical_ds_3$diag_1)
+```
+
+```{r diagnosis_code_2_encoding, MESSAGE=FALSE}
+medical_ds_3$diag_2 <- as.numeric(medical_ds_3$diag_2)
+#medical_ds_3$diag_2_enc <- 0
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 390 & medical_ds_3$diag_2 <= 459] <- "Circulatory"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 == 785] <- "Circulatory"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 460 & medical_ds_3$diag_2 <= 519] <- "Respiratory"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 == 786] <- "Respiratory"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 520 & medical_ds_3$diag_2 <= 579] <- "Digestive"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 == 787] <- "Digestive"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 == 250] <- "Diabetes"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 250.00 & medical_ds_3$diag_2 <= 250.99] <- "Diabetes"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 800 & medical_ds_3$diag_2 <= 999] <- "Injury"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 710 & medical_ds_3$diag_2 <= 739] <- "Musculoskeletal"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 580 & medical_ds_3$diag_2 <= 629] <- "Genitourinary"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 == 788] <- "Genitourinary"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 140 & medical_ds_3$diag_2 <= 239] <- "Neoplasms"
+
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 == 780 | medical_ds_3$diag_2 == 782 | medical_ds_3$diag_2 == 781 | medical_ds_3$diag_2 == 784] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 790 & medical_ds_3$diag_2 <= 799] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 240 & medical_ds_3$diag_2 <= 249] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 251 & medical_ds_3$diag_2 <= 279] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 680 & medical_ds_3$diag_2 <= 709] <- "Other"
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 1 & medical_ds_3$diag_2 <= 139] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 290 & medical_ds_3$diag_2 <= 319] <- "Other"
+
+
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 280 & medical_ds_3$diag_2 <= 289] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 320 & medical_ds_3$diag_2 <= 359] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 630 & medical_ds_3$diag_2 <= 679] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 360 & medical_ds_3$diag_2 <= 389] <- "Other"
+medical_ds_3$diag_2_enc[medical_ds_3$diag_2 >= 740 & medical_ds_3$diag_2 <= 759] <- "Other"
+medical_ds_3$diag_2_enc <- factor(medical_ds_3$diag_2_enc)
+levels(medical_ds_3$diag_2_enc)
+summary(medical_ds_3$diag_2)
+```
+
+
+```{r diagnosis_code_1_encoding, MESSAGE=FALSE}
+medical_ds_3$diag_3 <- as.numeric(medical_ds_3$diag_3)
+#medical_ds_3$diag_3_enc <- 0
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 390 & medical_ds_3$diag_3 <= 459] <- "Circulatory"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 == 785] <- "Circulatory"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 460 & medical_ds_3$diag_3 <= 519] <- "Respiratory"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 == 786] <- "Respiratory"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 520 & medical_ds_3$diag_3 <= 579] <- "Digestive"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 == 787] <- "Digestive"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 == 250] <- "Diabetes"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 250.00 & medical_ds_3$diag_3 <= 250.99] <- "Diabetes"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 800 & medical_ds_3$diag_3 <= 999] <- "Injury"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 710 & medical_ds_3$diag_3 <= 739] <- "Musculoskeletal"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 580 & medical_ds_3$diag_3 <= 629] <- "Genitourinary"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 == 788] <- "Genitourinary"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 140 & medical_ds_3$diag_3 <= 239] <- "Neoplasms"
+
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 == 780 | medical_ds_3$diag_3 == 782 | medical_ds_3$diag_3 == 781 | medical_ds_3$diag_3 == 784] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 790 & medical_ds_3$diag_3 <= 799] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 240 & medical_ds_3$diag_3 <= 249] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 251 & medical_ds_3$diag_3 <= 279] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 680 & medical_ds_3$diag_3 <= 709] <- "Other"
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 1 & medical_ds_3$diag_3 <= 139] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 290 & medical_ds_3$diag_3 <= 319] <- "Other"
+
+
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 280 & medical_ds_3$diag_3 <= 289] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 320 & medical_ds_3$diag_3 <= 359] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 630 & medical_ds_3$diag_3 <= 679] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 360 & medical_ds_3$diag_3 <= 389] <- "Other"
+medical_ds_3$diag_3_enc[medical_ds_3$diag_3 >= 740 & medical_ds_3$diag_3 <= 759] <- "Other"
+medical_ds_3$diag_3_enc <- factor(medical_ds_3$diag_3_enc)
+levels(medical_ds_3$diag_3_enc)
+summary(medical_ds_3$diag_3)
+```
+
+
+
+```{r final_dataset_1_and_summary}
+final_medical_ds_1 <- medical_ds_3
+summary(final_medical_ds_1)
+```
+
+
+```{r data_partition, MESSAGE=FALSE}
+# split the data into training and (held-out) test sets
+training_ind <- createDataPartition(final_medical_ds_1$readmitted_enc,
+p = 0.75,
+list = FALSE,
+times = 1)
+training_set <- final_medical_ds_1[training_ind, ]
+test_set <- final_medical_ds_1[-training_ind, ]
+```
+
+```{r}
+summary(training_set)
+```
+
+```{r target_encoding, MESSAGE=FALSE}
+
+threshold <- 250
+target_enc_train <- function(variable, level) {
+  training_set$readmitted_enc <- as.numeric(as.vector(training_set$readmitted_enc))
+  train_avg_target <- mean(training_set[, "readmitted_enc"])
+  if (nrow(training_set[training_set[, variable]==level, ])==0) {
+    return(train_avg_target)
+  } else {
+    level_num_obs <- nrow(training_set[training_set[, variable]==level,])
+    level_avg_target <- mean(training_set[training_set[, variable]==level,
+    "readmitted_enc"])
+    return((level_num_obs*level_avg_target+threshold*train_avg_target)/(level_num_obs+threshold))
+  }
+}
+age_target <- mapply(target_enc_train, variable = "age_enc", level = levels(training_set$age_enc), USE.NAMES = FALSE)
+names(age_target) <- levels(training_set$age_enc)
+training_set$age_target <- 0
+for (level in levels(training_set$age_enc)) {
+  training_set[training_set[, "age_enc"]==level, "age_target"] <- age_target[level]
+}
+
+test_set$age_target <- 0
+for (level in levels(training_set$age_enc)) {
+  test_set[test_set[, "age_enc"]==level, "age_target"] <- age_target[level]
+}
+
+
+#gender_target <- mapply(target_enc_train, variable = "gender", level = levels(training_set$gender), USE.NAMES = FALSE)
+#names(gender_target) <- levels(training_set$gender)
+#training_set$gender_target <- 0
+#for (level in levels(training_set$gender)) {
+#  training_set[training_set[, "gender"]==level, "gender_target"] <- gender_target[level]
+#}
+
+#test_set$gender_target <- 0
+#for (level in levels(training_set$gender)) {
+#  test_set[test_set[, "gender"]==level, "gender_target"] <- gender_target[level]
+#}
+
+
+race_target <- mapply(target_enc_train, variable = "race", level = levels(training_set$race), USE.NAMES = FALSE)
+names(race_target) <- levels(training_set$race)
+training_set$race_target <- 0
+for (level in levels(training_set$race)) {
+  training_set[training_set[, "race"]==level, "race_target"] <- race_target[level]
+}
+
+test_set$race_target <- 0
+for (level in levels(training_set$race)) {
+  test_set[test_set[, "race"]==level, "race_target"] <- race_target[level]
+}
+
+
+admission_source_id_target <- mapply(target_enc_train, variable = "admission_source_id_enc", level = levels(training_set$admission_source_id_enc), USE.NAMES = FALSE)
+names(admission_source_id_target) <- levels(training_set$admission_source_id_enc)
+training_set$admission_source_id_target <- 0
+for (level in levels(training_set$admission_source_id_enc)) {
+  training_set[training_set[, "admission_source_id_enc"]==level, "admission_source_id_target"] <- admission_source_id_target[level]
+}
+
+test_set$admission_source_id_target <- 0
+for (level in levels(training_set$admission_source_id_enc)) {
+  test_set[test_set[, "admission_source_id_enc"]==level, "admission_source_id_target"] <- admission_source_id_target[level]
+}
+
+admission_type_id_target <- mapply(target_enc_train, variable = "admission_type_id_enc", level = levels(training_set$admission_type_id_enc), USE.NAMES = FALSE)
+names(admission_type_id_target) <- levels(training_set$admission_type_id_enc)
+training_set$admission_type_id_target <- 0
+for (level in levels(training_set$admission_type_id_enc)) {
+  training_set[training_set[, "admission_type_id_enc"]==level, "admission_type_id_target"] <- admission_type_id_target[level]
+}
+
+test_set$admission_type_id_target <- 0
+for (level in levels(training_set$admission_type_id_enc)) {
+  test_set[test_set[, "admission_type_id_enc"]==level, "admission_type_id_target"] <- admission_type_id_target[level]
+}
+
+discharge_disposition_id_target <- mapply(target_enc_train, 
+                                          variable = "discharge_disposition_id_enc", level = levels(training_set$discharge_disposition_id_enc), USE.NAMES = FALSE)
+names(discharge_disposition_id_target) <- levels(training_set$discharge_disposition_id_enc)
+training_set$discharge_disposition_id_target <- 0
+for (level in levels(training_set$discharge_disposition_id_enc)) {
+  training_set[training_set[, "discharge_disposition_id_enc"]==level, "discharge_disposition_id_target"] <- discharge_disposition_id_target[level]
+}
+
+test_set$discharge_disposition_id_target <- 0
+for (level in levels(training_set$discharge_disposition_id_enc)) {
+  test_set[test_set[, "discharge_disposition_id_enc"]==level, "discharge_disposition_id_target"] <- discharge_disposition_id_target[level]
+}
+
+
+max_glu_serum_target <- mapply(target_enc_train, variable = "max_glu_serum", level = levels(training_set$max_glu_serum), USE.NAMES = FALSE)
+names(max_glu_serum_target) <- levels(training_set$max_glu_serum)
+training_set$max_glu_serum_target <- 0
+for (level in levels(training_set$max_glu_serum)) {
+  training_set[training_set[, "max_glu_serum"]==level, "max_glu_serum_target"] <- max_glu_serum_target[level]
+}
+
+test_set$max_glu_serum_target <- 0
+for (level in levels(training_set$max_glu_serum)) {
+  test_set[test_set[, "max_glu_serum"]==level, "max_glu_serum_target"] <- max_glu_serum_target[level]
+}
+
+A1Cresult_target <- mapply(target_enc_train, variable = "A1Cresult", level = levels(training_set$A1Cresult), USE.NAMES = FALSE)
+names(A1Cresult_target) <- levels(training_set$A1Cresult)
+training_set$A1Cresult_target <- 0
+for (level in levels(training_set$A1Cresult)) {
+  training_set[training_set[, "A1Cresult"]==level, "A1Cresult_target"] <- A1Cresult_target[level]
+}
+
+test_set$A1Cresult_target <- 0
+for (level in levels(training_set$A1Cresult)) {
+  test_set[test_set[, "A1Cresult"]==level, "A1Cresult_target"] <- A1Cresult_target[level]
+}
+
+#change_target <- mapply(target_enc_train, variable = "change", level = levels(training_set$change), USE.NAMES = FALSE)
+#names(change_target) <- levels(training_set$change)
+#training_set$change_target <- 0
+#for (level in levels(training_set$change)) {
+#  training_set[training_set[, "change"]==level, "change_target"] <- change_target[level]
+#}
+
+#test_set$change_target <- 0
+#for (level in levels(training_set$change)) {
+#  test_set[test_set[, "change"]==level, "change_target"] <- change_target[level]
+#}
+
+metformin_target <- mapply(target_enc_train, variable = "metformin", level = levels(training_set$metformin), USE.NAMES = FALSE)
+names(metformin_target) <- levels(training_set$metformin)
+training_set$metformin_target <- 0
+for (level in levels(training_set$metformin)) {
+  training_set[training_set[, "metformin"]==level, "metformin_target"] <- metformin_target[level]
+}
+
+test_set$metformin_target <- 0
+for (level in levels(training_set$metformin)) {
+  test_set[test_set[, "metformin"]==level, "metformin_target"] <- metformin_target[level]
+}
+
+insulin_target <- mapply(target_enc_train, variable = "insulin", level = levels(training_set$insulin), USE.NAMES = FALSE)
+names(insulin_target) <- levels(training_set$insulin)
+training_set$insulin_target <- 0
+for (level in levels(training_set$insulin)) {
+  training_set[training_set[, "insulin"]==level, "insulin_target"] <- insulin_target[level]
+}
+
+test_set$insulin_target <- 0
+for (level in levels(training_set$insulin)) {
+  test_set[test_set[, "insulin"]==level, "insulin_target"] <- insulin_target[level]
+}
+
+
+diag_1_enc_target <- mapply(target_enc_train, variable = "diag_1_enc", level = levels(training_set$diag_1_enc), USE.NAMES = FALSE)
+names(diag_1_enc_target) <- levels(training_set$diag_1_enc)
+training_set$diag_1_enc_target <- 0
+for (level in levels(training_set$diag_1_enc)) {
+  training_set[training_set[, "diag_1_enc"]==level, "diag_1_enc_target"] <- diag_1_enc_target[level]
+}
+
+test_set$diag_1_enc_target <- 0
+for (level in levels(training_set$diag_1_enc)) {
+  test_set[test_set[, "diag_1_enc"]==level, "diag_1_enc_target"] <- diag_1_enc_target[level]
+}
+
+diag_2_enc_target <- mapply(target_enc_train, variable = "diag_2_enc", level = levels(training_set$diag_2_enc), USE.NAMES = FALSE)
+names(diag_2_enc_target) <- levels(training_set$diag_2_enc)
+training_set$diag_2_enc_target <- 0
+for (level in levels(training_set$diag_2_enc)) {
+  training_set[training_set[, "diag_2_enc"]==level, "diag_2_enc_target"] <- diag_2_enc_target[level]
+}
+
+test_set$diag_2_enc_target <- 0
+for (level in levels(training_set$diag_2_enc)) {
+  test_set[test_set[, "diag_2_enc"]==level, "diag_2_enc_target"] <- diag_2_enc_target[level]
+}
+
+diag_3_enc_target <- mapply(target_enc_train, variable = "diag_3_enc", level = levels(training_set$diag_3_enc), USE.NAMES = FALSE)
+names(diag_3_enc_target) <- levels(training_set$diag_3_enc)
+training_set$diag_3_enc_target <- 0
+for (level in levels(training_set$diag_3_enc)) {
+  training_set[training_set[, "diag_3_enc"]==level, "diag_3_enc_target"] <- diag_3_enc_target[level]
+}
+
+test_set$diag_3_enc_target <- 0
+for (level in levels(training_set$diag_3_enc)) {
+  test_set[test_set[, "diag_3_enc"]==level, "diag_3_enc_target"] <- diag_3_enc_target[level]
+}
+
+```
+
+```{r one_hot_encoding, MESSAGE=FALSE}
+# onehot_encoder <- dummyVars(~ gender + change + diag_1_enc + diag_2_enc + diag_3_enc, 
+#                             final_medical_ds_1[, c("gender", "change","diag_1_enc", "diag_2_enc", "diag_3_enc")])
+# onehot_enc_training <- predict(onehot_encoder, training_set[, c("gender", "change","diag_1_enc", "diag_2_enc", "diag_3_enc")])
+# training_set <- cbind(training_set, onehot_enc_training)
+# onehot_enc_test <- predict(onehot_encoder, test_set[, c("gender", "change","diag_1_enc", "diag_2_enc", "diag_3_enc")])
+# test_set <- cbind(test_set, onehot_enc_test)
+```
+
+```{r one_hot_encoding_limited, MESSAGE=FALSE}
+onehot_encoder <- dummyVars(~ gender + change,
+                            final_medical_ds_1[, c("gender", "change")])
+onehot_enc_training <- predict(onehot_encoder, training_set[, c("gender", "change")])
+training_set <- cbind(training_set, onehot_enc_training)
+onehot_enc_test <- predict(onehot_encoder, test_set[, c("gender", "change")])
+test_set <- cbind(test_set, onehot_enc_test)
+```
+
+
+```{r, nnnet_subset}
+test_sample_size <- 5000
+train_sample_size <- test_sample_size * 3
+training_subset_ds <- training_set[sample(nrow(training_set), train_sample_size),]
+nrow(training_subset_ds)
+
+test_subset_ds <- test_set[sample(nrow(test_set), test_sample_size),]
+nrow(test_subset_ds)
+```
+```{r peak_data_training_test_data_set_1}
+head(training_subset_ds)
+head(test_subset_ds)
+```
+
+
+
+```{r, remove_columns_1}
+training_subset_ds_final <- training_subset_ds[, -which(names(training_subset_ds) %in% 
+  c("age", "age_enc", "race", 
+  "admission_type_id",
+  "discharge_disposition_id",
+  "admission_source_id",
+  "max_glu_serum",
+  "A1Cresult",
+  "metformin","insulin","glimepiride","glipizide" ,"glyburide","pioglitazone","rosiglitazone",
+  "gender", "change",
+  "diag_1","diag_2","diag_3",
+  "diag_1_enc","diag_2_enc","diag_3_enc", "readmitted"))]
+
+test_subset_ds_final <- test_subset_ds[, -which(names(training_subset_ds) %in% 
+  c("age", "age_enc", "race", 
+  "admission_type_id",
+  "discharge_disposition_id",
+  "admission_source_id",
+  "max_glu_serum",
+  "A1Cresult",
+  "metformin","insulin","glimepiride","glipizide" ,"glyburide","pioglitazone","rosiglitazone",
+  "gender", "change",
+  "diag_1","diag_2","diag_3",
+  "diag_1_enc","diag_2_enc","diag_3_enc", "readmitted"))]
+
+```
+
+```{r colnames}
+colnames(training_subset_ds_final)
+```
+
+```{r, SCALE_VARIABLES}
+num_var_start_index <- 1
+num_var_end_index <- 8
+target_var_index <- 9
+test_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(test_subset_ds_final[, num_var_start_index:num_var_end_index], 
+                                       center = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, mean), 
+                                       scale = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, sd))
+training_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(training_subset_ds_final[, num_var_start_index:num_var_end_index])
+levels(training_subset_ds_final$readmitted_enc)[levels(training_subset_ds_final$readmitted_enc) == 1] <- "Yes"
+levels(training_subset_ds_final$readmitted_enc)[levels(training_subset_ds_final$readmitted_enc) == 0] <- "No"
+```
+
+```{r peak_data_training_test_2}
+head(training_subset_ds_final)
+head(test_subset_ds_final)
+```
+
+
+
+
+```{r random_forest}
+modelLookup("rf")
+recommended_mtry <- floor(sqrt(ncol(training_subset_ds_final[,-1*c(target_var_index:target_var_index)])))
+rfGrid <- expand.grid(mtry = c(recommended_mtry-2, recommended_mtry, recommended_mtry+2))
+```
+
+```{r random_forest_1}
+rfControl <- trainControl(method = "oob", classProbs = TRUE)
+rf_onehot_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 50,
+                  importance = TRUE,
+                  trace = FALSE)
+
+```
+
+```{r prediction_random_forest}
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+```
+
+```{r evaluate_random_forest}
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+
+```
+
+```{r auc_value_rando_forest}
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf <- rocr_auc@y.values[[1]]
+auc_rf
+```
+
+
+
+
+```{r calibration_curve_random_forest}
+calibration_curve <- calibration(readmitted_enc ~ class_probabilities_onehot,
+data = test_subset_ds_final,
+class = 1)
+plot(calibration_curve)
+```
+
+```{r feature_importance_random_forest}
+rf_varImp <- varImp(rf_onehot_model, type = 2)
+plot(rf_varImp, top = 25)
+```
+```{r list_important_features_random_forest}
+rf_varImp
+```
+
+```{r nueral_network_1}
+modelLookup("nnet")
+nnGrid <- expand.grid(size = 8:10, decay = 0.2)
+nnControl <- trainControl(method = "repeatedcv",
+              repeats = 5,
+              number=10,
+              classProbs = TRUE)
+```
+
+```{r nueral_network_2}
+nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 800)
+```
+
+
+```{r neural_network_3}
+test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+```
+
+```{r nueral_network_4}
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+```
+
+ 
+
+```{r nueral_network_auc_r}
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_nn <- rocr_auc@y.values[[1]]
+auc_nn
+```
+
+```{r neural_network_calibration_curve_1}
+calibration_curve <- calibration(readmitted_enc ~ class_probabilities_target,
+data = test_subset_ds_final,
+class = 1)
+plot(calibration_curve)
+
+```
+
+```{r rf_confusion_matrix}
+ levels(test_subset_ds_final$readmitted_enc)[levels(test_subset_ds_final$readmitted_enc) == 1] <- "Yes"
+ levels(test_subset_ds_final$readmitted_enc)[levels(test_subset_ds_final$readmitted_enc) == 0] <- "No"
+ test_subset_ds_final$readmitted_enc <- factor(test_subset_ds_final$readmitted_enc)
+ rf_confusion_matrix <- confusionMatrix(test_subset_ds_final$prediction_target, test_subset_ds_final$readmitted_enc, positive = "Yes")
+ rf_confusion_matrix
+```
+
+
+## Logistic Regression
+```{r logistic_regression_medical_dataset, message=FALSE}
+
+logistic_regression_model <- glm(readmitted_enc ~ 
+                          num_medications + 
+                          time_in_hospital +
+                          number_diagnoses +
+                          num_procedures +  
+                          age_target +
+                          number_inpatient +
+                          insulin_target +
+                          race_target +   
+                          A1Cresult_target +
+                          number_outpatient +
+                          admission_type_id_enc +
+                          admission_source_id_enc +
+                          metformin_target +          
+                          number_emergency +          
+                          diag_3_enc_target +          
+                          diag_2_enc_target +          
+                          diag_1_enc_target          
+                          ,data = training_subset_ds_final, family = binomial)
+
+test_subset_ds_final$prediction_target <- predict(logistic_regression_model,newdata = test_subset_ds_final[,-1*c(target_var_index:target_var_index)],type="response")
+test_subset_ds_final$prediction_target <- ifelse(test_subset_ds_final$prediction_target > 0.5, 1, 0)
+```
+
+```{r logistic_regression_roc_curve}
+ rocr_pred <- prediction(test_subset_ds_final$prediction_target, test_subset_ds_final$readmitted_enc)
+ rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_auc_r}
+ rocr_auc <- performance(rocr_pred, measure = "auc")
+ auc_glm <- rocr_auc@y.values[[1]]
+ auc_glm
+```
+
+```{r class_imbalance}
+table(training_subset_ds_final$readmitted_enc)
+
+training_subset_ds_final_no <- training_subset_ds_final %>%
+  filter(readmitted_enc == 'No')
+no_count <- nrow(training_subset_ds_final_no)
+
+training_subset_ds_final_yes <- training_subset_ds_final %>%
+  filter(readmitted_enc == 'Yes')
+yes_count <- nrow(training_subset_ds_final_yes)
+no_count
+yes_count
+
+```
+
+```{r over_sampling_data}
+training_subset_ds_final_over <- ovun.sample(readmitted_enc ~., data = training_subset_ds_final, method = "over", N = no_count*2)$data
+table(training_subset_ds_final_over$readmitted_enc)
+```
+
+```{r random_forest_2_over_sampling}
+rfControl <- trainControl(method = "oob", classProbs = TRUE)
+rf_onehot_model <- train(x = training_subset_ds_final_over[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_over[, target_var_index],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 50,
+                  importance = TRUE,
+                  trace = FALSE)
+
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf_over <- rocr_auc@y.values[[1]]
+auc_rf_over
+
+```
+
+
+```{r nueral_network_2_over}
+nn_target_model <- train(x = training_subset_ds_final_over[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_over[, target_var_index],
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 800)
+
+test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_nn_over <- rocr_auc@y.values[[1]]
+auc_nn_over
+```
+
+
+```{r under_sampling_data}
+training_subset_ds_final_under <- ovun.sample(readmitted_enc ~., data = training_subset_ds_final, method = "under", N = yes_count*2)$data
+table(training_subset_ds_final_under$readmitted_enc)
+```
+
+```{r random_forest_2_under_sampling}
+rfControl <- trainControl(method = "oob", classProbs = TRUE)
+rf_onehot_model <- train(x = training_subset_ds_final_under[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_under[, target_var_index],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 50,
+                  importance = TRUE,
+                  trace = FALSE)
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf_under <- rocr_auc@y.values[[1]]
+auc_rf_under
+
+```
+
+```{r nueral_network_2_under}
+nn_target_model <- train(x = training_subset_ds_final_under[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_under[, target_var_index],
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 800)
+
+test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_nn_under <- rocr_auc@y.values[[1]]
+auc_nn_under
+```
+
+```{r over_under_sampling_data}
+training_subset_ds_final_both <- ovun.sample(readmitted_enc ~., data = training_subset_ds_final, method = "both", N = no_count + yes_count,
+                                             p = 0.5, seed = 222)$data
+table(training_subset_ds_final_both$readmitted_enc)
+```
+
+```{r random_forest_2_over_under_sampling}
+rfControl <- trainControl(method = "oob", classProbs = TRUE)
+rf_onehot_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 50,
+                  importance = TRUE,
+                  trace = FALSE)
+
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf_both <- rocr_auc@y.values[[1]]
+auc_rf_both
+```
+
+```{r nueral_network_2_both}
+nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 800)
+
+test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_nn_both <- rocr_auc@y.values[[1]]
+auc_nn_both
+```
+
+```{r, build_data_frame_auc}
+auc_df <- data.frame("algorithm_method" = c("rf"), "auc" = c(auc_rf))
+auc_df_temp <- data.frame("algorithm_method" = c("rf_over"), "auc" = c(auc_rf_over))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("rf_under"), "auc" = c(auc_rf_under))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("rf_both"), "auc" = c(auc_rf_both))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("nn"), "auc" = c(auc_nn))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("nn_over"), "auc" = c(auc_nn_over))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("nn_under"), "auc" = c(auc_nn_under))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("nn_both"), "auc" = c(auc_nn_both))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("glm"), "auc" = c(auc_glm))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df
+```
+
+```{r plor_compare_auc}
+ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
+  geom_bar(colour="black", stat="identity", fill = "#0073C2FF") +
+  theme_minimal()
+```

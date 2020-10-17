@@ -1256,3 +1256,5 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 /Predictive-Modelling/Final-Project/data
 /Machine-Learning/Week-3/data/data.csv
 /Machine-Learning/Week-5/data/data.csv
+/Machine-Learning/Week-8/data
+*.Rhistory
