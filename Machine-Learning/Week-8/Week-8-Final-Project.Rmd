@@ -736,7 +736,7 @@ test_set <- cbind(test_set, onehot_enc_test)
 
 
 ```{r, nnnet_subset}
-test_sample_size <- 100
+test_sample_size <- 15000
 train_sample_size <- test_sample_size * 3
 training_subset_ds <- training_set[sample(nrow(training_set), train_sample_size),]
 nrow(training_subset_ds)
