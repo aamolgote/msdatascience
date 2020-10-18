@@ -18,6 +18,7 @@ library(caret)
 library(ROCR)
 library(gbm)
 library(ROSE)
+library(gridExtra)
 ```
 
 ```{r load_data}
@@ -29,6 +30,125 @@ summary(medical_ds)
 ```
 ```{r ds_info, MESSAGE = FALSE}
 nrow(medical_ds)
+```
+
+```{r age_plot}
+age_plot <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = age), fill = "#0073C2FF") +
+  xlab("Age segments")  + 
+  ylab("Number of patients") + 
+  theme_minimal() 
+
+race_plot <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = race), fill = "#0073C2FF") +
+  xlab("Race")  + 
+  ylab("Number of patients") + 
+  theme_minimal() 
+
+
+gender_plot <- ggplot(data = medical_ds, aes(x="", fill=gender))+
+  geom_bar(width = 1) +
+  coord_polar("y") +
+  scale_fill_brewer(palette="Dark2") +
+  theme_minimal()
+
+grid.arrange(age_plot, race_plot)
+#bp<- ggplot(df, aes(x="", y=value, fill=group))+
+#geom_bar(width = 1, stat = "identity")
+gender_plot
+```
+```{r, histogram}
+metformin <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = metformin), fill = "#0073C2FF") +
+  xlab("metformin")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+repaglinide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = repaglinide), fill = "#0073C2FF") +
+  xlab("repaglinide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+nateglinide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = nateglinide), fill = "#0073C2FF") +
+  xlab("nateglinide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+chlorpropamide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = chlorpropamide), fill = "#0073C2FF") +
+  xlab("chlorpropamide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+glimepiride <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = glimepiride), fill = "#0073C2FF") +
+  xlab("glimepiride")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+acetohexamide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = acetohexamide), fill = "#0073C2FF") +
+  xlab("repaglinide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+grid.arrange(metformin, repaglinide,nateglinide,chlorpropamide,glimepiride,acetohexamide, ncol=3)
+
+```
+
+```{r, histogram}
+glipizide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = glipizide), fill = "#0073C2FF") +
+  xlab("glipizide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+glyburide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = glyburide), fill = "#0073C2FF") +
+  xlab("glyburide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+tolbutamide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = tolbutamide), fill = "#0073C2FF") +
+  xlab("tolbutamide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+pioglitazone <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = pioglitazone), fill = "#0073C2FF") +
+  xlab("repaglinide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+rosiglitazone <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = rosiglitazone), fill = "#0073C2FF") +
+  xlab("rosiglitazone")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+acarbose <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = acarbose), fill = "#0073C2FF") +
+  xlab("acarbose")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+grid.arrange(glipizide, glyburide,tolbutamide,pioglitazone,rosiglitazone,acarbose, ncol=3)
+
 ```
 
 ```{r, initial_dataset, MESSAGE = FALSE}
