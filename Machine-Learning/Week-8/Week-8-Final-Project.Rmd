@@ -53,14 +53,19 @@ gender_plot <- ggplot(data = medical_ds, aes(x="", fill=gender))+
   theme_minimal()
 
 grid.arrange(age_plot, race_plot)
-#bp<- ggplot(df, aes(x="", y=value, fill=group))+
-#geom_bar(width = 1, stat = "identity")
 gender_plot
 ```
-```{r, histogram}
+```{r, medication_non_variance_plots_1}
 metformin <- ggplot(data = medical_ds)+
   geom_bar(aes(x = metformin), fill = "#0073C2FF") +
   xlab("metformin")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+insulin <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = insulin), fill = "#0073C2FF") +
+  xlab("insulin")  + 
   ylab("# patients") + 
   coord_flip() +
   theme_minimal() 
@@ -100,11 +105,6 @@ acetohexamide <- ggplot(data = medical_ds)+
   coord_flip() +
   theme_minimal() 
 
-grid.arrange(metformin, repaglinide,nateglinide,chlorpropamide,glimepiride,acetohexamide, ncol=3)
-
-```
-
-```{r, histogram}
 glipizide <- ggplot(data = medical_ds)+
   geom_bar(aes(x = glipizide), fill = "#0073C2FF") +
   xlab("glipizide")  + 
@@ -118,6 +118,13 @@ glyburide <- ggplot(data = medical_ds)+
   ylab("# patients") + 
   coord_flip() +
   theme_minimal() 
+
+grid.arrange(metformin, insulin,repaglinide,nateglinide,chlorpropamide,glimepiride,acetohexamide,glipizide,glyburide, ncol=3)
+
+```
+
+```{r, medication_non_variance_plots_2}
+
 
 tolbutamide <- ggplot(data = medical_ds)+
   geom_bar(aes(x = tolbutamide), fill = "#0073C2FF") +
@@ -147,9 +154,86 @@ acarbose <- ggplot(data = medical_ds)+
   coord_flip() +
   theme_minimal() 
 
-grid.arrange(glipizide, glyburide,tolbutamide,pioglitazone,rosiglitazone,acarbose, ncol=3)
+miglitol <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = miglitol), fill = "#0073C2FF") +
+  xlab("miglitol")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+troglitazone <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = troglitazone), fill = "#0073C2FF") +
+  xlab("troglitazone")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+tolazamide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = tolazamide), fill = "#0073C2FF") +
+  xlab("tolazamide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+examide <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = examide), fill = "#0073C2FF") +
+  xlab("examide")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+citoglipton <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = citoglipton), fill = "#0073C2FF") +
+  xlab("citoglipton")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+grid.arrange(tolbutamide,pioglitazone,rosiglitazone,acarbose,miglitol,troglitazone,tolazamide,examide,citoglipton, ncol=3)
 
 ```
+
+                         
+```{r, medication_non_variance_plots_3}
+glyburide.metformin <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = glyburide.metformin), fill = "#0073C2FF") +
+  xlab("glyburide.metformin")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+glipizide.metformin <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = glipizide.metformin), fill = "#0073C2FF") +
+  xlab("glipizide.metformin")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+glimepiride.pioglitazone <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = glimepiride.pioglitazone), fill = "#0073C2FF") +
+  xlab("glimepiride.pioglitazone")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+metformin.rosiglitazone <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = metformin.rosiglitazone), fill = "#0073C2FF") +
+  xlab("metformin.rosiglitazone")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+metformin.pioglitazone <- ggplot(data = medical_ds)+
+  geom_bar(aes(x = metformin.pioglitazone), fill = "#0073C2FF") +
+  xlab("metformin.pioglitazone")  + 
+  ylab("# patients") + 
+  coord_flip() +
+  theme_minimal() 
+
+grid.arrange(glyburide.metformin, glipizide.metformin,glimepiride.pioglitazone,metformin.rosiglitazone,metformin.pioglitazone, ncol=3)
+
+```
+  
 
 ```{r, initial_dataset, MESSAGE = FALSE}
 medical_ds_1 <- medical_ds[,c(
@@ -652,7 +736,7 @@ test_set <- cbind(test_set, onehot_enc_test)
 
 
 ```{r, nnnet_subset}
-test_sample_size <- 5000
+test_sample_size <- 100
 train_sample_size <- test_sample_size * 3
 training_subset_ds <- training_set[sample(nrow(training_set), train_sample_size),]
 nrow(training_subset_ds)
@@ -903,7 +987,7 @@ training_subset_ds_final_over <- ovun.sample(readmitted_enc ~., data = training_
 table(training_subset_ds_final_over$readmitted_enc)
 ```
 
-```{r random_forest_2_over_sampling}
+```{r random_forest_2_over_sampling_rose}
 rfControl <- trainControl(method = "oob", classProbs = TRUE)
 rf_onehot_model <- train(x = training_subset_ds_final_over[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_over[, target_var_index],
                   method = "rf",
@@ -918,14 +1002,6 @@ class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[,
 test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
 
 rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
-rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
-plot(rocr_roc,
-colorize = TRUE,
-print.cutoffs.at = seq(0, 1, by = 0.1),
-text.adj = c(-0.5, 1),
-lwd = 2)
-abline(a = 0, b = 1)
-
 rocr_auc <- performance(rocr_pred, measure = "auc")
 auc_rf_over <- rocr_auc@y.values[[1]]
 auc_rf_over
@@ -933,7 +1009,7 @@ auc_rf_over
 ```
 
 
-```{r nueral_network_2_over}
+```{r nueral_network_2_over_sampling_rose}
 nn_target_model <- train(x = training_subset_ds_final_over[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_over[, target_var_index],
                           method = "nnet",
                           tuneGrid = nnGrid,
@@ -951,6 +1027,7 @@ rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
 rocr_auc <- performance(rocr_pred, measure = "auc")
 auc_nn_over <- rocr_auc@y.values[[1]]
 auc_nn_over
+
 ```
 
 
@@ -959,7 +1036,7 @@ training_subset_ds_final_under <- ovun.sample(readmitted_enc ~., data = training
 table(training_subset_ds_final_under$readmitted_enc)
 ```
 
-```{r random_forest_2_under_sampling}
+```{r random_forest_2_under_sampling_rose}
 rfControl <- trainControl(method = "oob", classProbs = TRUE)
 rf_onehot_model <- train(x = training_subset_ds_final_under[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_under[, target_var_index],
                   method = "rf",
@@ -978,7 +1055,7 @@ auc_rf_under
 
 ```
 
-```{r nueral_network_2_under}
+```{r nueral_network_2_under_rose}
 nn_target_model <- train(x = training_subset_ds_final_under[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_under[, target_var_index],
                           method = "nnet",
                           tuneGrid = nnGrid,
@@ -1004,7 +1081,7 @@ training_subset_ds_final_both <- ovun.sample(readmitted_enc ~., data = training_
 table(training_subset_ds_final_both$readmitted_enc)
 ```
 
-```{r random_forest_2_over_under_sampling}
+```{r random_forest_2_over_under_sampling_rose}
 rfControl <- trainControl(method = "oob", classProbs = TRUE)
 rf_onehot_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
                   method = "rf",
@@ -1024,7 +1101,7 @@ auc_rf_both <- rocr_auc@y.values[[1]]
 auc_rf_both
 ```
 
-```{r nueral_network_2_both}
+```{r nueral_network_2_both_rose}
 nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
                           method = "nnet",
                           tuneGrid = nnGrid,
@@ -1044,22 +1121,165 @@ auc_nn_both <- rocr_auc@y.values[[1]]
 auc_nn_both
 ```
 
+
+```{r random_forest_3_sampling_smote_caret}
+rfControl <- trainControl(method = "oob", classProbs = TRUE, sampling = "smote")
+rf_onehot_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 50,
+                  importance = TRUE,
+                  trace = FALSE)
+
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf_smote <- rocr_auc@y.values[[1]]
+auc_rf_smote
+```
+
+```{r random_forest_3_sampling_caret_up_sampling}
+rfControl <- trainControl(method = "oob", classProbs = TRUE, sampling = "up")
+rf_onehot_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 50,
+                  importance = TRUE,
+                  trace = FALSE)
+
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf_up_caret <- rocr_auc@y.values[[1]]
+auc_rf_up_caret
+```
+
+```{r random_forest_3_sampling_caret_down_sampling}
+rfControl <- trainControl(method = "oob", classProbs = TRUE, sampling = "down")
+rf_onehot_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
+                  method = "rf",
+                  tuneGrid = rfGrid,
+                  trControl = rfControl,
+                  ntree = 50,
+                  importance = TRUE,
+                  trace = FALSE)
+
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf_down_caret <- rocr_auc@y.values[[1]]
+auc_rf_down_caret
+```
+
+```{r nueral_network_3_caret_up_sampling}
+nnControl$sampling <- "up"
+nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 800)
+
+test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_nn_up_caret <- rocr_auc@y.values[[1]]
+auc_nn_up_caret
+```
+
+```{r nueral_network_3_caret_down_sampling}
+nnControl$sampling <- "down"
+nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 800)
+
+test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_nn_down_caret <- rocr_auc@y.values[[1]]
+auc_nn_down_caret
+```
+
+```{r nueral_network_3_caret_smote_sampling}
+nnControl$sampling <- "smote"
+nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 800)
+
+test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_nn_smote_caret <- rocr_auc@y.values[[1]]
+auc_nn_smote_caret
+```
+
+
 ```{r, build_data_frame_auc}
 auc_df <- data.frame("algorithm_method" = c("rf"), "auc" = c(auc_rf))
-auc_df_temp <- data.frame("algorithm_method" = c("rf_over"), "auc" = c(auc_rf_over))
+auc_df_temp <- data.frame("algorithm_method" = c("rf_over_rose"), "auc" = c(auc_rf_over))
 auc_df <- rbind(auc_df,auc_df_temp)
-auc_df_temp <- data.frame("algorithm_method" = c("rf_under"), "auc" = c(auc_rf_under))
+auc_df_temp <- data.frame("algorithm_method" = c("rf_under_rose"), "auc" = c(auc_rf_under))
 auc_df <- rbind(auc_df,auc_df_temp)
-auc_df_temp <- data.frame("algorithm_method" = c("rf_both"), "auc" = c(auc_rf_both))
+auc_df_temp <- data.frame("algorithm_method" = c("rf_both_rose"), "auc" = c(auc_rf_both))
 auc_df <- rbind(auc_df,auc_df_temp)
+
+
+auc_df_temp <- data.frame("algorithm_method" = c("rf_up_caret"), "auc" = c(auc_rf_up_caret))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("rf_down_caret"), "auc" = c(auc_rf_down_caret))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("rf_smote_caret"), "auc" = c(auc_rf_smote))
+auc_df <- rbind(auc_df,auc_df_temp)
+
 auc_df_temp <- data.frame("algorithm_method" = c("nn"), "auc" = c(auc_nn))
 auc_df <- rbind(auc_df,auc_df_temp)
-auc_df_temp <- data.frame("algorithm_method" = c("nn_over"), "auc" = c(auc_nn_over))
+auc_df_temp <- data.frame("algorithm_method" = c("nn_over_rose"), "auc" = c(auc_nn_over))
 auc_df <- rbind(auc_df,auc_df_temp)
-auc_df_temp <- data.frame("algorithm_method" = c("nn_under"), "auc" = c(auc_nn_under))
+auc_df_temp <- data.frame("algorithm_method" = c("nn_under_rose"), "auc" = c(auc_nn_under))
 auc_df <- rbind(auc_df,auc_df_temp)
-auc_df_temp <- data.frame("algorithm_method" = c("nn_both"), "auc" = c(auc_nn_both))
+auc_df_temp <- data.frame("algorithm_method" = c("nn_both_rose"), "auc" = c(auc_nn_both))
 auc_df <- rbind(auc_df,auc_df_temp)
+
+
+auc_df_temp <- data.frame("algorithm_method" = c("nn_up_caret"), "auc" = c(auc_nn_up_caret))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("nn_down_caret"), "auc" = c(auc_nn_down_caret))
+auc_df <- rbind(auc_df,auc_df_temp)
+auc_df_temp <- data.frame("algorithm_method" = c("nn_smote_caret"), "auc" = c(auc_nn_smote_caret))
+auc_df <- rbind(auc_df,auc_df_temp)
+
 auc_df_temp <- data.frame("algorithm_method" = c("glm"), "auc" = c(auc_glm))
 auc_df <- rbind(auc_df,auc_df_temp)
 auc_df
@@ -1068,5 +1288,6 @@ auc_df
 ```{r plor_compare_auc}
 ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
   geom_bar(colour="black", stat="identity", fill = "#0073C2FF") +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))
 ```
