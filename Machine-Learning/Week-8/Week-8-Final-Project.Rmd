@@ -736,7 +736,7 @@ test_set <- cbind(test_set, onehot_enc_test)
 
 
 ```{r, nnnet_subset}
-test_sample_size <- 100
+test_sample_size <- 15000
 train_sample_size <- test_sample_size * 3
 training_subset_ds <- training_set[sample(nrow(training_set), train_sample_size),]
 nrow(training_subset_ds)
@@ -1277,8 +1277,8 @@ auc_df_temp <- data.frame("algorithm_method" = c("nn_up_caret"), "auc" = c(auc_n
 auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("nn_down_caret"), "auc" = c(auc_nn_down_caret))
 auc_df <- rbind(auc_df,auc_df_temp)
-auc_df_temp <- data.frame("algorithm_method" = c("nn_smote_caret"), "auc" = c(auc_nn_smote_caret))
-auc_df <- rbind(auc_df,auc_df_temp)
+# auc_df_temp <- data.frame("algorithm_method" = c("nn_smote_caret"), "auc" = c(auc_nn_smote_caret))
+# auc_df <- rbind(auc_df,auc_df_temp)
 
 auc_df_temp <- data.frame("algorithm_method" = c("glm"), "auc" = c(auc_glm))
 auc_df <- rbind(auc_df,auc_df_temp)
@@ -1288,6 +1288,8 @@ auc_df
 ```{r plor_compare_auc}
 ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
   geom_bar(colour="black", stat="identity", fill = "darkred") +
+  ylab("Auc value") +
+  xlab("Algorithm methods") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))
 ```
