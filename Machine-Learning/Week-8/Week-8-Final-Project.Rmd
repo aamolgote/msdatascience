@@ -1225,24 +1225,24 @@ auc_nn_down_caret
 ```
 
 ```{r nueral_network_3_caret_smote_sampling}
-nnControl$sampling <- "smote"
-nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
-                          method = "nnet",
-                          tuneGrid = nnGrid,
-                          trControl = nnControl,
-                          importance = TRUE,
-                          trace = FALSE,
-                          MaxNWts = 800)
-
-test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
-class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
-test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
-
-rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
-rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
-rocr_auc <- performance(rocr_pred, measure = "auc")
-auc_nn_smote_caret <- rocr_auc@y.values[[1]]
-auc_nn_smote_caret
+# nnControl$sampling <- "smote"
+# nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
+#                           method = "nnet",
+#                           tuneGrid = nnGrid,
+#                           trControl = nnControl,
+#                           importance = TRUE,
+#                           trace = FALSE,
+#                           MaxNWts = 800)
+# 
+# test_subset_ds_final$prediction_target <- predict(nn_target_model,newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+# class_probabilities <- predict(nn_target_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+# test_subset_ds_final$class_probabilities_target <- class_probabilities$Yes
+# 
+# rocr_pred <- prediction(test_subset_ds_final$class_probabilities_target, test_subset_ds_final$readmitted_enc)
+# rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+# rocr_auc <- performance(rocr_pred, measure = "auc")
+# auc_nn_smote_caret <- rocr_auc@y.values[[1]]
+# auc_nn_smote_caret
 ```
 
 
