@@ -736,7 +736,7 @@ test_set <- cbind(test_set, onehot_enc_test)
 
 
 ```{r, nnnet_subset}
-test_sample_size <- 15000
+test_sample_size <- 100
 train_sample_size <- test_sample_size * 3
 training_subset_ds <- training_set[sample(nrow(training_set), train_sample_size),]
 nrow(training_subset_ds)
@@ -1184,7 +1184,7 @@ auc_rf_down_caret
 
 ```{r nueral_network_3_caret_up_sampling}
 nnControl$sampling <- "up"
-nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
                           method = "nnet",
                           tuneGrid = nnGrid,
                           trControl = nnControl,
@@ -1205,7 +1205,7 @@ auc_nn_up_caret
 
 ```{r nueral_network_3_caret_down_sampling}
 nnControl$sampling <- "down"
-nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
                           method = "nnet",
                           tuneGrid = nnGrid,
                           trControl = nnControl,
@@ -1226,7 +1226,7 @@ auc_nn_down_caret
 
 ```{r nueral_network_3_caret_smote_sampling}
 nnControl$sampling <- "smote"
-nn_target_model <- train(x = training_subset_ds_final_both[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final_both[, target_var_index],
+nn_target_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
                           method = "nnet",
                           tuneGrid = nnGrid,
                           trControl = nnControl,
@@ -1287,7 +1287,194 @@ auc_df
 
 ```{r plor_compare_auc}
 ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
-  geom_bar(colour="black", stat="identity", fill = "#0073C2FF") +
+  geom_bar(colour="black", stat="identity", fill = "darkred") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))
 ```
+```{r, detach_package}
+#detach(package:plyr)
+```
+```{r, create_ds_post_data_analysis}
+library(dplyr)
+post_model_ds <- medical_ds_3
+post_model_ds$readmitted_flag[post_model_ds$readmitted == '<30'] <- "Yes"
+post_model_ds$readmitted_flag[post_model_ds$readmitted == '>30'] <- "Yes"
+post_model_ds$readmitted_flag[post_model_ds$readmitted == 'NO'] <- "No"
+
+grouped_data <- post_model_ds %>%
+  group_by(readmitted_flag) %>%
+  summarise(
+      mean_num_lab_procedures = mean(num_lab_procedures),
+      median_num_lab_procedures = median(num_lab_procedures),
+      mean_num_medications = mean(num_medications),
+      median_num_medications = median(num_medications),
+      mean_time_in_hospital = mean(time_in_hospital),
+      median_time_in_hospital = median(time_in_hospital),
+      mean_number_diagnoses = mean(number_diagnoses),
+      median_number_diagnoses = median(number_diagnoses)
+    )
+grouped_data
+```
+
+```{r, box_plot_imp_feature_lab_procedures}
+num_lab_procedures <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=num_lab_procedures)) + 
+  geom_boxplot() +
+  xlab("Re-admitted") +
+  ylab("Number of lab procedures") +
+  theme_minimal()
+
+num_medications <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=num_medications)) + 
+  geom_boxplot() +
+  xlab("Re-admitted") +
+  ylab("Number of medications") +
+  theme_minimal()
+
+time_in_hospital <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=time_in_hospital)) + 
+  geom_boxplot() +
+  xlab("Re-admitted") +
+  ylab("Time in hospital (# days)") +
+  theme_minimal()
+
+number_diagnoses <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=number_diagnoses)) + 
+  geom_boxplot() +
+  xlab("Re-admitted") +
+  ylab("Number of diagnosis") +
+  theme_minimal()
+
+grid.arrange(num_lab_procedures, num_medications,time_in_hospital,number_diagnoses, ncol=2)
+```
+
+```{r, demographics_diagnosis}
+ggplot(data = post_model_ds)+
+   geom_bar(aes(x = age), fill = "#0073c2ff") +
+   xlab("age segments")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+
+ggplot(data = post_model_ds)+
+   geom_bar(aes(x = diag_2_enc), fill = "#0073c2ff") +
+   xlab("diagnosis 2")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+ ggplot(data = post_model_ds)+
+   geom_bar(aes(x = diag_1_enc), fill = "#0073c2ff") +
+   xlab("diagnosis 1")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+ ggplot(data = post_model_ds)+
+   geom_bar(aes(x = diag_3_enc), fill = "#0073c2ff") +
+   xlab("diagnosis 3")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+
+ ggplot(data = post_model_ds)+
+   geom_bar(aes(x = insulin), fill = "#0073c2ff") +
+   xlab("insulin")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+ggplot(data = post_model_ds)+
+  geom_bar(aes(x = A1Cresult), fill = "#0073C2FF") +
+  xlab("A1Cresult")  +
+  ylab("Number of patients") +
+  facet_grid(readmitted_flag ~ .) +
+  theme_minimal()
+```
+
+```{r, admission_type_source}
+ggplot(data = post_model_ds)+
+   geom_bar(aes(x = admission_type_id_enc), fill = "#0073c2ff") +
+   xlab("Admission type")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+ggplot(data = post_model_ds)+
+   geom_bar(aes(x = admission_source_id_enc), fill = "#0073c2ff") +
+   xlab("Admission type")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+ggplot(data = post_model_ds)+
+   geom_bar(aes(x = race), fill = "#0073c2ff") +
+   xlab("Race")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+```
+
+```{r, medication}
+ggplot(data = post_model_ds)+
+   geom_bar(aes(x = metformin), fill = "#0073c2ff") +
+   xlab("Metformin")  +
+   ylab("number of patients") +
+   facet_grid(readmitted_flag ~ .) +
+   theme_minimal()
+
+ggplot(data=post_model_ds, aes(x=readmitted_flag, y=number_emergency)) + 
+  geom_boxplot() +
+  xlab("Re-admitted") +
+  ylab("Number of emergencies") +
+  theme_minimal()
+
+```
+
+```{r, diagnosis_consolidation_distribution}
+diag_1_dist_plot <- ggplot(data = post_model_ds)+
+   geom_bar(aes(x = diag_1_enc), fill = "brown") +
+   xlab("diagnosis 1")  +
+   ylab("number of patients") +
+   theme_minimal()
+
+diag_2_dist_plot <- ggplot(data = post_model_ds)+
+   geom_bar(aes(x = diag_2_enc), fill = "forestgreen") +
+   xlab("diagnosis 2")  +
+   ylab("number of patients") +
+   theme_minimal()
+
+
+diag_3_dist_plot <- ggplot(data = post_model_ds)+
+   geom_bar(aes(x = diag_3_enc), fill = "darkslategrey") +
+   xlab("diagnosis 3")  +
+   ylab("number of patients") +
+   theme_minimal()
+
+grid.arrange(diag_1_dist_plot, diag_2_dist_plot,diag_3_dist_plot, ncol=1)
+
+```
+```{r, admission_source_type_consolidation_distribution}
+admission_source_id_dist_plot <- ggplot(data = post_model_ds)+
+   geom_bar(aes(x = admission_source_id_enc), fill = "#0073c2ff") +
+   xlab("Admission source distribution")  +
+   ylab("Number of patients") +
+   theme_minimal()
+
+
+admission_type_id_dist_plot <- ggplot(data = post_model_ds)+
+   geom_bar(aes(x = admission_type_id_enc), fill = "darkmagenta") +
+   xlab("Admission type distribution")  +
+   ylab("Number of patients") +
+   theme_minimal()
+
+age_distribution_plot <- ggplot(data = post_model_ds)+
+   geom_bar(aes(x = age_enc), fill = "deepskyblue4") +
+   xlab("Age distribution")  +
+   ylab("Number of patients") +
+   theme_minimal()
+
+
+grid.arrange(admission_source_id_dist_plot, admission_type_id_dist_plot,age_distribution_plot,ncol=2)
+
+
+```
+
