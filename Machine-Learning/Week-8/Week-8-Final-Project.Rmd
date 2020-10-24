@@ -19,6 +19,8 @@ library(ROCR)
 library(gbm)
 library(ROSE)
 library(gridExtra)
+library(parallel) 
+
 ```
 
 ```{r load_data}
@@ -799,7 +801,15 @@ head(training_subset_ds_final)
 head(test_subset_ds_final)
 ```
 
+```{r set_up_parallel}
+# Calculate the number of cores
+no_cores <- detectCores() - 1
 
+library(doParallel)
+# create the cluster for caret to use
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl)
+```
 
 
 ```{r random_forest}
@@ -965,6 +975,38 @@ test_subset_ds_final$prediction_target <- ifelse(test_subset_ds_final$prediction
  rocr_auc <- performance(rocr_pred, measure = "auc")
  auc_glm <- rocr_auc@y.values[[1]]
  auc_glm
+```
+
+```{r  gbm_1}
+gbmControl <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
+gbm_model <- train(x = training_subset_ds_final[, -1*c(target_var_index:target_var_index)], y = training_subset_ds_final[, target_var_index],
+                  method = "gbm",
+                  trControl = gbmControl,
+                  verbose = FALSE)
+```
+
+```{r gbm_2}
+test_subset_ds_final$prediction_onehot <- predict(gbm_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(gbm_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+```
+
+```{r gbm_roc}
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$readmitted_enc)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+
+```
+
+```{r gbm_auc}
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_gbm <- rocr_auc@y.values[[1]]
+auc_gbm
 ```
 
 ```{r class_imbalance}
@@ -1245,9 +1287,18 @@ auc_nn_down_caret
 # auc_nn_smote_caret
 ```
 
+```{r, stop_parallel}
+stopCluster(cl)
+registerDoSEQ()
+```
 
 ```{r, build_data_frame_auc}
 auc_df <- data.frame("algorithm_method" = c("rf"), "auc" = c(auc_rf))
+
+auc_df_temp <- data.frame("algorithm_method" = c("nn"), "auc" = c(auc_nn))
+auc_df <- rbind(auc_df,auc_df_temp)
+
+
 auc_df_temp <- data.frame("algorithm_method" = c("rf_over_rose"), "auc" = c(auc_rf_over))
 auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("rf_under_rose"), "auc" = c(auc_rf_under))
@@ -1263,8 +1314,6 @@ auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("rf_smote_caret"), "auc" = c(auc_rf_smote))
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("nn"), "auc" = c(auc_nn))
-auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("nn_over_rose"), "auc" = c(auc_nn_over))
 auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("nn_under_rose"), "auc" = c(auc_nn_under))
@@ -1277,11 +1326,18 @@ auc_df_temp <- data.frame("algorithm_method" = c("nn_up_caret"), "auc" = c(auc_n
 auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("nn_down_caret"), "auc" = c(auc_nn_down_caret))
 auc_df <- rbind(auc_df,auc_df_temp)
-# auc_df_temp <- data.frame("algorithm_method" = c("nn_smote_caret"), "auc" = c(auc_nn_smote_caret))
-# auc_df <- rbind(auc_df,auc_df_temp)
 
 auc_df_temp <- data.frame("algorithm_method" = c("glm"), "auc" = c(auc_glm))
 auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("gbm"), "auc" = c(auc_gbm))
+auc_df <- rbind(auc_df,auc_df_temp)
+
+
+# auc_df_temp <- data.frame("algorithm_method" = c("nn_smote_caret"), "auc" = c(auc_nn_smote_caret))
+# auc_df <- rbind(auc_df,auc_df_temp)
+
+
 auc_df
 ```
 
@@ -1479,4 +1535,7 @@ grid.arrange(admission_source_id_dist_plot, admission_type_id_dist_plot,age_dist
 
 
 ```
+
+
+
 
