@@ -157,7 +157,6 @@ fundamentals_ds_filter_1$restmt_wcap_mag <- 0.0
 
 for (row in 1:nrow(sample_restmt_ds_filter)){
   restmt_item_gvkey  <- sample_restmt_ds_filter[row, "gvkey"]
-  restmt_item_gvkey
   restmt_item_fyear  <- sample_restmt_ds_filter[row, "fyear"]
   restmt_item_at  <- sample_restmt_ds_filter[row, "at"]
   restmt_item_capx  <- sample_restmt_ds_filter[row, "capx"]
@@ -310,4 +309,370 @@ for (row in 1:nrow(sample_restmt_ds_filter)){
   }
 }
 head(fundamentals_ds_filter_1)
+```
+
+
+```{r summary_ds_with_restamt_flags}
+nrow(fundamentals_ds_filter_1)
+# Removing aco == NA as all those rows do not have any data
+fundamentals_ds_filter_2 <- subset(fundamentals_ds_filter_1, !is.na(aco))
+nrow(fundamentals_ds_filter_2)
+fundamentals_ds_filter_2[is.na(fundamentals_ds_filter_2)] <- 0
+nrow(fundamentals_ds_filter_2)
+#summary(fundamentals_ds_filter_2)
+head(fundamentals_ds_filter_2)
+```
+
+```{r get_col_names}
+colnames(fundamentals_ds_filter_2)
+```
+
+
+```{r final_ds_preparation}
+final_ds_initial <- fundamentals_ds_filter_2 %>%
+  group_by(gvkey,tic) %>%
+  summarize(
+    aco = mean(aco),
+    acominc = mean(acominc),
+    act = mean(act),
+    ao = mean(ao),
+    aocidergl = mean(aocidergl),
+    aocipen = mean(aocipen),
+    aodo = mean(aodo),
+    aoloch = mean(aoloch),
+    ap = mean(ap),
+    aqc = mean(aqc),
+    at = mean(at),
+    bkvlps = mean(bkvlps),
+    caps = mean(caps),
+    capx = mean(capx),
+    ceq = mean(ceq),
+    ceqt = mean(ceqt),
+    ch = mean(ch),
+    che = mean(che),
+    chech = mean(chech),
+    ci = mean(ci),
+    cogs = mean(cogs),
+    cshi = mean(cshi),
+    csho = mean(csho),
+    cstk = mean(cstk),
+    cstkcv = mean(cstkcv),
+    dd1 = mean(dd1),
+    dilavx = mean(dilavx),
+    dlc = mean(dlc),
+    dltt = mean(dltt),
+    dm = mean(dm),
+    dn = mean(dn),
+    dpact = mean(dpact),
+    dpc = mean(dpc),
+    dvt = mean(dvt),
+    ebit = mean(ebit),
+    ebitda = mean(ebitda),
+    epsfi = mean(epsfi),
+    epspi = mean(epspi),
+    esub = mean(esub),
+    fiao = mean(fiao),
+    fincf = mean(fincf),
+    fopo = mean(fopo),
+    gdwl = mean(gdwl),
+    gp = mean(gp),
+    ib = mean(ib),
+    icapt = mean(icapt),
+    intan = mean(intan),
+    intano = mean(intano),
+    invt = mean(invt),
+    ivch = mean(ivch),
+    ivncf = mean(ivncf),
+    ivst = mean(ivst),
+    lo = mean(lo),
+    lse = mean(lse),
+    lt = mean(lt),
+    ni = mean(ni),
+    nopi = mean(nopi),
+    nopio = mean(nopio),
+    oancf = mean(oancf),
+    oiadp = mean(oiadp),
+    oibdp = mean(oibdp),
+    opeps = mean(opeps),
+    pi = mean(pi),
+    ppegt = mean(ppegt),
+    re = mean(re),
+    reajo = mean(reajo),
+    rect = mean(rect),
+    recta = mean(recta),
+    reuna = mean(reuna),
+    revt = mean(revt),
+    seq	 = 	mean(	seq	),
+    siv	 = 	mean(	siv	),
+    spce = mean(spce),
+    spi = mean(spi),
+    sppiv = mean(sppiv),
+    sstk = mean(sstk),
+    teq = mean(teq),
+    tstk = mean(tstk),
+    tstkn = mean(tstkn),
+    txp = mean(txp),
+    txr = mean(txr),
+    txt = mean(txt),
+    wcap = mean(wcap),
+    xint = mean(xint),
+    restmt_at = mean(restmt_at),
+    restmt_at_mag = mean(restmt_at_mag),
+    restmt_capx = mean(restmt_capx),
+    restmt_capx_mag = mean(restmt_capx_mag),
+    restmt_cogs = mean(restmt_cogs),
+    restmt_cogs_mag = mean(restmt_cogs_mag),
+    restmt_dltt = mean(restmt_dltt),
+    restmt_dltt_mag = mean(restmt_dltt_mag),
+    restmt_epsfi = mean(restmt_epsfi),
+    restmt_epsfi_mag = mean(restmt_epsfi_mag),
+    restmt_epspi = mean(restmt_epspi),
+    restmt_epspi_mag = mean(restmt_epspi_mag),
+    restmt_ib = mean(restmt_ib),
+    restmt_ib_mag = mean(restmt_ib_mag),
+    restmt_ni = mean(restmt_ni),
+    restmt_ni_mag = mean(restmt_ni_mag),
+    restmt_nopi = mean(restmt_nopi),
+    restmt_nopi_mag = mean(restmt_nopi_mag),
+    restmt_pi = mean(restmt_pi),
+    restmt_pi_mag = mean(restmt_pi_mag),
+    restmt_reuna = mean(restmt_reuna),
+    restmt_reuna_mag = mean(restmt_reuna_mag),
+    restmt_seq = mean(restmt_seq),
+    restmt_seq_mag = mean(restmt_seq_mag),
+    restmt_teq = mean(restmt_teq),
+    restmt_teq_mag = mean(restmt_teq_mag),
+    restmt_txt = mean(restmt_txt),
+    restmt_txt_mag = mean(restmt_txt_mag),
+    restmt_wcap = mean(restmt_wcap),
+    restmt_wcap_mag = mean(restmt_wcap_mag)
+  )
+
+head(final_ds_initial)
+```
+
+```{r adjust_restatement_flag}
+final_ds_initial_1 <- final_ds_initial 
+
+for (row in 1:nrow(final_ds_initial_1)){
+  row_item_gvkey  <- as.integer(final_ds_initial_1[row, "gvkey"])
+  
+  restmt_at <- final_ds_initial_1[row, "restmt_at"]
+  restmt_at_mag <- final_ds_initial_1[row, "restmt_at_mag"]
+  if (restmt_at >= 0.5){
+    restmt_at <- 1
+    restmt_at_mag <- as.double(restmt_at_mag)
+  }
+  else{
+    restmt_at <- 0
+    restmt_at_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_at[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_at
+  final_ds_initial_1$restmt_at_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_at_mag
+  
+  restmt_capx <- final_ds_initial_1[row, "restmt_capx"]
+  restmt_capx_mag <- final_ds_initial_1[row, "restmt_capx_mag"]
+  if (restmt_capx >= 0.5){
+    restmt_capx <- 1
+    restmt_capx_mag <- as.double(restmt_capx_mag)
+  }
+  else{
+    restmt_capx <- 0
+    restmt_capx_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_capx[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_capx
+  final_ds_initial_1$restmt_capx_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_capx_mag
+  
+  restmt_cogs <- final_ds_initial_1[row, "restmt_cogs"]
+  restmt_cogs_mag <- final_ds_initial_1[row, "restmt_cogs_mag"]
+  if (restmt_cogs >= 0.5){
+    restmt_cogs <- 1
+    restmt_cogs_mag <- as.double(restmt_cogs_mag)
+  }
+  else{
+    restmt_cogs <- 0
+    restmt_cogs_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_cogs[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_cogs
+  final_ds_initial_1$restmt_cogs_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_cogs_mag
+  
+  restmt_dltt <- final_ds_initial_1[row, "restmt_dltt"]
+  restmt_dltt_mag <- final_ds_initial_1[row, "restmt_dltt_mag"]
+  if (restmt_dltt >= 0.5){
+    restmt_dltt <- 1
+    restmt_dltt_mag <- as.double(restmt_dltt_mag)
+  }
+  else{
+    restmt_dltt <- 0
+    restmt_dltt_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_dltt[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dltt
+  final_ds_initial_1$restmt_dltt_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dltt_mag
+  
+  
+  restmt_epsfi <- final_ds_initial_1[row, "restmt_epsfi"]
+  restmt_epsfi_mag <- final_ds_initial_1[row, "restmt_epsfi_mag"]
+  if (restmt_epsfi >= 0.5){
+    restmt_epsfi <- 1
+    restmt_epsfi_mag <- as.double(restmt_epsfi_mag)
+  }
+  else{
+    restmt_epsfi <- 0
+    restmt_epsfi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_epsfi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epsfi
+  final_ds_initial_1$restmt_epsfi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epsfi_mag
+  
+  
+  restmt_epspi <- final_ds_initial_1[row, "restmt_epspi"]
+  restmt_epspi_mag <- final_ds_initial_1[row, "restmt_epspi_mag"]
+  if (restmt_epspi >= 0.5){
+    restmt_epspi <- 1
+    restmt_epspi_mag <- as.double(restmt_epspi_mag)
+  }
+  else{
+    restmt_epspi <- 0
+    restmt_epspi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_epspi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epspi
+  final_ds_initial_1$restmt_epspi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epspi_mag
+  
+  restmt_ib <- final_ds_initial_1[row, "restmt_ib"]
+  restmt_ib_mag <- final_ds_initial_1[row, "restmt_ib_mag"]
+  if (restmt_ib >= 0.5){
+    restmt_ib <- 1
+    restmt_ib_mag <- as.double(restmt_ib_mag)
+  }
+  else{
+    restmt_ib <- 0
+    restmt_ib_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_ib[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ib
+  final_ds_initial_1$restmt_ib_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ib_mag
+  
+  restmt_ni <- final_ds_initial_1[row, "restmt_ni"]
+  restmt_ni_mag <- final_ds_initial_1[row, "restmt_ni_mag"]
+  if (restmt_ni >= 0.5){
+    restmt_ni <- 1
+    restmt_ni_mag <- as.double(restmt_ni_mag)
+  }
+  else{
+    restmt_ni <- 0
+    restmt_ni_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_ni[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ni
+  final_ds_initial_1$restmt_ni_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ni_mag
+  
+  restmt_nopi <- final_ds_initial_1[row, "restmt_nopi"]
+  restmt_nopi_mag <- final_ds_initial_1[row, "restmt_nopi_mag"]
+  if (restmt_nopi >= 0.5){
+    restmt_nopi <- 1
+    restmt_nopi_mag <- as.double(restmt_nopi_mag)
+  }
+  else{
+    restmt_nopi <- 0
+    restmt_nopi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_nopi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_nopi
+  final_ds_initial_1$restmt_nopi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_nopi_mag
+  
+  restmt_pi <- final_ds_initial_1[row, "restmt_pi"]
+  restmt_pi_mag <- final_ds_initial_1[row, "restmt_pi_mag"]
+  if (restmt_pi >= 0.5){
+    restmt_pi <- 1
+    restmt_pi_mag <- as.double(restmt_pi_mag)
+  }
+  else{
+    restmt_pi <- 0
+    restmt_pi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_pi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_pi
+  final_ds_initial_1$restmt_pi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_pi_mag
+  
+  restmt_reuna <- final_ds_initial_1[row, "restmt_reuna"]
+  restmt_reuna_mag <- final_ds_initial_1[row, "restmt_reuna_mag"]
+  if (restmt_reuna >= 0.5){
+    restmt_reuna <- 1
+    restmt_reuna_mag <- as.double(restmt_reuna_mag)
+  }
+  else{
+    restmt_reuna <- 0
+    restmt_reuna_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_reuna[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_reuna
+  final_ds_initial_1$restmt_reuna_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_reuna_mag
+  
+  restmt_seq <- final_ds_initial_1[row, "restmt_seq"]
+  restmt_seq_mag <- final_ds_initial_1[row, "restmt_seq_mag"]
+  if (restmt_seq >= 0.5){
+    restmt_seq <- 1
+    restmt_seq_mag <- as.double(restmt_seq_mag)
+  }
+  else{
+    restmt_seq <- 0
+    restmt_seq_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_seq[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_seq
+  final_ds_initial_1$restmt_seq_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_seq_mag
+  
+  restmt_teq <- final_ds_initial_1[row, "restmt_teq"]
+  restmt_teq_mag <- final_ds_initial_1[row, "restmt_teq_mag"]
+  if (restmt_teq >= 0.5){
+    restmt_teq <- 1
+    restmt_teq_mag <- as.double(restmt_teq_mag)
+  }
+  else{
+    restmt_teq <- 0
+    restmt_teq_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_teq[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_teq
+  final_ds_initial_1$restmt_teq_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_teq_mag
+  
+  restmt_txt <- final_ds_initial_1[row, "restmt_txt"]
+  restmt_txt_mag <- final_ds_initial_1[row, "restmt_txt_mag"]
+  if (restmt_txt >= 0.5){
+    restmt_txt <- 1
+    restmt_txt_mag <- as.double(restmt_txt_mag)
+  }
+  else{
+    restmt_txt <- 0
+    restmt_txt_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_txt[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_txt
+  final_ds_initial_1$restmt_txt_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_txt_mag
+  
+  restmt_wcap <- final_ds_initial_1[row, "restmt_wcap"]
+  restmt_wcap_mag <- final_ds_initial_1[row, "restmt_wcap_mag"]
+  if (restmt_wcap >= 0.5){
+    restmt_wcap <- 1
+    restmt_wcap_mag <- as.double(restmt_wcap_mag)
+  }
+  else{
+    restmt_wcap <- 0
+    restmt_wcap_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_wcap[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_wcap
+  final_ds_initial_1$restmt_wcap_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_wcap_mag
+  
+}
+
+restmt_var_ds <- subset(final_ds_initial_1, select = c(gvkey,
+                                                     restmt_at,restmt_at_mag,
+                                                      restmt_capx,restmt_capx_mag,
+                                                      restmt_cogs, restmt_cogs_mag,
+                                                      restmt_dltt, restmt_dltt_mag,
+                                                      restmt_epsfi, restmt_epsfi_mag,
+                                                      restmt_epspi, restmt_epspi_mag,
+                                                      restmt_ib, restmt_ib_mag,
+                                                      restmt_ni, restmt_ni_mag,
+                                                      restmt_nopi, restmt_nopi_mag,
+                                                      restmt_pi, restmt_pi_mag,
+                                                      restmt_reuna, restmt_reuna_mag,
+                                                      restmt_seq, restmt_seq_mag,
+                                                      restmt_teq, restmt_teq_mag,
+                                                      restmt_txt, restmt_txt_mag,
+                                                      restmt_wcap, restmt_wcap_mag
+                                                     ))
+
+head(restmt_var_ds)
 ```
