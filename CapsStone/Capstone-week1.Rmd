@@ -1,0 +1,111 @@
+---
+title: "Capstone Project - Week1"
+author: "Amol Gote"
+date: "11/7/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library_setup, MESSAGE = FALSE, warning=FALSE}
+set.seed(123)
+library(tidyverse)
+library(caret)
+```
+
+
+```{r load_data}
+fundamentals_ds <- read.csv("./data/Fundamentals_DS.csv", na.strings=c(""," "))
+nrow(fundamentals_ds)
+```
+
+
+
+```{r filter_data_datafmt}
+fundamentals_ds_filter <- fundamentals_ds %>%
+  filter(datafmt == 'STD') 
+nrow(fundamentals_ds_filter)
+```
+
+```{r }
+#fundamentals_ds_filter %>% summarize_all(funs(sum(is.na(.)) / length(.)))
+#fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ] %>% 
+#  summarize_all(funs(sum(is.na(.)) / length(.)))
+fundamentals_ds_filter_1 <- fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
+ncol(fundamentals_ds_filter_1)
+```
+
+```{r}
+#summary(fundamentals_ds_filter_1)
+#matrix(colMins(fundamentals_ds_filter_1) ) 
+```
+
+```{r, write_file}
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_1.csv", row.names=FALSE)
+```
+
+```{r}
+#nrow(fundamentals_ds_filter_1)
+#summary(fundamentals_ds_filter_1$compst)
+#fundamentals_ds_filter_1 <- read.csv("./data/fundamentals_ds_filter_1.csv", na.strings=c(""," "))
+fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[ lapply( fundamentals_ds_filter_1, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
+#ncol(fundamentals_ds_filter_1)
+fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(datadate,indfmt,curncd,consol,popsrc,conm,curcd,apdedate,fdate,add1,addzip,busdesc,
+                                                                         city,conml,weburl,phone,loc,final,fyr,acchg,fic,
+                                                                         xido,xidoc,naicsh,sich,au,auop,auopic,fyrc,ggroup,gind,gsector,gsubind,priusa))
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_2.csv", row.names=FALSE, na="")
+```
+
+```{r}
+#summary(fundamentals_ds_filter_1)
+#fundamentals_ds_filter_num <- select_if(fundamentals_ds_filter_1, is.numeric)
+#ncol(fundamentals_ds_filter_num)
+#summary(fundamentals_ds_filter_num)
+#sapply(fundamentals_ds_filter_num, sd, na.rm = TRUE)
+#df <- fundamentals_ds_filter_num[, sapply(fundamentals_ds_filter_num, function(x) { sd(x) != 0} )]
+#ncol(df)
+#apply(fundamentals_ds_filter_num, 2, sd)
+```
+
+```{r, identify_near_zero_variance}
+nzv_ds <- nearZeroVar(fundamentals_ds_filter_1, saveMetrics = TRUE)
+nzv_ds <- nzv_ds[nzv_ds[,"nzv"] > 0, ]
+nzv_ds
+```
+
+
+
+```{r, remove_near_zero_variance_columns}
+nzv_ds_cols <- nearZeroVar(fundamentals_ds_filter_1)
+fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[, -nzv_ds_cols]
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_3.csv", row.names=FALSE, na="")
+```
+
+```{r}
+ncol(fundamentals_ds_filter_1)
+```
+
+
+```{r}
+fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(acctstd,ismod,src,acodo,acox,
+                                                                          aox,capxv,ceql,cibegni,cicurr,cidergl,
+                                                                          cimii,cipen,cisecgl,citotal,cshfd,cshpri,dclo,dcpstk,
+                                                                          dltis,dlto,dltr,do,dp,dpvieb,drc,
+                                                                          drlt,dv,dvc,epsfx,epspx,exre,
+                                                                          fopox,ibadj,ibc,ibcom,ibmii,
+                                                                          invch,ivaco,ivaeq,ivao,lco,
+                                                                          lcox,lcoxdr,lct,loxdr,mibn,
+                                                                          mibt,mii,msa,niadj,np,oprepsx,pnca,ppent,ppeveb,
+                                                                          recco,rectr,sale,spced,spceeps,
+                                                                          tstkc,txbco,txbcof,txdb,
+                                                                          txdba,txdbca,txdc,txdi,
+                                                                          txditc,txndb,xopr,exchg,costat,
+                                                                          ceoso,cfoso,idbflag,naics,sic,stko))
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_4.csv", row.names=FALSE, na="")
+```
+
+```{r}
+ncol(fundamentals_ds_filter_1)
+```
