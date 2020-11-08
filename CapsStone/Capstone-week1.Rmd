@@ -16,60 +16,37 @@ library(caret)
 ```
 
 
-```{r load_data}
+```{r load_data, MESSAGE = FALSE, warning=FALSE}
 fundamentals_ds <- read.csv("./data/Fundamentals_DS.csv", na.strings=c(""," "))
 nrow(fundamentals_ds)
 ```
 
 
 
-```{r filter_data_datafmt}
+```{r filter_data_datafmt, MESSAGE = FALSE, warning=FALSE}
 fundamentals_ds_filter <- fundamentals_ds %>%
   filter(datafmt == 'STD') 
 nrow(fundamentals_ds_filter)
 ```
 
-```{r }
-#fundamentals_ds_filter %>% summarize_all(funs(sum(is.na(.)) / length(.)))
-#fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ] %>% 
-#  summarize_all(funs(sum(is.na(.)) / length(.)))
+```{r remove_cols_with_high_na, MESSAGE = FALSE, warning=FALSE}
 fundamentals_ds_filter_1 <- fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
 ncol(fundamentals_ds_filter_1)
 ```
 
-```{r}
-#summary(fundamentals_ds_filter_1)
-#matrix(colMins(fundamentals_ds_filter_1) ) 
-```
-
-```{r, write_file}
+```{r write_file, MESSAGE = FALSE, warning=FALSE}
 write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_1.csv", row.names=FALSE)
 ```
 
-```{r}
-#nrow(fundamentals_ds_filter_1)
-#summary(fundamentals_ds_filter_1$compst)
-#fundamentals_ds_filter_1 <- read.csv("./data/fundamentals_ds_filter_1.csv", na.strings=c(""," "))
+```{r write_filter_after_na_removal, MESSAGE = FALSE, warning=FALSE}
 fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[ lapply( fundamentals_ds_filter_1, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
-#ncol(fundamentals_ds_filter_1)
 fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(datadate,indfmt,curncd,consol,popsrc,conm,curcd,apdedate,fdate,add1,addzip,busdesc,
                                                                          city,conml,weburl,phone,loc,final,fyr,acchg,fic,
                                                                          xido,xidoc,naicsh,sich,au,auop,auopic,fyrc,ggroup,gind,gsector,gsubind,priusa))
 write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_2.csv", row.names=FALSE, na="")
 ```
 
-```{r}
-#summary(fundamentals_ds_filter_1)
-#fundamentals_ds_filter_num <- select_if(fundamentals_ds_filter_1, is.numeric)
-#ncol(fundamentals_ds_filter_num)
-#summary(fundamentals_ds_filter_num)
-#sapply(fundamentals_ds_filter_num, sd, na.rm = TRUE)
-#df <- fundamentals_ds_filter_num[, sapply(fundamentals_ds_filter_num, function(x) { sd(x) != 0} )]
-#ncol(df)
-#apply(fundamentals_ds_filter_num, 2, sd)
-```
-
-```{r, identify_near_zero_variance}
+```{r identify_near_zero_variance, MESSAGE = FALSE, warning=FALSE}
 nzv_ds <- nearZeroVar(fundamentals_ds_filter_1, saveMetrics = TRUE)
 nzv_ds <- nzv_ds[nzv_ds[,"nzv"] > 0, ]
 nzv_ds
@@ -77,18 +54,18 @@ nzv_ds
 
 
 
-```{r, remove_near_zero_variance_columns}
+```{r remove_near_zero_variance_columns, MESSAGE = FALSE, warning=FALSE}
 nzv_ds_cols <- nearZeroVar(fundamentals_ds_filter_1)
 fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[, -nzv_ds_cols]
 write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_3.csv", row.names=FALSE, na="")
 ```
 
-```{r}
+```{r, column_count_after_nzv_removal, MESSAGE = FALSE}
 ncol(fundamentals_ds_filter_1)
 ```
 
 
-```{r}
+```{r remove_not_required_variables, MESSAGE = FALSE, warning=FALSE }
 fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(acctstd,ismod,src,acodo,acox,
                                                                           aox,capxv,ceql,cibegni,cicurr,cidergl,
                                                                           cimii,cipen,cisecgl,citotal,cshfd,cshpri,dclo,dcpstk,
@@ -106,6 +83,6 @@ fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(acctstd
 write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_4.csv", row.names=FALSE, na="")
 ```
 
-```{r}
+```{r column_count_after_col_removal, MESSAGE = FALSE, warning=FALSE}
 ncol(fundamentals_ds_filter_1)
 ```
