@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 set.seed(123)
 library(tidyverse)
 library(caret)
+library(corrplot)
 ```
 
 
@@ -97,18 +98,19 @@ fundamentals_restmt_ds_filter <- fundamentals_ds %>%
 std_cols <- colnames(fundamentals_ds_filter_1)
 fundamentals_restmt_ds_filter <- subset(fundamentals_restmt_ds_filter, select = c(std_cols))
 fundamentals_restmt_ds_filter <- fundamentals_restmt_ds_filter[ lapply( fundamentals_restmt_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
-head(fundamentals_restmt_ds_filter)
-#summary(fundamentals_restmt_ds_filter)
+summary(fundamentals_restmt_ds_filter$ci)
 ```
 
 ```{r compare_restatement_rows, MESSAGE = FALSE, warning=FALSE}
 
-sample_restmt_ds_filter <- fundamentals_restmt_ds_filter #%>%
-  #filter(gvkey == 16505)
-sample_ds_filter <- fundamentals_ds_filter_1 #%>%
-  #filter(gvkey == 16505)
-nrow(sample_restmt_ds_filter)
-nrow(sample_ds_filter)
+sample_restmt_ds_filter <- fundamentals_restmt_ds_filter %>%
+  filter(gvkey == 1076)
+sample_ds_filter <- fundamentals_ds_filter_1 %>%
+  filter(gvkey == 1076)
+#nrow(sample_restmt_ds_filter)
+#nrow(sample_ds_filter)
+head(sample_restmt_ds_filter)
+head(sample_ds_filter)
 
 fundamentals_ds_filter_1$restmt_at <- 0
 fundamentals_ds_filter_1$restmt_at_mag <- 0.0
@@ -155,8 +157,11 @@ fundamentals_ds_filter_1$restmt_txt_mag <- 0.0
 fundamentals_ds_filter_1$restmt_wcap <- 0
 fundamentals_ds_filter_1$restmt_wcap_mag <- 0.0
 
+fundamentals_ds_filter_1$restmt_ci <- 0
+fundamentals_ds_filter_1$restmt_ci_mag <- 0.0
+
 for (row in 1:nrow(sample_restmt_ds_filter)){
-  restmt_item_gvkey  <- sample_restmt_ds_filter[row, "gvkey"]
+  restmt_item_gvkey  <- as.integer(sample_restmt_ds_filter[row, "gvkey"])
   restmt_item_fyear  <- sample_restmt_ds_filter[row, "fyear"]
   restmt_item_at  <- sample_restmt_ds_filter[row, "at"]
   restmt_item_capx  <- sample_restmt_ds_filter[row, "capx"]
@@ -174,8 +179,7 @@ for (row in 1:nrow(sample_restmt_ds_filter)){
   restmt_item_teq  <- sample_restmt_ds_filter[row, "teq"]
   restmt_item_txt  <- sample_restmt_ds_filter[row, "txt"]
   restmt_item_wcap  <- sample_restmt_ds_filter[row, "wcap"]
-  
-  
+
   row_count <- as.integer(nrow(subset(fundamentals_ds_filter_1, gvkey == restmt_item_gvkey & fyear == restmt_item_fyear)))
   
   if (row_count > 0){
@@ -199,127 +203,161 @@ for (row in 1:nrow(sample_restmt_ds_filter)){
     stmt_item_teq  <- fundamental_stmt_row["teq"]
     stmt_item_txt  <- fundamental_stmt_row["txt"]
     stmt_item_wcap  <- fundamental_stmt_row["wcap"]
-  
-  
+
     if (!is.na(restmt_item_at) & !is.na(stmt_item_at) & restmt_item_at != stmt_item_at){
       fundamentals_ds_filter_1$restmt_at[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_at - stmt_item_at)/stmt_item_at) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_at_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_capx) & !is.na(stmt_item_capx) & restmt_item_capx != stmt_item_capx){
       fundamentals_ds_filter_1$restmt_capx[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
-      magnitude  <- ((restmt_item_capx - stmt_item_capx)/stmt_item_capx) * 100.0
+      if (stmt_item_capx == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_capx - stmt_item_capx)/stmt_item_capx) * 100.0
+      }
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_capx_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_cogs) & !is.na(stmt_item_cogs) & restmt_item_cogs != stmt_item_cogs){
       fundamentals_ds_filter_1$restmt_cogs[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
-      magnitude  <- ((restmt_item_cogs - stmt_item_cogs)/stmt_item_cogs) * 100.0
+      if (stmt_item_cogs == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_cogs - stmt_item_cogs)/stmt_item_cogs) * 100.0
+      }
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_cogs_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_dltt) & !is.na(stmt_item_dltt) & restmt_item_dltt != stmt_item_dltt){
       fundamentals_ds_filter_1$restmt_dltt[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
-      magnitude  <- ((restmt_item_dltt - stmt_item_dltt)/stmt_item_dltt) * 100.0
+      if (stmt_item_dltt == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_dltt - stmt_item_dltt)/stmt_item_dltt) * 100.0
+      }
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_dltt_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_epsfi) & !is.na(stmt_item_epsfi) & restmt_item_epsfi != stmt_item_epsfi){
       fundamentals_ds_filter_1$restmt_epsfi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
-      magnitude  <- ((restmt_item_epsfi - stmt_item_epsfi)/stmt_item_epsfi) * 100.0
+      if (stmt_item_epsfi == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_epsfi - stmt_item_epsfi)/stmt_item_epsfi) * 100.0
+      }
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_epsfi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_epspi) & !is.na(stmt_item_epspi) & restmt_item_epspi != stmt_item_epspi){
       fundamentals_ds_filter_1$restmt_epspi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
-      magnitude  <- ((restmt_item_epspi - stmt_item_epspi)/stmt_item_epspi) * 100.0
+      if (stmt_item_epspi == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_epspi - stmt_item_epspi)/stmt_item_epspi) * 100.0
+      }
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_epspi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
-    
+
+
     if (!is.na(restmt_item_ib) & !is.na(stmt_item_ib) & restmt_item_ib != stmt_item_ib){
       fundamentals_ds_filter_1$restmt_ib[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_ib - stmt_item_ib)/stmt_item_ib) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_ib_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_ni) & !is.na(stmt_item_ni) & restmt_item_ni != stmt_item_ni){
       fundamentals_ds_filter_1$restmt_ni[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_ni - stmt_item_ni)/stmt_item_ni) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_ni_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_nopi) & !is.na(stmt_item_nopi) & restmt_item_nopi != stmt_item_nopi){
       fundamentals_ds_filter_1$restmt_nopi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
-      magnitude  <- ((restmt_item_nopi - stmt_item_nopi)/stmt_item_nopi) * 100.0
+      if (stmt_item_nopi == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_nopi - stmt_item_nopi)/stmt_item_nopi) * 100.0
+      }
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_nopi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_pi) & !is.na(stmt_item_pi) & restmt_item_pi != stmt_item_pi){
       fundamentals_ds_filter_1$restmt_pi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_pi - stmt_item_pi)/stmt_item_pi) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_pi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_reuna) & !is.na(stmt_item_reuna) & restmt_item_reuna != stmt_item_reuna){
       fundamentals_ds_filter_1$restmt_reuna[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_reuna - stmt_item_reuna)/stmt_item_reuna) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_reuna_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_seq) & !is.na(stmt_item_seq) & restmt_item_seq != stmt_item_seq){
       fundamentals_ds_filter_1$restmt_seq[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_seq - stmt_item_seq)/stmt_item_seq) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_seq_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_teq) & !is.na(stmt_item_teq) & restmt_item_teq != stmt_item_teq){
       fundamentals_ds_filter_1$restmt_teq[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_teq - stmt_item_teq)/stmt_item_teq) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_teq_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_txt) & !is.na(stmt_item_txt) & restmt_item_txt != stmt_item_txt){
       fundamentals_ds_filter_1$restmt_txt[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
-      magnitude  <- ((restmt_item_txt - stmt_item_txt)/stmt_item_txt) * 100.0
+      if (stmt_item_txt == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_txt - stmt_item_txt)/stmt_item_txt) * 100.0
+      }
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_txt_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
-    
+
     if (!is.na(restmt_item_wcap) & !is.na(stmt_item_wcap) & restmt_item_wcap != stmt_item_wcap){
       fundamentals_ds_filter_1$restmt_wcap[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
       magnitude  <- ((restmt_item_wcap - stmt_item_wcap)/stmt_item_wcap) * 100.0
       magnitude  <- as.double(round(magnitude, digits = 3))
       fundamentals_ds_filter_1$restmt_wcap_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
     }
+    
   }
 }
-head(fundamentals_ds_filter_1)
+#head(fundamentals_ds_filter_1)
 ```
 
 
-```{r summary_ds_with_restamt_flags}
+```{r summary_ds_with_restamt_flags, MESSAGE = FALSE, warning=FALSE}
 nrow(fundamentals_ds_filter_1)
 # Removing aco == NA as all those rows do not have any data
 fundamentals_ds_filter_2 <- subset(fundamentals_ds_filter_1, !is.na(aco))
 nrow(fundamentals_ds_filter_2)
 fundamentals_ds_filter_2[is.na(fundamentals_ds_filter_2)] <- 0
 nrow(fundamentals_ds_filter_2)
-#summary(fundamentals_ds_filter_2)
 head(fundamentals_ds_filter_2)
 ```
 
@@ -328,7 +366,7 @@ colnames(fundamentals_ds_filter_2)
 ```
 
 
-```{r final_ds_preparation}
+```{r final_ds_preparation, MESSAGE = FALSE, warning=FALSE}
 final_ds_initial <- fundamentals_ds_filter_2 %>%
   group_by(gvkey,tic) %>%
   summarize(
@@ -445,13 +483,13 @@ final_ds_initial <- fundamentals_ds_filter_2 %>%
     restmt_txt = mean(restmt_txt),
     restmt_txt_mag = mean(restmt_txt_mag),
     restmt_wcap = mean(restmt_wcap),
-    restmt_wcap_mag = mean(restmt_wcap_mag)
+    restmt_wcap_mag = mean(restmt_wcap_mag),
   )
 
 head(final_ds_initial)
 ```
 
-```{r adjust_restatement_flag}
+```{r adjust_restatement_flag, MESSAGE = FALSE, warning=FALSE}
 final_ds_initial_1 <- final_ds_initial 
 
 for (row in 1:nrow(final_ds_initial_1)){
@@ -675,4 +713,30 @@ restmt_var_ds <- subset(final_ds_initial_1, select = c(gvkey,
                                                      ))
 
 head(restmt_var_ds)
+```
+
+```{r final_dataset, MESSAGE = FALSE, warning=FALSE}
+final_ds_initial_2 <- final_ds_initial_1
+summary(final_ds_initial_2)
+write.csv(final_ds_initial_2, file = "data/final_ds_initial_2.csv", row.names=FALSE, na="")
+```
+
+```{r identify_correlation, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(final_ds_initial_2, select = -c(gvkey,tic, aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
+                                              ib,pi,
+                                              oiadp,oibdp,gdwl,esub,
+                                              restmt_seq,restmt_seq_mag,
+                                              restmt_ib,restmt_ib_mag,
+                                              restmt_epsfi,restmt_epsfi_mag))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number()==1)
+#corrplot(cor_matrix, method = "ellipse")
+
+ncol(cor_matrix_ds)
 ```
