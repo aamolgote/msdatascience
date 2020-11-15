@@ -721,13 +721,14 @@ summary(final_ds_initial_2)
 write.csv(final_ds_initial_2, file = "data/final_ds_initial_2.csv", row.names=FALSE, na="")
 ```
 
+
 ```{r identify_correlation, MESSAGE = FALSE, warning=FALSE}
 cor_matrix_ds <- subset(final_ds_initial_2, select = -c(gvkey,tic, aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
                                               ib,pi,
                                               oiadp,oibdp,gdwl,esub,
                                               restmt_seq,restmt_seq_mag,
                                               restmt_ib,restmt_ib_mag,
-                                              restmt_epsfi,restmt_epsfi_mag))
+                                              restmt_epsfi,restmt_epsfi_mag, restmt_cogs_mag))
 cor_matrix <- cor(cor_matrix_ds)
 cor_matrix %>%
   as.data.frame() %>%
@@ -739,4 +740,264 @@ cor_matrix %>%
 #corrplot(cor_matrix, method = "ellipse")
 
 ncol(cor_matrix_ds)
+```
+
+```{r fundamentals_final_ds, MESSAGE = FALSE, warning=FALSE}
+fundamentals_final_ds <- subset(final_ds_initial_2, select = -c(aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
+                                              ib,pi,
+                                              oiadp,oibdp,gdwl,esub,
+                                              restmt_seq,restmt_seq_mag,
+                                              restmt_ib,restmt_ib_mag,
+                                              restmt_epsfi,restmt_epsfi_mag, restmt_cogs_mag))
+```
+
+```{r load_stocks_data, MESSAGE = FALSE, warning=FALSE}
+stocks_init_ds <- read.csv("./data/Stocks_DS.csv", na.strings=c(""," "))
+nrow(stocks_init_ds)
+```
+
+
+```{r stocks_data_filter, warning=FALSE}
+names(stocks_init_ds)[names(stocks_init_ds) == "ï..gvkey"] <- "gvkey"
+stocks_init_limited_cols <- subset(stocks_init_ds, select = c(gvkey,cshtrd,prccd,prchd,prcld,prcod,trfd))
+stocks_init_limited_cols <- stocks_init_limited_cols[!is.na(stocks_init_limited_cols$cshtrd)&!is.na(stocks_init_limited_cols$prccd)
+                                                     &!is.na(stocks_init_limited_cols$prchd)&!is.na(stocks_init_limited_cols$prcld)
+                                                     &!is.na(stocks_init_limited_cols$trfd),]
+stocks_init_limited_cols$prcod[is.na(stocks_init_limited_cols$prcod)] <- (stocks_init_limited_cols$prchd + stocks_init_limited_cols$prcld)/2
+
+stocks_grouped_data <- stocks_init_limited_cols %>%
+   group_by(gvkey) %>%
+   summarize(
+     cshtrd_m = mean(cshtrd),
+     prccd_m = mean(prccd),
+     prchd_m = mean(prchd),
+     prcld_m = mean(prcld),
+     prcod_m = mean(prcod),
+     trfd_m = mean(trfd)
+   )
+```
+
+```{r, merge_fundamental_stocks_data, warning=FALSE}
+fundamental_stocks_data <- fundamentals_final_ds %>%
+  inner_join(stocks_grouped_data, by = 'gvkey')
+summary(fundamental_stocks_data)
+```
+
+```{r identify_correlation_1, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(fundamental_stocks_data, select = -c(gvkey,tic))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number()==1)
+```
+
+```{r drop_cols_based_on_above_correlations, warning=FALSE}
+fundamental_stocks_data_final <- subset(fundamental_stocks_data, select = -c(prccd_m))
+summary(fundamental_stocks_data_final)
+nrow(fundamental_stocks_data_final)
+```
+
+
+
+
+```{r load_stocks_data, MESSAGE = FALSE, warning=FALSE}
+securities_init_ds <- read.csv("./data/Securities_DS.csv", na.strings=c(""," "))
+names(securities_init_ds)[names(securities_init_ds) == "ï..gvkey"] <- "gvkey"
+securities_init_ds_1 <- subset(securities_init_ds, select = -c(iid,isalrt,primiss,ajexm,
+                                                               spgim,spiim,spmim,cheqvm,curcddvm,dvpsxm,
+                                                               sphcusip,sphiid, sphmid,sphname,sphsec,sphtic,sphvg,sph100,
+                                                               cyear,mkvalincl,exchg,tpci,city,
+                                                               conml,costat,ggroup,gind, gsector,gsubind,loc,naics,sic,state, curcdm, 
+                                                               navm,adrrm,rawpm,rawxm,cshoq,csfsm,
+                                                               datadate,tic,conm,cmth
+                                                               ))
+
+
+summary(securities_init_ds_1)
+```
+
+```{r merge_stock_data, warning=FALSE, message=FALSE}
+fund_stock_securities_ds <- fundamental_stocks_data_final 
+securities_init_ds_2 <- securities_init_ds_1 %>%
+  filter(!is.na(trfm) & !is.na(trt1m)) %>%
+  group_by(gvkey) %>%
+  summarise(
+    trfm_m = mean(trfm)
+    )
+
+fund_stock_securities_ds$trfm_m <- NA
+for (row in 1:nrow(fund_stock_securities_ds)){
+  row_item_gvkey  <- as.integer(fund_stock_securities_ds[row, "gvkey"])
+  specific_security <- securities_init_ds_2 %>%
+    filter(gvkey == row_item_gvkey) 
+  if (nrow(specific_security) > 0){
+    security_row <- head(specific_security, 1)
+    trfm_m <- as.numeric(security_row$trfm_m)  
+    fund_stock_securities_ds$trfm_m[fund_stock_securities_ds$gvkey == row_item_gvkey] <- trfm_m
+  }
+}
+
+
+
+securities_init_ds_3 <- securities_init_ds_1 %>%
+  filter(!is.na(dvrate)) %>%
+  group_by(gvkey) %>%
+  summarise(
+    dvrate_m = mean(dvrate)
+    )
+
+fund_stock_securities_ds$dvrate_m <- NA
+for (row in 1:nrow(fund_stock_securities_ds)){
+  row_item_gvkey  <- as.integer(fund_stock_securities_ds[row, "gvkey"])
+  specific_security <- securities_init_ds_3 %>%
+    filter(gvkey == row_item_gvkey) 
+  if (nrow(specific_security) > 0){
+    security_row <- head(specific_security, 1)
+    dvrate_m <- as.numeric(security_row$dvrate_m)  
+    fund_stock_securities_ds$dvrate_m[fund_stock_securities_ds$gvkey == row_item_gvkey] <- dvrate_m
+  }
+}
+
+
+summary(fund_stock_securities_ds)
+```
+
+
+```{r load_ratings_data, MESSAGE = FALSE, warning=FALSE}
+ratings_init_ds <- read.csv("./data/Ratings_DS.csv", na.strings=c("", " "))
+names(ratings_init_ds)[names(ratings_init_ds) == "ï..gvkey"] <- "gvkey"
+ratings_init_ds$datadate <- as.Date(ratings_init_ds$datadate, "%m/%d/%Y")
+ratings_init_ds$splticrm = factor(ratings_init_ds$splticrm, levels=c(levels(ratings_init_ds$splticrm), "NR"))
+ratings_init_ds$splticrm[is.na(ratings_init_ds$splticrm)] = "NR"
+
+ratings_init_ds$splticrm_num_value <- 0
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "AAA"] <-  100
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "AA"] <-   90
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "AA-"] <-  85
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "A+"] <-   80
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "A"] <-    75
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "A-"] <-   70
+
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BBB+"] <-   65
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BBB"] <-    60
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BBB-"] <-   55
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BB+"] <-    50
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BB"] <-   45
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BB-"] <-   40
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "B+"] <-   35
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "B"] <-   30
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "B-"] <-   25
+
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CCC+"] <-   20
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CCC"] <-   19
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CCC-"] <-   18
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CC"] <-   17
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "D"] <-   10
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "SD"] <-   10
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "NR"] <-   0
+ratings_init_ds$splticrm_num_value <- factor(ratings_init_ds$splticrm_num_value)
+#levels(ratings_init_ds$splticrm)
+#str(ratings_init_ds)
+```
+
+
+```{r, consolidate_ds_fundamental_stock_rating, warning=FALSE, message=FALSE}
+fund_stock_securities_rating_ds <- fund_stock_securities_ds #%>%
+  #filter(gvkey == 1078)
+fund_stock_securities_rating_ds$sp_rating <- "NOTRATED" 
+rated_companies <- ratings_init_ds %>%
+  filter(splticrm != "NR")
+
+for (row in 1:nrow(fund_stock_securities_rating_ds)){
+  row_item_gvkey  <- as.integer(fund_stock_securities_rating_ds[row, "gvkey"])
+
+  specific_rating <- rated_companies %>%
+    filter(gvkey == row_item_gvkey) %>%
+    arrange(datadate)
+  if (nrow(specific_rating) > 0){
+    first_row <- head(specific_rating, 1)
+    last_row <- tail(specific_rating, 1)
+    start_value <- as.integer(first_row$splticrm_num_value)
+    end_value <- as.integer(last_row$splticrm_num_value)
+    if (start_value == end_value){
+      fund_stock_securities_rating_ds$sp_rating[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- "NoCHANGE"
+    }else if (start_value < end_value){
+      fund_stock_securities_rating_ds$sp_rating[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- "INCREASED"
+    }else if (start_value > end_value){
+      fund_stock_securities_rating_ds$sp_rating[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- "DECREASED"
+    }
+  }
+}
+fund_stock_securities_rating_ds$sp_rating <- factor(fund_stock_securities_rating_ds$sp_rating)
+summary(fund_stock_securities_rating_ds)
+```
+
+
+```{r load_stocks_data, MESSAGE = FALSE, warning=FALSE}
+sca_fillings_ds <- read.csv("./data/SCA_Filings_and_Settlements.csv", na.strings=c(""," "))
+sca_fillings_ds$SettlementAmount = gsub("\\$", "", sca_fillings_ds$SettlementAmount)
+sca_fillings_ds$SettlementAmount = as.numeric(gsub("\\,", "", sca_fillings_ds$SettlementAmount))
+summary(sca_fillings_ds)
+```
+
+```{r, merge_sca_filings_data, warning=false}
+fund_stock_securities_rating_ds$litigated <- 0
+fund_stock_securities_rating_ds$litigation_settlement <- NA
+fund_stock_securities_rating_ds_1 <- fund_stock_securities_rating_ds #%>%
+  #filter(gvkey == 2184)
+
+for (row in 1:nrow(fund_stock_securities_rating_ds_1)){
+  row_item_tic  <- lapply(fund_stock_securities_rating_ds_1[row, "tic"], as.character)
+  row_item_gvkey  <- as.integer(fund_stock_securities_rating_ds[row, "gvkey"])
+  specific_sca_filings <- sca_fillings_ds %>%
+    filter(Ticker == row_item_tic) 
+  if (nrow(specific_sca_filings) > 0){
+    fund_stock_securities_rating_ds$litigated[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- 1
+    specific_sca_filings_max <- specific_sca_filings %>%
+    filter(!is.na(SettlementAmount)) %>%
+    arrange(SettlementAmount)
+    
+   if (nrow(specific_sca_filings_max) > 0){
+      last_row <- tail(specific_sca_filings_max, 1)
+      settlement_amount <- as.numeric(last_row$SettlementAmount)
+      fund_stock_securities_rating_ds$litigation_settlement[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- settlement_amount
+   }
+  }
+}
+fund_stock_securities_rating_ds$litigated <- as.factor(fund_stock_securities_rating_ds$litigated)
+summary(fund_stock_securities_rating_ds)
+```
+
+```{r, final_ds_column_names, warning=FALSE}
+colnames(fund_stock_securities_rating_ds)
+```
+
+
+```{r, clean_up_not_required_columns}
+fund_stock_securities_rating_ds_final <- subset(fund_stock_securities_rating_ds, select = -c(aocidergl, aocipen, ceqt, cstkcv, dd1,
+                                                    dpc,icapt, intan, intano, ivncf, ivst,
+                                                    lo, lse, opeps, reajo, recta,
+                                                    spi, tstkn, txp, txr
+                                                    ))
+summary(fund_stock_securities_rating_ds_final)
+```
+
+```{r identify_correlation_2, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number() == 1)
 ```
