@@ -87,7 +87,7 @@ write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_4.csv", 
 
 ```{r column_count_after_col_removal, MESSAGE = FALSE, warning=FALSE}
 ncol(fundamentals_ds_filter_1)
-fundamentals_ds_filter_1
+#fundamentals_ds_filter_1
 ```
 
 
@@ -109,8 +109,8 @@ sample_ds_filter <- fundamentals_ds_filter_1 %>%
   filter(gvkey == 1076)
 #nrow(sample_restmt_ds_filter)
 #nrow(sample_ds_filter)
-head(sample_restmt_ds_filter)
-head(sample_ds_filter)
+#head(sample_restmt_ds_filter)
+#head(sample_ds_filter)
 
 fundamentals_ds_filter_1$restmt_at <- 0
 fundamentals_ds_filter_1$restmt_at_mag <- 0.0
@@ -357,8 +357,8 @@ nrow(fundamentals_ds_filter_1)
 fundamentals_ds_filter_2 <- subset(fundamentals_ds_filter_1, !is.na(aco))
 nrow(fundamentals_ds_filter_2)
 fundamentals_ds_filter_2[is.na(fundamentals_ds_filter_2)] <- 0
-nrow(fundamentals_ds_filter_2)
-head(fundamentals_ds_filter_2)
+#nrow(fundamentals_ds_filter_2)
+#head(fundamentals_ds_filter_2)
 ```
 
 ```{r get_col_names}
@@ -717,7 +717,7 @@ head(restmt_var_ds)
 
 ```{r final_dataset, MESSAGE = FALSE, warning=FALSE}
 final_ds_initial_2 <- final_ds_initial_1
-summary(final_ds_initial_2)
+#summary(final_ds_initial_2)
 write.csv(final_ds_initial_2, file = "data/final_ds_initial_2.csv", row.names=FALSE, na="")
 ```
 
@@ -739,7 +739,7 @@ cor_matrix %>%
   filter(row_number()==1)
 #corrplot(cor_matrix, method = "ellipse")
 
-ncol(cor_matrix_ds)
+#ncol(cor_matrix_ds)
 ```
 
 ```{r fundamentals_final_ds, MESSAGE = FALSE, warning=FALSE}
@@ -780,7 +780,7 @@ stocks_grouped_data <- stocks_init_limited_cols %>%
 ```{r, merge_fundamental_stocks_data, warning=FALSE}
 fundamental_stocks_data <- fundamentals_final_ds %>%
   inner_join(stocks_grouped_data, by = 'gvkey')
-summary(fundamental_stocks_data)
+#summary(fundamental_stocks_data)
 ```
 
 ```{r identify_correlation_1, MESSAGE = FALSE, warning=FALSE}
@@ -797,14 +797,14 @@ cor_matrix %>%
 
 ```{r drop_cols_based_on_above_correlations, warning=FALSE}
 fundamental_stocks_data_final <- subset(fundamental_stocks_data, select = -c(prccd_m))
-summary(fundamental_stocks_data_final)
+#summary(fundamental_stocks_data_final)
 nrow(fundamental_stocks_data_final)
 ```
 
 
 
 
-```{r load_stocks_data, MESSAGE = FALSE, warning=FALSE}
+```{r load_securities_data, MESSAGE = FALSE, warning=FALSE}
 securities_init_ds <- read.csv("./data/Securities_DS.csv", na.strings=c(""," "))
 names(securities_init_ds)[names(securities_init_ds) == "ï..gvkey"] <- "gvkey"
 securities_init_ds_1 <- subset(securities_init_ds, select = -c(iid,isalrt,primiss,ajexm,
@@ -817,7 +817,7 @@ securities_init_ds_1 <- subset(securities_init_ds, select = -c(iid,isalrt,primis
                                                                ))
 
 
-summary(securities_init_ds_1)
+#summary(securities_init_ds_1)
 ```
 
 ```{r merge_stock_data, warning=FALSE, message=FALSE}
@@ -863,7 +863,7 @@ for (row in 1:nrow(fund_stock_securities_ds)){
 }
 
 
-summary(fund_stock_securities_ds)
+#summary(fund_stock_securities_ds)
 ```
 
 
@@ -937,22 +937,21 @@ for (row in 1:nrow(fund_stock_securities_rating_ds)){
   }
 }
 fund_stock_securities_rating_ds$sp_rating <- factor(fund_stock_securities_rating_ds$sp_rating)
-summary(fund_stock_securities_rating_ds)
+#summary(fund_stock_securities_rating_ds)
 ```
 
 
-```{r load_stocks_data, MESSAGE = FALSE, warning=FALSE}
+```{r load_sca_filings_data, MESSAGE = FALSE, warning=FALSE}
 sca_fillings_ds <- read.csv("./data/SCA_Filings_and_Settlements.csv", na.strings=c(""," "))
 sca_fillings_ds$SettlementAmount = gsub("\\$", "", sca_fillings_ds$SettlementAmount)
 sca_fillings_ds$SettlementAmount = as.numeric(gsub("\\,", "", sca_fillings_ds$SettlementAmount))
-summary(sca_fillings_ds)
+#summary(sca_fillings_ds)
 ```
 
-```{r, merge_sca_filings_data, warning=false}
+```{r merge_sca_filings_data, MESSAGE = FALSE, warning=FALSE}
 fund_stock_securities_rating_ds$litigated <- 0
 fund_stock_securities_rating_ds$litigation_settlement <- NA
-fund_stock_securities_rating_ds_1 <- fund_stock_securities_rating_ds #%>%
-  #filter(gvkey == 2184)
+fund_stock_securities_rating_ds_1 <- fund_stock_securities_rating_ds 
 
 for (row in 1:nrow(fund_stock_securities_rating_ds_1)){
   row_item_tic  <- lapply(fund_stock_securities_rating_ds_1[row, "tic"], as.character)
@@ -973,21 +972,26 @@ for (row in 1:nrow(fund_stock_securities_rating_ds_1)){
   }
 }
 fund_stock_securities_rating_ds$litigated <- as.factor(fund_stock_securities_rating_ds$litigated)
-summary(fund_stock_securities_rating_ds)
+#summary(fund_stock_securities_rating_ds)
 ```
 
-```{r, final_ds_column_names, warning=FALSE}
-colnames(fund_stock_securities_rating_ds)
+```{r final_ds_column_names, MESSAGE = FALSE, warning=FALSE}
+#colnames(fund_stock_securities_rating_ds)
 ```
 
 
-```{r, clean_up_not_required_columns}
+```{r clean_up_not_required_columns, MESSAGE = FALSE, warning=FALSE}
 fund_stock_securities_rating_ds_final <- subset(fund_stock_securities_rating_ds, select = -c(aocidergl, aocipen, ceqt, cstkcv, dd1,
                                                     dpc,icapt, intan, intano, ivncf, ivst,
                                                     lo, lse, opeps, reajo, recta,
-                                                    spi, tstkn, txp, txr
+                                                    spi, tstkn, txp, txr,
+                                                    restmt_capx, restmt_capx_mag, restmt_epspi, restmt_epspi_mag,
+                                                    restmt_ni, restmt_ni_mag, restmt_pi, restmt_pi_mag,  
+                                                    restmt_reuna, restmt_reuna_mag, restmt_teq, restmt_teq_mag, 
+                                                    restmt_txt, restmt_txt_mag, restmt_wcap, restmt_wcap_mag
+
                                                     ))
-summary(fund_stock_securities_rating_ds_final)
+#summary(fund_stock_securities_rating_ds_final)
 ```
 
 ```{r identify_correlation_2, MESSAGE = FALSE, warning=FALSE}
@@ -1000,4 +1004,9 @@ cor_matrix %>%
   arrange(desc(value)) %>%
   group_by(value) %>%
   filter(row_number() == 1)
+```
+
+```{r ds_final_rows_summary_analysis, MESSAGE = FALSE, warning=FALSE}
+nrow(fund_stock_securities_rating_ds_final)
+summary(fund_stock_securities_rating_ds_final)
 ```
