@@ -46,8 +46,9 @@ nrow(fundamentals_ds_filter)
 ```
 
 ```{r remove_cols_with_high_na, MESSAGE = FALSE, warning=FALSE}
-fundamentals_ds_filter_1 <- fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
+fundamentals_ds_filter_1 <- fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.25 ]
 ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
 ```
 
 ```{r write_file, MESSAGE = FALSE, warning=FALSE}
@@ -55,11 +56,14 @@ write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_1.csv", 
 ```
 
 ```{r write_filter_after_na_removal, MESSAGE = FALSE, warning=FALSE}
-fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[ lapply( fundamentals_ds_filter_1, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
+#fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[ lapply( fundamentals_ds_filter_1, function(x) sum(is.na(x)) / length(x) ) < 0.25 ]
+ncol(fundamentals_ds_filter_1)
 fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(datadate,indfmt,curncd,consol,popsrc,conm,curcd,apdedate,fdate,add1,addzip,busdesc,
                                                                          city,conml,weburl,phone,loc,final,fyr,acchg,fic,
                                                                          xido,xidoc,naicsh,sich,au,auop,auopic,fyrc,ggroup,gind,gsector,gsubind,priusa))
 write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_2.csv", row.names=FALSE, na="")
+ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
 ```
 
 ```{r identify_near_zero_variance, MESSAGE = FALSE, warning=FALSE}
@@ -78,6 +82,7 @@ write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_3.csv", 
 
 ```{r, column_count_after_nzv_removal, MESSAGE = FALSE}
 ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
 ```
 
 
@@ -101,6 +106,7 @@ write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_4.csv", 
 
 ```{r column_count_after_col_removal, MESSAGE = FALSE, warning=FALSE}
 ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
 #fundamentals_ds_filter_1
 ```
 
@@ -108,11 +114,14 @@ ncol(fundamentals_ds_filter_1)
 
 ```{r filter_data_re_stmt, MESSAGE = FALSE, warning=FALSE}
 fundamentals_restmt_ds_filter <- fundamentals_ds %>%
-  filter(datafmt == 'SUMM_STD')
+  filter(datafmt == 'SUMM_STD' & gsector == gsector_sjm)
+  #filter(datafmt == 'SUMM_STD')
+  
 std_cols <- colnames(fundamentals_ds_filter_1)
 fundamentals_restmt_ds_filter <- subset(fundamentals_restmt_ds_filter, select = c(std_cols))
 fundamentals_restmt_ds_filter <- fundamentals_restmt_ds_filter[ lapply( fundamentals_restmt_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
 summary(fundamentals_restmt_ds_filter)
+nrow(fundamentals_restmt_ds_filter)
 ```
 
 
@@ -414,6 +423,7 @@ for (row in 1:nrow(sample_restmt_ds_filter)){
   }
 }
 #head(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
 ```
 
 
@@ -430,7 +440,11 @@ summary(fundamentals_ds_filter_2)
 
 ```{r get_col_names}
 colnames(fundamentals_ds_filter_2)
+nrow(fundamentals_ds_filter_2)
 ```
+
+
+
 
 
 ```{r final_ds_preparation, MESSAGE = FALSE, warning=FALSE}
@@ -566,6 +580,7 @@ final_ds_initial <- fundamentals_ds_filter_2 %>%
   )
 
 summary(final_ds_initial)
+nrow(final_ds_initial)
 ```
 
 ```{r adjust_restatement_flag, MESSAGE = FALSE, warning=FALSE}
@@ -1474,9 +1489,6 @@ test_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(test_subs
 training_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(training_subset_ds_final[, num_var_start_index:num_var_end_index])
 levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 1] <- "Yes"
 levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 0] <- "No"
-#summary(training_subset_ds_final)
-#training_subset_ds_final$litigated <- as.factor(training_subset_ds_final$litigated)
-#str(training_subset_ds_final[target_var_index])
 summary(training_subset_ds_final)
 ```
 
@@ -1587,4 +1599,9 @@ logistic_regression_model
  rocr_auc <- performance(rocr_pred, measure = "auc")
  auc_glm <- rocr_auc@y.values[[1]]
  auc_glm
+```
+
+```{r}
+nrow(training_subset_ds_final)
+nrow(test_subset_ds_final)
 ```
