@@ -1460,7 +1460,7 @@ summary(training_subset_ds_final)
 ```
 
 
-```{r, SCALE_VARIABLES}
+```{r, SCALE_VARIABLES, MESSAGE = FALSE, warning=FALSE}
 num_var_start_index <- 1
 num_var_end_index <- ncol(training_subset_ds_final) - 1
 target_var_index <- ncol(training_subset_ds_final)
@@ -1482,7 +1482,7 @@ summary(training_subset_ds_final)
 
 
 
-```{r random_forest}
+```{r random_forest, MESSAGE = FALSE, warning=FALSE}
 modelLookup("rf")
 rf_x <- training_subset_ds_final[,num_var_start_index:num_var_end_index]
 rf_y <- training_subset_ds_final[,target_var_index]
@@ -1491,18 +1491,18 @@ recommended_mtry <- sqrt(ncol(rf_x))
 rfGrid <- expand.grid(mtry=recommended_mtry)
 ```
 
-```{r random_forest_1}
+```{r random_forest_1, MESSAGE = FALSE, warning=FALSE}
 rfControl <- trainControl(method='repeatedcv', number=10, repeats=3)
 rf_onehot_model <- train(litigated~., 
                       data=training_subset_ds_final, 
                       method='rf', 
                       metric='Accuracy', 
-                      tuneGrid=tunegrid, 
-                      trControl=control)
+                      tuneGrid=rfGrid, 
+                      trControl=rfControl)
 
 ```
 
-```{r prediction_random_forest}
+```{r prediction_random_forest, MESSAGE = FALSE, warning=FALSE}
 test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
 class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
@@ -1511,7 +1511,7 @@ test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
 
 
 
-```{r evaluate_random_forest}
+```{r evaluate_random_forest, MESSAGE = FALSE, warning=FALSE}
 rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$litigated)
 rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
 plot(rocr_roc,
@@ -1522,21 +1522,21 @@ lwd = 2)
 abline(a = 0, b = 1)
 
 ```
-```{r auc_value_rando_forest}
+```{r auc_value_rando_forest, MESSAGE = FALSE, warning=FALSE}
 rocr_auc <- performance(rocr_pred, measure = "auc")
 auc_rf <- rocr_auc@y.values[[1]]
 auc_rf
 ```
 
 
-```{r calibration_curve_random_forest}
+```{r calibration_curve_random_forest, MESSAGE = FALSE, warning=FALSE}
 calibration_curve <- calibration(litigated ~ class_probabilities_onehot,
 data = test_subset_ds_final,
 class = 1)
 plot(calibration_curve)
 ```
 
-```{r feature_importance_random_forest}
+```{r feature_importance_random_forest, MESSAGE = FALSE, warning=FALSE}
 rf_varImp <- varImp(rf_onehot_model, type = 2)
 plot(rf_varImp, top = 25)
 ```
@@ -1545,7 +1545,7 @@ rf_varImp
 ```
 
 ## Logistic Regression
-```{r logistic_regression_medical_dataset, message=FALSE}
+```{r logistic_regression_medical_dataset, MESSAGE = FALSE, warning=FALSE}
 
 logistic_regression_model <- glm(litigated ~ 
                                   cshtrd_m + 
@@ -1573,7 +1573,7 @@ test_subset_ds_final$prediction_target <- ifelse(test_subset_ds_final$prediction
 logistic_regression_model
 ```
 
-```{r logistic_regression_roc_curve}
+```{r logistic_regression_roc_curve, MESSAGE = FALSE, warning=FALSE}
  rocr_pred <- prediction(test_subset_ds_final$prediction_target, test_subset_ds_final$litigated)
  rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
  plot(rocr_roc,
@@ -1583,7 +1583,7 @@ logistic_regression_model
  lwd = 2)
  abline(a = 0, b = 1)
 ```
-```{r logistic_regression_auc_r}
+```{r logistic_regression_auc_r, MESSAGE = FALSE, warning=FALSE}
  rocr_auc <- performance(rocr_pred, measure = "auc")
  auc_glm <- rocr_auc@y.values[[1]]
  auc_glm
