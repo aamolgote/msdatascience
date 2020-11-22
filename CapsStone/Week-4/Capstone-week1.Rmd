@@ -1,7 +1,7 @@
 ---
-title: "Capstone Project - Week1"
+title: "Capstone Project - Week1-8"
 author: "Amol Gote"
-date: "11/7/2020"
+date: "12/18/2020"
 output: word_document
 ---
 
@@ -14,6 +14,12 @@ set.seed(123)
 library(tidyverse)
 library(caret)
 library(corrplot)
+library(tidyverse)
+library(ROCR)
+library(gbm)
+library(ROSE)
+library(gridExtra)
+library(parallel) 
 ```
 
 
@@ -1177,12 +1183,13 @@ fund_stock_securities_rating_ds_final$trfm_m[is.na(fund_stock_securities_rating_
 
 
 ```{r ds_final_rows_summary_analysis, MESSAGE = FALSE, warning=FALSE}
-nrow(fund_stock_securities_rating_ds_final)
-summary(fund_stock_securities_rating_ds_final)
+#nrow(fund_stock_securities_rating_ds_final)
+#summary(fund_stock_securities_rating_ds_final)
 ```
 
 ```{r convert_categorical_to_factor, MESSAGE = FALSE, warning=FALSE}
 ds_final <- fund_stock_securities_rating_ds_final
+ds_final <- subset(ds_final, select = -c(dvrate_m, litigation_settlement))
 ds_final$restmt_at <- as.factor(ds_final$restmt_at)
 ds_final$restmt_capx <- as.factor(ds_final$restmt_capx)
 ds_final$restmt_cogs <- as.factor(ds_final$restmt_cogs)
@@ -1197,5 +1204,387 @@ ds_final$restmt_txt <- as.factor(ds_final$restmt_txt)
 ds_final$restmt_wcap <- as.factor(ds_final$restmt_wcap)
 ds_final$restmt_xint <- as.factor(ds_final$restmt_xint)
 ds_final$sp_rating <- as.factor(ds_final$sp_rating)
-summary(ds_final)
+ds_final$litigated <- as.factor(ds_final$litigated)
+#summary(ds_final)
+```
+
+
+```{r encode_categorical_variables, MESSAGE = FALSE, warning=FALSE}
+# split the data into training and (held-out) test sets
+training_ind <- createDataPartition(ds_final$litigated,
+p = 0.75,
+list = FALSE,
+times = 1)
+training_set <- ds_final[training_ind, ]
+test_set <- ds_final[-training_ind, ]
+
+nrow(training_set)
+nrow(test_set)
+threshold <- 250
+#head(training_set$litigated)
+
+threshold <- 250
+target_enc_train <- function(variable, level) {
+  training_set$litigated <- as.numeric(as.vector(training_set$litigated))
+  train_avg_target <- colMeans(training_set[, "litigated"])
+  if (nrow(training_set[training_set[, variable]==level, ])==0) {
+    return(train_avg_target)
+  } else {
+    level_num_obs <- nrow(training_set[training_set[, variable]==level,])
+    level_avg_target <- colMeans(training_set[training_set[, variable]==level, "litigated"])
+    return((level_num_obs*level_avg_target+threshold*train_avg_target)/(level_num_obs+threshold))
+  }
+}
+
+sp_rating_target <- mapply(target_enc_train, variable = "sp_rating", level = levels(training_set$sp_rating), USE.NAMES = FALSE)
+names(sp_rating_target) <- levels(training_set$sp_rating)
+training_set$sp_rating_target <- 0
+for (level in levels(training_set$sp_rating)) {
+  training_set[training_set[, "sp_rating"]==level, "sp_rating_target"] <- sp_rating_target[level]
+}
+
+test_set$sp_rating_target <- 0
+for (level in levels(training_set$sp_rating)) {
+  test_set[test_set[, "sp_rating"]==level, "sp_rating_target"] <- sp_rating_target[level]
+}
+
+
+restmt_at_target <- mapply(target_enc_train, variable = "restmt_at", level = levels(training_set$restmt_at), USE.NAMES = FALSE)
+names(restmt_at_target) <- levels(training_set$restmt_at)
+training_set$restmt_at_target <- 0
+for (level in levels(training_set$restmt_at)) {
+  training_set[training_set[, "restmt_at"]==level, "restmt_at_target"] <- restmt_at_target[level]
+}
+
+test_set$restmt_at_target <- 0
+for (level in levels(training_set$restmt_at)) {
+  test_set[test_set[, "restmt_at"]==level, "restmt_at_target"] <- restmt_at_target[level]
+}
+
+restmt_capx_target <- mapply(target_enc_train, variable = "restmt_capx", level = levels(training_set$restmt_capx), USE.NAMES = FALSE)
+names(restmt_capx_target) <- levels(training_set$restmt_capx)
+training_set$restmt_capx_target <- 0
+for (level in levels(training_set$restmt_capx)) {
+  training_set[training_set[, "restmt_capx"]==level, "restmt_capx_target"] <- restmt_capx_target[level]
+}
+
+test_set$restmt_capx_target <- 0
+for (level in levels(training_set$restmt_capx)) {
+  test_set[test_set[, "restmt_capx"]==level, "restmt_capx_target"] <- restmt_capx_target[level]
+}
+
+restmt_cogs_target <- mapply(target_enc_train, variable = "restmt_cogs", level = levels(training_set$restmt_cogs), USE.NAMES = FALSE)
+names(restmt_cogs_target) <- levels(training_set$restmt_cogs)
+training_set$restmt_cogs_target <- 0
+for (level in levels(training_set$restmt_cogs)) {
+  training_set[training_set[, "restmt_cogs"]==level, "restmt_cogs_target"] <- restmt_cogs_target[level]
+}
+
+test_set$restmt_cogs_target <- 0
+for (level in levels(training_set$restmt_cogs)) {
+  test_set[test_set[, "restmt_cogs"]==level, "restmt_cogs_target"] <- restmt_cogs_target[level]
+}
+
+restmt_dltt_target <- mapply(target_enc_train, variable = "restmt_dltt", level = levels(training_set$restmt_dltt), USE.NAMES = FALSE)
+names(restmt_dltt_target) <- levels(training_set$restmt_dltt)
+training_set$restmt_dltt_target <- 0
+for (level in levels(training_set$restmt_dltt)) {
+  training_set[training_set[, "restmt_dltt"]==level, "restmt_dltt_target"] <- restmt_dltt_target[level]
+}
+
+test_set$restmt_dltt_target <- 0
+for (level in levels(training_set$restmt_dltt)) {
+  test_set[test_set[, "restmt_dltt"]==level, "restmt_dltt_target"] <- restmt_dltt_target[level]
+}
+
+restmt_epspi_target <- mapply(target_enc_train, variable = "restmt_epspi", level = levels(training_set$restmt_epspi), USE.NAMES = FALSE)
+names(restmt_epspi_target) <- levels(training_set$restmt_epspi)
+training_set$restmt_epspi_target <- 0
+for (level in levels(training_set$restmt_epspi)) {
+  training_set[training_set[, "restmt_epspi"]==level, "restmt_epspi_target"] <- restmt_epspi_target[level]
+}
+
+test_set$restmt_epspi_target <- 0
+for (level in levels(training_set$restmt_epspi)) {
+  test_set[test_set[, "restmt_epspi"]==level, "restmt_epspi_target"] <- restmt_epspi_target[level]
+}
+
+restmt_ib_target <- mapply(target_enc_train, variable = "restmt_ib", level = levels(training_set$restmt_ib), USE.NAMES = FALSE)
+names(restmt_ib_target) <- levels(training_set$restmt_ib)
+training_set$restmt_ib_target <- 0
+for (level in levels(training_set$restmt_ib)) {
+  training_set[training_set[, "restmt_ib"]==level, "restmt_ib_target"] <- restmt_ib_target[level]
+}
+
+test_set$restmt_ib_target <- 0
+for (level in levels(training_set$restmt_ib)) {
+  test_set[test_set[, "restmt_ib"]==level, "restmt_ib_target"] <- restmt_ib_target[level]
+}
+
+
+restmt_ni_target <- mapply(target_enc_train, variable = "restmt_ni", level = levels(training_set$restmt_ni), USE.NAMES = FALSE)
+names(restmt_ni_target) <- levels(training_set$restmt_ni)
+training_set$restmt_ni_target <- 0
+for (level in levels(training_set$restmt_ni)) {
+  training_set[training_set[, "restmt_ni"]==level, "restmt_ni_target"] <- restmt_ni_target[level]
+}
+
+test_set$restmt_ni_target <- 0
+for (level in levels(training_set$restmt_ni)) {
+  test_set[test_set[, "restmt_ni"]==level, "restmt_ni_target"] <- restmt_ni_target[level]
+}
+
+restmt_nopi_target <- mapply(target_enc_train, variable = "restmt_nopi", level = levels(training_set$restmt_nopi), USE.NAMES = FALSE)
+names(restmt_nopi_target) <- levels(training_set$restmt_nopi)
+training_set$restmt_nopi_target <- 0
+for (level in levels(training_set$restmt_nopi)) {
+  training_set[training_set[, "restmt_nopi"]==level, "restmt_nopi_target"] <- restmt_nopi_target[level]
+}
+
+test_set$restmt_nopi_target <- 0
+for (level in levels(training_set$restmt_nopi)) {
+  test_set[test_set[, "restmt_nopi"]==level, "restmt_nopi_target"] <- restmt_nopi_target[level]
+}
+
+
+restmt_reuna_target <- mapply(target_enc_train, variable = "restmt_reuna", level = levels(training_set$restmt_reuna), USE.NAMES = FALSE)
+names(restmt_reuna_target) <- levels(training_set$restmt_reuna)
+training_set$restmt_reuna_target <- 0
+for (level in levels(training_set$restmt_reuna)) {
+  training_set[training_set[, "restmt_reuna"]==level, "restmt_reuna_target"] <- restmt_reuna_target[level]
+}
+
+test_set$restmt_reuna_target <- 0
+for (level in levels(training_set$restmt_reuna)) {
+  test_set[test_set[, "restmt_reuna"]==level, "restmt_reuna_target"] <- restmt_reuna_target[level]
+}
+
+restmt_teq_target <- mapply(target_enc_train, variable = "restmt_teq", level = levels(training_set$restmt_teq), USE.NAMES = FALSE)
+names(restmt_teq_target) <- levels(training_set$restmt_teq)
+training_set$restmt_teq_target <- 0
+for (level in levels(training_set$restmt_teq)) {
+  training_set[training_set[, "restmt_teq"]==level, "restmt_teq_target"] <- restmt_teq_target[level]
+}
+
+test_set$restmt_teq_target <- 0
+for (level in levels(training_set$restmt_teq)) {
+  test_set[test_set[, "restmt_teq"]==level, "restmt_teq_target"] <- restmt_teq_target[level]
+}
+
+restmt_txt_target <- mapply(target_enc_train, variable = "restmt_txt", level = levels(training_set$restmt_txt), USE.NAMES = FALSE)
+names(restmt_txt_target) <- levels(training_set$restmt_txt)
+training_set$restmt_txt_target <- 0
+for (level in levels(training_set$restmt_txt)) {
+  training_set[training_set[, "restmt_txt"]==level, "restmt_txt_target"] <- restmt_txt_target[level]
+}
+
+test_set$restmt_txt_target <- 0
+for (level in levels(training_set$restmt_txt)) {
+  test_set[test_set[, "restmt_txt"]==level, "restmt_txt_target"] <- restmt_txt_target[level]
+}
+
+restmt_wcap_target <- mapply(target_enc_train, variable = "restmt_wcap", level = levels(training_set$restmt_wcap), USE.NAMES = FALSE)
+names(restmt_wcap_target) <- levels(training_set$restmt_wcap)
+training_set$restmt_wcap_target <- 0
+for (level in levels(training_set$restmt_wcap)) {
+  training_set[training_set[, "restmt_wcap"]==level, "restmt_wcap_target"] <- restmt_wcap_target[level]
+}
+
+test_set$restmt_wcap_target <- 0
+for (level in levels(training_set$restmt_wcap)) {
+  test_set[test_set[, "restmt_wcap"]==level, "restmt_wcap_target"] <- restmt_wcap_target[level]
+}
+
+restmt_xint_target <- mapply(target_enc_train, variable = "restmt_xint", level = levels(training_set$restmt_xint), USE.NAMES = FALSE)
+names(restmt_xint_target) <- levels(training_set$restmt_xint)
+training_set$restmt_xint_target <- 0
+for (level in levels(training_set$restmt_xint)) {
+  training_set[training_set[, "restmt_xint"]==level, "restmt_xint_target"] <- restmt_xint_target[level]
+}
+
+test_set$restmt_xint_target <- 0
+for (level in levels(training_set$restmt_xint)) {
+  test_set[test_set[, "restmt_xint"]==level, "restmt_xint_target"] <- restmt_xint_target[level]
+}
+```
+
+```{r keep_encoded_required_variables, MESSAGE = FALSE, warning=FALSE}
+training_subset_ds_final_1 <- subset(training_set, select = -c(gvkey,tic, sp_rating,
+                                                              restmt_at,
+                                                              restmt_capx,
+                                                              restmt_cogs,
+                                                              restmt_dltt,
+                                                              restmt_epspi,
+                                                              restmt_ib,
+                                                              restmt_ni,
+                                                              restmt_nopi,
+                                                              restmt_reuna,
+                                                              restmt_teq,
+                                                              restmt_txt,
+                                                              restmt_wcap,
+                                                              restmt_xint))
+
+
+test_subset_ds_final_1 <- subset(test_set, select = -c(gvkey,tic, sp_rating,
+                                                              restmt_at,
+                                                              restmt_capx,
+                                                              restmt_cogs,
+                                                              restmt_dltt,
+                                                              restmt_epspi,
+                                                              restmt_ib,
+                                                              restmt_ni,
+                                                              restmt_nopi,
+                                                              restmt_reuna,
+                                                              restmt_teq,
+                                                              restmt_txt,
+                                                              restmt_wcap,
+                                                              restmt_xint))
+
+training_subset_ds_final_1 <- training_subset_ds_final_1 %>% 
+  relocate(litigated, .after = last_col())
+
+test_subset_ds_final_1 <- test_subset_ds_final_1 %>% 
+  relocate(litigated, .after = last_col())
+
+
+#summary(training_subset_ds_final_1)
+#training_subset_ds_final <- subset(training_subset_ds_final_1, select = -c(6:86))
+#test_subset_ds_final <- subset(test_subset_ds_final_1, select = -c(6:86))
+
+training_subset_ds_final <- training_subset_ds_final_1
+test_subset_ds_final <- test_subset_ds_final_1
+
+
+ncol(training_subset_ds_final)
+summary(training_subset_ds_final)
+```
+
+
+```{r, SCALE_VARIABLES}
+num_var_start_index <- 1
+num_var_end_index <- ncol(training_subset_ds_final) - 1
+target_var_index <- ncol(training_subset_ds_final)
+
+num_var_start_index
+num_var_end_index
+target_var_index
+test_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(test_subset_ds_final[, num_var_start_index:num_var_end_index], 
+                                       center = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, mean), 
+                                       scale = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, sd))
+training_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(training_subset_ds_final[, num_var_start_index:num_var_end_index])
+levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 1] <- "Yes"
+levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 0] <- "No"
+#summary(training_subset_ds_final)
+#training_subset_ds_final$litigated <- as.factor(training_subset_ds_final$litigated)
+#str(training_subset_ds_final[target_var_index])
+summary(training_subset_ds_final)
+```
+
+
+
+```{r random_forest}
+modelLookup("rf")
+rf_x <- training_subset_ds_final[,num_var_start_index:num_var_end_index]
+rf_y <- training_subset_ds_final[,target_var_index]
+recommended_mtry <- sqrt(ncol(rf_x))
+#rfGrid <- expand.grid(mtry = c(recommended_mtry-2, recommended_mtry, recommended_mtry+2))
+rfGrid <- expand.grid(mtry=recommended_mtry)
+```
+
+```{r random_forest_1}
+rfControl <- trainControl(method='repeatedcv', number=10, repeats=3)
+rf_onehot_model <- train(litigated~., 
+                      data=training_subset_ds_final, 
+                      method='rf', 
+                      metric='Accuracy', 
+                      tuneGrid=tunegrid, 
+                      trControl=control)
+
+```
+
+```{r prediction_random_forest}
+test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
+class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+```
+
+
+
+
+```{r evaluate_random_forest}
+rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$litigated)
+rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+
+```
+```{r auc_value_rando_forest}
+rocr_auc <- performance(rocr_pred, measure = "auc")
+auc_rf <- rocr_auc@y.values[[1]]
+auc_rf
+```
+
+
+```{r calibration_curve_random_forest}
+calibration_curve <- calibration(litigated ~ class_probabilities_onehot,
+data = test_subset_ds_final,
+class = 1)
+plot(calibration_curve)
+```
+
+```{r feature_importance_random_forest}
+rf_varImp <- varImp(rf_onehot_model, type = 2)
+plot(rf_varImp, top = 25)
+```
+```{r list_important_features_random_forest}
+rf_varImp
+```
+
+## Logistic Regression
+```{r logistic_regression_medical_dataset, message=FALSE}
+
+logistic_regression_model <- glm(litigated ~ 
+                                  cshtrd_m + 
+                                  sstk + 
+                                  txt + 
+                                  chech +
+                                  fopo +
+                                  restmt_epspi_mag +
+                                  capx +
+                                  cstk + 
+                                  cogs + 
+                                  restmt_nopi_mag + 
+                                  caps + 
+                                  ebit + 
+                                  re +
+                                  teq + 
+                                  ci +
+                                  ni +
+                                  epspi + 
+                                  ppegt
+                          ,data = training_subset_ds_final, family = binomial)
+
+test_subset_ds_final$prediction_target <- predict(logistic_regression_model,newdata = test_subset_ds_final[,-1*c(target_var_index:target_var_index)],type="response")
+test_subset_ds_final$prediction_target <- ifelse(test_subset_ds_final$prediction_target >= 0.5, 1, 0)
+logistic_regression_model
+```
+
+```{r logistic_regression_roc_curve}
+ rocr_pred <- prediction(test_subset_ds_final$prediction_target, test_subset_ds_final$litigated)
+ rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_auc_r}
+ rocr_auc <- performance(rocr_pred, measure = "auc")
+ auc_glm <- rocr_auc@y.values[[1]]
+ auc_glm
 ```
