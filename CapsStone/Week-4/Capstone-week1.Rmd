@@ -1462,10 +1462,6 @@ test_subset_ds_final_1 <- test_subset_ds_final_1 %>%
   relocate(litigated, .after = last_col())
 
 
-#summary(training_subset_ds_final_1)
-#training_subset_ds_final <- subset(training_subset_ds_final_1, select = -c(6:86))
-#test_subset_ds_final <- subset(test_subset_ds_final_1, select = -c(6:86))
-
 training_subset_ds_final <- training_subset_ds_final_1
 test_subset_ds_final <- test_subset_ds_final_1
 
@@ -1493,19 +1489,110 @@ summary(training_subset_ds_final)
 ```
 
 
+```{r  logisitic_regression_glm_1, MESSAGE = FALSE, warning=FALSE}
+glm_control <- trainControl(
+  method = "repeatedCv",
+  number = 10,
+  repeats = 3,
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE 
+)
+
+glm_model <- train(litigated ~
+                      ., 
+                      data = training_subset_ds_final, method = "glm", family = "binomial", trControl = glm_control)
+class_probabilities <- predict(glm_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+```
+
+```{r logistic_regression_glm_roc_curve, MESSAGE = FALSE, warning=FALSE}
+ glm_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$litigated)
+ glm_rocr_roc <- performance(glm_rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(glm_rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_glm_auc_r, MESSAGE = FALSE, warning=FALSE}
+ glm_rocr_auc <- performance(glm_rocr_pred, measure = "auc")
+ glm_auc <- glm_rocr_auc@y.values[[1]]
+ glm_auc
+```
+
+```{r gbm_1, MESSAGE = FALSE, warning=FALSE}
+gbm_control <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
+gbm_model <- train(litigated~., 
+                  data=training_subset_ds_final, 
+                  method = "gbm",
+                  trControl = gbm_control,
+                  verbose = FALSE)
+```
+
+```{r gbm_2, MESSAGE = FALSE, warning=FALSE}
+class_probabilities <- predict(gbm_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
+```
+
+```{r gbm_roc, MESSAGE = FALSE, warning=FALSE}
+gbm_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+gbm_rocr_roc <- performance(gbm_rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(gbm_rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+```
+
+```{r gbm_auc, MESSAGE = FALSE, warning=FALSE}
+gbm_rocr_auc <- performance(gbm_rocr_pred, measure = "auc")
+gbm_auc <- gbm_rocr_auc@y.values[[1]]
+gbm_auc
+```
+
+
+
+```{r  glmnet_1, MESSAGE = FALSE, warning=FALSE}
+glmnet_control <- trainControl(
+  method = "cv",
+  number = 10,
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE 
+)
+
+glmnet_model <- train(litigated ~ ., data = training_subset_ds_final, method = "glmnet", family = "binomial", trControl = glmnet_control)
+class_probabilities <- predict(glmnet_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
+```
+
+```{r logistic_regression_glmnet_roc_curve, MESSAGE = FALSE, warning=FALSE}
+ glmnet_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+ glmnet_rocr_roc <- performance(glmnet_rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(glmnet_rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_glmnet_auc_r, MESSAGE = FALSE, warning=FALSE}
+ glmnet_rocr_auc <- performance(glmnet_rocr_pred, measure = "auc")
+ glmnet_auc <- glmnet_rocr_auc@y.values[[1]]
+ glmnet_auc
+```
 
 ```{r random_forest, MESSAGE = FALSE, warning=FALSE}
-modelLookup("rf")
 rf_x <- training_subset_ds_final[,num_var_start_index:num_var_end_index]
 rf_y <- training_subset_ds_final[,target_var_index]
 recommended_mtry <- sqrt(ncol(rf_x))
-#rfGrid <- expand.grid(mtry = c(recommended_mtry-2, recommended_mtry, recommended_mtry+2))
 rfGrid <- expand.grid(mtry=recommended_mtry)
 ```
 
 ```{r random_forest_1, MESSAGE = FALSE, warning=FALSE}
 rfControl <- trainControl(method='repeatedcv', number=10, repeats=3)
-rf_onehot_model <- train(litigated~., 
+rf_model <- train(litigated~., 
                       data=training_subset_ds_final, 
                       method='rf', 
                       metric='Accuracy', 
@@ -1515,18 +1602,17 @@ rf_onehot_model <- train(litigated~.,
 ```
 
 ```{r prediction_random_forest, MESSAGE = FALSE, warning=FALSE}
-test_subset_ds_final$prediction_onehot <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)])
-class_probabilities <- predict(rf_onehot_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
-test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+class_probabilities <- predict(rf_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
 ```
 
 
 
 
 ```{r evaluate_random_forest, MESSAGE = FALSE, warning=FALSE}
-rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$litigated)
-rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
-plot(rocr_roc,
+rf_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+rf_rocr_roc <- performance(rf_rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rf_rocr_roc,
 colorize = TRUE,
 print.cutoffs.at = seq(0, 1, by = 0.1),
 text.adj = c(-0.5, 1),
@@ -1535,73 +1621,42 @@ abline(a = 0, b = 1)
 
 ```
 ```{r auc_value_rando_forest, MESSAGE = FALSE, warning=FALSE}
-rocr_auc <- performance(rocr_pred, measure = "auc")
-auc_rf <- rocr_auc@y.values[[1]]
-auc_rf
+rf_rocr_auc <- performance(rf_rocr_pred, measure = "auc")
+rf_auc <- rf_rocr_auc@y.values[[1]]
+rf_auc
 ```
 
 
 ```{r calibration_curve_random_forest, MESSAGE = FALSE, warning=FALSE}
-calibration_curve <- calibration(litigated ~ class_probabilities_onehot,
-data = test_subset_ds_final,
-class = 1)
+calibration_curve <- calibration(litigated ~ class_probabilities_litigated,
+                                 data = test_subset_ds_final,
+                                 class = 1)
 plot(calibration_curve)
 ```
 
 ```{r feature_importance_random_forest, MESSAGE = FALSE, warning=FALSE}
-rf_varImp <- varImp(rf_onehot_model, type = 2)
+rf_varImp <- varImp(rf_model, type = 2)
 plot(rf_varImp, top = 25)
 ```
 ```{r list_important_features_random_forest}
 rf_varImp
 ```
 
-## Logistic Regression
-```{r logistic_regression_medical_dataset, MESSAGE = FALSE, warning=FALSE}
 
-logistic_regression_model <- glm(litigated ~ 
-                                  cshtrd_m + 
-                                  sstk + 
-                                  txt + 
-                                  chech +
-                                  fopo +
-                                  restmt_epspi_mag +
-                                  capx +
-                                  cstk + 
-                                  cogs + 
-                                  restmt_nopi_mag + 
-                                  caps + 
-                                  ebit + 
-                                  re +
-                                  teq + 
-                                  ci +
-                                  ni +
-                                  epspi + 
-                                  ppegt
-                          ,data = training_subset_ds_final, family = binomial)
 
-test_subset_ds_final$prediction_target <- predict(logistic_regression_model,newdata = test_subset_ds_final[,-1*c(target_var_index:target_var_index)],type="response")
-test_subset_ds_final$prediction_target <- ifelse(test_subset_ds_final$prediction_target >= 0.5, 1, 0)
-logistic_regression_model
-```
 
-```{r logistic_regression_roc_curve, MESSAGE = FALSE, warning=FALSE}
- rocr_pred <- prediction(test_subset_ds_final$prediction_target, test_subset_ds_final$litigated)
- rocr_roc <- performance(rocr_pred, measure = "tpr", x.measure = "fpr")
- plot(rocr_roc,
- colorize = TRUE,
- print.cutoffs.at = seq(0, 1, by = 0.1),
- text.adj = c(-0.5, 1),
- lwd = 2)
- abline(a = 0, b = 1)
-```
-```{r logistic_regression_auc_r, MESSAGE = FALSE, warning=FALSE}
- rocr_auc <- performance(rocr_pred, measure = "auc")
- auc_glm <- rocr_auc@y.values[[1]]
- auc_glm
-```
+
 
 ```{r}
 nrow(training_subset_ds_final)
 nrow(test_subset_ds_final)
 ```
+
+
+
+
+
+
+
+
+
