@@ -31,6 +31,7 @@ fundamentals_ds <- read.csv("./data/Fundamentals_DS.csv", na.strings=c(""," "))
 nrow(fundamentals_ds)
 ```
 
+### Filter the dataset with the sector assigned.
 ```{r load_data_for_specific_sector, MESSAGE = FALSE, warning=FALSE}
 fundamentals_ds_sjm <- fundamentals_ds %>%
   filter(tic == 'SJM')
@@ -39,7 +40,7 @@ fundamentals_ds <- fundamentals_ds %>%
   filter(gsector == gsector_sjm)
 nrow(fundamentals_ds)
 ```
-
+### Filter the data to restrict the dataset to contain all annually reported statements, and exclude restatements.
 ```{r filter_data_datafmt, MESSAGE = FALSE, warning=FALSE}
 names(fundamentals_ds)[names(fundamentals_ds) == "ï..gvkey"] <- "gvkey"
 fundamentals_ds_filter <- fundamentals_ds %>%
@@ -47,6 +48,7 @@ fundamentals_ds_filter <- fundamentals_ds %>%
 nrow(fundamentals_ds_filter)
 ```
 
+### Remove all the columns which contain 25% or greater NA or null values 
 ```{r remove_cols_with_high_na, MESSAGE = FALSE, warning=FALSE}
 fundamentals_ds_filter_1 <- fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.25 ]
 ncol(fundamentals_ds_filter_1)
@@ -57,6 +59,7 @@ nrow(fundamentals_ds_filter_1)
 write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_1.csv", row.names=FALSE)
 ```
 
+### Remove all the columns which are related to general information of the company like address, phone, url etc...
 ```{r write_filter_after_na_removal, MESSAGE = FALSE, warning=FALSE}
 #fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[ lapply( fundamentals_ds_filter_1, function(x) sum(is.na(x)) / length(x) ) < 0.25 ]
 ncol(fundamentals_ds_filter_1)
@@ -68,6 +71,7 @@ ncol(fundamentals_ds_filter_1)
 nrow(fundamentals_ds_filter_1)
 ```
 
+### Identify columns which have values which are new to zero variance
 ```{r identify_near_zero_variance, MESSAGE = FALSE, warning=FALSE}
 nzv_ds <- nearZeroVar(fundamentals_ds_filter_1, saveMetrics = TRUE)
 nzv_ds <- nzv_ds[nzv_ds[,"nzv"] > 0, ]
@@ -75,7 +79,7 @@ nzv_ds
 ```
 
 
-
+### Remove columns which have values which are of zero variance
 ```{r remove_near_zero_variance_columns, MESSAGE = FALSE, warning=FALSE}
 nzv_ds_cols <- nearZeroVar(fundamentals_ds_filter_1)
 fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[, -nzv_ds_cols]
@@ -87,7 +91,7 @@ ncol(fundamentals_ds_filter_1)
 nrow(fundamentals_ds_filter_1)
 ```
 
-
+### Based on manual analysis of the columns and considering the end goal, remove the variables which logically do not make sense or might have correlattion with existing set of variables.
 ```{r remove_not_required_variables, MESSAGE = FALSE, warning=FALSE }
 fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(acctstd,src,acodo,acox,
                                                                           aox,capxv,ceql,cibegni,cicurr,cidergl,
@@ -113,7 +117,8 @@ nrow(fundamentals_ds_filter_1)
 ```
 
 
-
+### Filter and create a seperate dataset for restatement 
+#### Remove all the columns which contain 10% or greater NA or null values  
 ```{r filter_data_re_stmt, MESSAGE = FALSE, warning=FALSE}
 fundamentals_restmt_ds_filter <- fundamentals_ds %>%
   filter(datafmt == 'SUMM_STD' & gsector == gsector_sjm)
@@ -126,7 +131,7 @@ summary(fundamentals_restmt_ds_filter)
 nrow(fundamentals_restmt_ds_filter)
 ```
 
-
+### Add restement variables and the magnitude as pecentages 
 ```{r compare_restatement_rows, MESSAGE = FALSE, warning=FALSE}
 
 sample_restmt_ds_filter <- fundamentals_restmt_ds_filter #%>%
@@ -428,15 +433,12 @@ for (row in 1:nrow(sample_restmt_ds_filter)){
 nrow(fundamentals_ds_filter_1)
 ```
 
-
+### Removing aco == NA as all those rows do not have any data
 ```{r summary_ds_with_restamt_flags, MESSAGE = FALSE, warning=FALSE}
 nrow(fundamentals_ds_filter_1)
-# Removing aco == NA as all those rows do not have any data
 fundamentals_ds_filter_2 <- subset(fundamentals_ds_filter_1, !is.na(aco))
 nrow(fundamentals_ds_filter_2)
 fundamentals_ds_filter_2[is.na(fundamentals_ds_filter_2)] <- 0
-#nrow(fundamentals_ds_filter_2)
-#head(fundamentals_ds_filter_2)
 summary(fundamentals_ds_filter_2)
 ```
 
@@ -446,9 +448,8 @@ nrow(fundamentals_ds_filter_2)
 ```
 
 
-
-
-
+### The dataset contains company wise data across financial year, this dataset needs to be consolidate to single ror for each of the company 
+### So group the dataset by gvkey and summarize all variables 
 ```{r final_ds_preparation, MESSAGE = FALSE, warning=FALSE}
 final_ds_initial <- fundamentals_ds_filter_2 %>%
   group_by(gvkey,tic) %>%
@@ -585,6 +586,7 @@ summary(final_ds_initial)
 nrow(final_ds_initial)
 ```
 
+### Adjust the restement values, in case if the restate percentage is greater than 50% then mark restatement as 1 or else mark as 0 For 0/false restatement magnitude is marked as 0.
 ```{r adjust_restatement_flag, MESSAGE = FALSE, warning=FALSE}
 final_ds_initial_1 <- final_ds_initial 
 
@@ -874,7 +876,7 @@ nrow(final_ds_initial_2)
 write.csv(final_ds_initial_2, file = "data/final_ds_initial_2.csv", row.names=FALSE, na="")
 ```
 
-
+### This first step where all the correlated variables are idenfied and then removed. This will reduce the Collinearity. 
 ```{r identify_correlation, MESSAGE = FALSE, warning=FALSE}
 cor_matrix_ds <- subset(final_ds_initial_2, select = -c(gvkey,tic, aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
                                               ib,pi,
@@ -888,7 +890,6 @@ cor_matrix %>%
   group_by(value) %>%
   filter(row_number()==1)
 #corrplot(cor_matrix, method = "ellipse")
-
 #ncol(cor_matrix_ds)
 ```
 
@@ -900,12 +901,18 @@ summary(fundamentals_final_ds)
 nrow(fundamentals_final_ds)
 ```
 
+### Loan stocks data file 
 ```{r load_stocks_data, MESSAGE = FALSE, warning=FALSE}
 stocks_init_ds <- read.csv("./data/Stocks_DS.csv", na.strings=c(""," "))
 nrow(stocks_init_ds)
 ```
 
-
+### From Stocks daat file choose only certain variables 
+### prccd	==> Price - Close - Daily
+### prchd	==> Price - High - Daily
+### prcld	==> Price - Low - Daily
+### prcod	==> Price - Open - Daily
+### trfd	==> Daily Total Return Factor
 ```{r stocks_data_filter, warning=FALSE}
 names(stocks_init_ds)[names(stocks_init_ds) == "ï..gvkey"] <- "gvkey"
 stocks_init_limited_cols <- subset(stocks_init_ds, select = c(gvkey,cshtrd,prccd,prchd,prcld,prcod,trfd))
@@ -926,6 +933,8 @@ stocks_grouped_data <- stocks_init_limited_cols %>%
    )
 ```
 
+
+### Merge the stocks dataset with final dataset.
 ```{r, merge_fundamental_stocks_data, warning=FALSE}
 
 #fundamental_stocks_data <- fundamentals_final_ds %>%
@@ -958,15 +967,15 @@ fundamental_stocks_data <- fundamentals_final_ds[!is.na(fundamentals_final_ds$cs
 ```
 
 ```{r identify_correlation_1, MESSAGE = FALSE, warning=FALSE}
-cor_matrix_ds <- subset(fundamental_stocks_data, select = -c(gvkey,tic))
-cor_matrix <- cor(cor_matrix_ds)
-cor_matrix %>%
-  as.data.frame() %>%
-  mutate(var1 = rownames(.)) %>%
-  gather(var2, value, -var1) %>%
-  arrange(desc(value)) %>%
-  group_by(value) %>%
-  filter(row_number()==1)
+# cor_matrix_ds <- subset(fundamental_stocks_data, select = -c(gvkey,tic))
+# cor_matrix <- cor(cor_matrix_ds)
+# cor_matrix %>%
+#   as.data.frame() %>%
+#   mutate(var1 = rownames(.)) %>%
+#   gather(var2, value, -var1) %>%
+#   arrange(desc(value)) %>%
+#   group_by(value) %>%
+#   filter(row_number()==1)
 ```
 
 ```{r drop_cols_based_on_above_correlations, warning=FALSE}
@@ -977,7 +986,7 @@ nrow(fundamental_stocks_data_final)
 
 
 
-
+### Load securities dataset
 ```{r load_securities_data, MESSAGE = FALSE, warning=FALSE}
 securities_init_ds <- read.csv("./data/Securities_DS.csv", na.strings=c(""," "))
 names(securities_init_ds)[names(securities_init_ds) == "ï..gvkey"] <- "gvkey"
@@ -994,6 +1003,9 @@ securities_init_ds_1 <- subset(securities_init_ds, select = -c(iid,isalrt,primis
 #summary(securities_init_ds_1)
 ```
 
+### Choose following variables from the securities dataset 
+### trfm	  ==> Monthly Total Return Factor
+### dvrate	==> Dividend Rate - Monthly
 ```{r merge_stock_data, warning=FALSE, message=FALSE}
 fund_stock_securities_ds <- fundamental_stocks_data_final 
 securities_init_ds_2 <- securities_init_ds_1 %>%
@@ -1040,7 +1052,10 @@ for (row in 1:nrow(fund_stock_securities_ds)){
 #summary(fund_stock_securities_ds)
 ```
 
-
+### Load ratings dataset.
+### Load this variable splticrm	==> S&P Domestic Long Term Issuer Credit Rating
+### splticrm	- This is categorical variable with unique ratings, each of the rating are given numeric values.
+### Highest rating gets high numeric values and as rating decreases the numerica value assigned decreases. 
 ```{r load_ratings_data, MESSAGE = FALSE, warning=FALSE}
 ratings_init_ds <- read.csv("./data/Ratings_DS.csv", na.strings=c("", " "))
 names(ratings_init_ds)[names(ratings_init_ds) == "ï..gvkey"] <- "gvkey"
@@ -1082,7 +1097,11 @@ ratings_init_ds$splticrm_num_value <- factor(ratings_init_ds$splticrm_num_value)
 #str(ratings_init_ds)
 ```
 
-
+### Merge the ratings dataset and fundamentals dataset, by assigning the rating from ratings dataset to each company using gvkey  
+### Along with rating, additional variable is added which indicates whether the rating has 
+###     1. Increased
+###     2. Decreased 
+###     3. NOCHANGE
 ```{r, consolidate_ds_fundamental_stock_rating, warning=FALSE, message=FALSE}
 fund_stock_securities_rating_ds <- fund_stock_securities_ds #%>%
   #filter(gvkey == 1078)
@@ -1114,7 +1133,7 @@ fund_stock_securities_rating_ds$sp_rating <- factor(fund_stock_securities_rating
 #summary(fund_stock_securities_rating_ds)
 ```
 
-
+### Load Sca filing dataset for the target variable 
 ```{r load_sca_filings_data, MESSAGE = FALSE, warning=FALSE}
 sca_fillings_ds <- read.csv("./data/SCA_Filings_and_Settlements.csv", na.strings=c(""," "))
 sca_fillings_ds$SettlementAmount = gsub("\\$", "", sca_fillings_ds$SettlementAmount)
@@ -1122,6 +1141,9 @@ sca_fillings_ds$SettlementAmount = as.numeric(gsub("\\,", "", sca_fillings_ds$Se
 #summary(sca_fillings_ds)
 ```
 
+### Add the target variable litigated to the dataset under analysis.
+### From each of the conany record identify if has any sca filing from the sca fileing dataset,if entry exists then mark for that company lititgated = true or else if the record ### does not exist in sca filing  for that particular comapny then mark litigate attribute as false.
+### Also in case of litigation indentify if there is any settlement amount and add same to main dataset. In case if multiple settlement amount exists for particular company then ### take the maximum settlement amount.  
 ```{r merge_sca_filings_data, MESSAGE = FALSE, warning=FALSE}
 fund_stock_securities_rating_ds$litigated <- 0
 fund_stock_securities_rating_ds$litigation_settlement <- NA
@@ -1154,6 +1176,7 @@ fund_stock_securities_rating_ds$litigated <- as.factor(fund_stock_securities_rat
 ```
 
 
+### Based on manual review. idetify the columns that need to be removed from the final dataset.
 ```{r clean_up_not_required_columns, MESSAGE = FALSE, warning=FALSE}
 fund_stock_securities_rating_ds_final <- subset(fund_stock_securities_rating_ds, select = -c(aocidergl, aocipen, ceqt, cstkcv, dd1,
                                                     dpc,icapt, intan, intano, ivncf, ivst,
@@ -1170,15 +1193,15 @@ fund_stock_securities_rating_ds_final <- subset(fund_stock_securities_rating_ds,
 ```
 
 ```{r identify_correlation_2, MESSAGE = FALSE, warning=FALSE}
-cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated))
-cor_matrix <- cor(cor_matrix_ds)
-cor_matrix %>%
-  as.data.frame() %>%
-  mutate(var1 = rownames(.)) %>%
-  gather(var2, value, -var1) %>%
-  arrange(desc(value)) %>%
-  group_by(value) %>%
-  filter(row_number() == 1)
+# cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated))
+# cor_matrix <- cor(cor_matrix_ds)
+# cor_matrix %>%
+#   as.data.frame() %>%
+#   mutate(var1 = rownames(.)) %>%
+#   gather(var2, value, -var1) %>%
+#   arrange(desc(value)) %>%
+#   group_by(value) %>%
+#   filter(row_number() == 1)
 ```
 
 # DE ==> Debt to equity ratio
@@ -1199,7 +1222,22 @@ trfm_median <- median(as.numeric(fund_stock_securities_rating_ds_final$trfm_m),n
 fund_stock_securities_rating_ds_final$trfm_m[is.na(fund_stock_securities_rating_ds_final$trfm_m)] <- trfm_median
 ```
 
+### From the final dataset identify correlated variables 
 ```{r identify_correlation_3, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number() == 1)
+
+```
+
+#### Remove Highly correlated variables, in general if correlation value is > 0.9 and check the correlation matrix values
+```{r identify_correlation_4, MESSAGE = FALSE, warning=FALSE}
 cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated, prchd_m, prcld_m, ni, restmt_ib_mag, ceq, oancf, cogs, ppegt,
                                                                            lt, ci, restmt_dltt_mag, invt, che, ap, at, xint, gp, act, txt, capx,
                                                                            dm, dn, dpact,fiao,fincf,sppiv,fopo)) #latest removed variables
@@ -1216,8 +1254,7 @@ cor_matrix %>%
 
 
 
-
-
+### Remove Highly correlated variables from above analysis.
 ```{r ds_final_rows_summary_analysis, MESSAGE = FALSE, warning=FALSE}
 
 fund_stock_securities_rating_ds_final_10 <- subset(fund_stock_securities_rating_ds_final, select = -c(prchd_m, prcld_m, ni, restmt_ib_mag, 
@@ -1229,6 +1266,7 @@ fund_stock_securities_rating_ds_final_10 <- subset(fund_stock_securities_rating_
 #summary(fund_stock_securities_rating_ds_final)
 ```
 
+### Convert all categorical variables to factor
 ```{r convert_categorical_to_factor, MESSAGE = FALSE, warning=FALSE}
 ds_final <- fund_stock_securities_rating_ds_final_10
 ds_final <- subset(ds_final, select = -c(dvrate_m, litigation_settlement))
@@ -1252,7 +1290,7 @@ ds_final$litigated <- as.factor(ds_final$litigated)
 
 
 
-
+### Perform target ecoding to all the categorical variables 
 ```{r encode_categorical_variables, MESSAGE = FALSE, warning=FALSE}
 # split the data into training and (held-out) test sets
 training_ind <- createDataPartition(ds_final$litigated,
@@ -1451,7 +1489,7 @@ for (level in levels(training_set$restmt_xint)) {
   test_set[test_set[, "restmt_xint"]==level, "restmt_xint_target"] <- restmt_xint_target[level]
 }
 ```
-
+### Remove the restatement variables which have near zero variance
 ```{r keep_encoded_required_variables, MESSAGE = FALSE, warning=FALSE}
 training_subset_ds_final_1 <- subset(training_set, select = -c(gvkey,tic, sp_rating,
                                                               restmt_at,
@@ -1506,8 +1544,7 @@ summary(training_subset_ds_final)
 
 
 
-
-
+### Scale the variables. 
 ```{r, SCALE_VARIABLES, MESSAGE = FALSE, warning=FALSE}
 num_var_start_index <- 1
 num_var_end_index <- ncol(training_subset_ds_final) - 1
@@ -1583,6 +1620,15 @@ test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
  glm_auc
 ```
 
+```{r glm_confusion_matrix}
+set.seed(123)
+glm_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
+glm_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
+glm_confusion_matrix <- confusionMatrix(factor(glm_class_probabilities_litigated), factor(glm_litigated), positive = "Yes")
+glm_confusion_matrix
+glm_accuracy <- glm_confusion_matrix$overall["Accuracy"]
+```
+
 ```{r  glmnet_1, MESSAGE = FALSE, warning=FALSE}
 glmnet_control <- trainControl(
   method = "cv",
@@ -1611,6 +1657,15 @@ test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
  glmnet_auc <- glmnet_rocr_auc@y.values[[1]]
  glmnet_auc
 ```
+```{r glmnet_confusion_matrix}
+set.seed(123)
+glmnet_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
+glmnet_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
+glmnet_confusion_matrix <- confusionMatrix(factor(glmnet_class_probabilities_litigated), factor(glmnet_litigated), positive = "Yes")
+glmnet_confusion_matrix
+glmnet_accuracy <- glmnet_confusion_matrix$overall["Accuracy"]
+```
+
 
 ```{r  logisitic_regression_lda_1, MESSAGE = FALSE, warning=FALSE}
 lda_control <- trainControl(
@@ -1640,6 +1695,16 @@ test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
  lda_auc <- lda_rocr_auc@y.values[[1]]
  lda_auc
 ```
+
+```{r lda_confusion_matrix}
+set.seed(123)
+lda_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
+lda_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
+lda_confusion_matrix <- confusionMatrix(factor(lda_class_probabilities_litigated), factor(lda_litigated), positive = "Yes")
+lda_confusion_matrix
+lda_accuracy <- lda_confusion_matrix$overall["Accuracy"]
+```
+
 
 ```{r gbm_1, MESSAGE = FALSE, warning=FALSE}
 gbm_control <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
@@ -1673,6 +1738,15 @@ gbm_auc <- gbm_rocr_auc@y.values[[1]]
 gbm_auc
 ```
 
+```{r gbm_confusion_matrix}
+set.seed(123)
+gbm_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
+gbm_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
+gbm_confusion_matrix <- confusionMatrix(factor(gbm_class_probabilities_litigated), factor(gbm_litigated), positive = "Yes")
+gbm_confusion_matrix
+gbm_accuracy <- gbm_confusion_matrix$overall["Accuracy"]
+```
+
 ```{r feature_importance_gbm, MESSAGE = FALSE, warning=FALSE}
 gbm_varImp <- varImp(gbm_model, type = 2)
 plot(gbm_varImp, top = 25)
@@ -1699,6 +1773,15 @@ tree_rocr_auc <- performance(tree_rocr_pred, measure = "auc")
 tree_auc <- tree_rocr_auc@y.values[[1]]
 tree_auc
 ```
+```{r tree_confusion_matrix}
+set.seed(123)
+tree_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
+tree_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
+tree_confusion_matrix <- confusionMatrix(factor(tree_class_probabilities_litigated), factor(tree_litigated), positive = "Yes")
+tree_confusion_matrix
+tree_accuracy <- tree_confusion_matrix$overall["Accuracy"]
+```
+
 
 ```{r plot_tree}
 rpart.plot(tree_model)
@@ -1749,6 +1832,14 @@ rf_auc <- rf_rocr_auc@y.values[[1]]
 rf_auc
 ```
 
+```{r rf_confusion_matrix}
+set.seed(123)
+rf_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
+rf_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
+rf_confusion_matrix <- confusionMatrix(factor(rf_class_probabilities_litigated), factor(rf_litigated), positive = "Yes")
+rf_confusion_matrix
+rf_accuracy <- rf_confusion_matrix$overall["Accuracy"]
+```
 
 ```{r calibration_curve_random_forest, MESSAGE = FALSE, warning=FALSE}
 calibration_curve <- calibration(litigated ~ class_probabilities_litigated,
@@ -1803,48 +1894,69 @@ nn_auc
 
 ```
 
+```{r nn_confusion_matrix}
+set.seed(123)
+nn_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
+nn_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
+nn_confusion_matrix <- confusionMatrix(factor(nn_class_probabilities_litigated), factor(nn_litigated), positive = "Yes")
+nn_confusion_matrix
+nn_accuracy <- nn_confusion_matrix$overall["Accuracy"]
+```
+
 ```{r, build_data_frame_auc}
-auc_df <- data.frame("algorithm_method" = c("glm"), "auc" = c(glm_auc) * 100)
+auc_df <- data.frame("algorithm_method" = c("glm"), "auc" = c(glm_auc) * 100, "accuracy" = c(glm_accuracy) * 100)
 
-auc_df_temp <- data.frame("algorithm_method" = c("glmnet"), "auc" = c(glmnet_auc)  * 100)
+auc_df_temp <- data.frame("algorithm_method" = c("glmnet"), "auc" = c(glmnet_auc)  * 100, "accuracy" = c(glmnet_accuracy) * 100)
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("lda"), "auc" = c(lda_auc) * 100)
+auc_df_temp <- data.frame("algorithm_method" = c("lda"), "auc" = c(lda_auc) * 100, "accuracy" = c(lda_accuracy) * 100)
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("gbm"), "auc" = c(gbm_auc) * 100)
+auc_df_temp <- data.frame("algorithm_method" = c("gbm"), "auc" = c(gbm_auc) * 100, "accuracy" = c(gbm_accuracy) * 100)
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("tree"), "auc" = c(tree_auc) * 100)
+auc_df_temp <- data.frame("algorithm_method" = c("tree"), "auc" = c(tree_auc) * 100, "accuracy" = c(tree_accuracy) * 100)
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("rf"), "auc" = c(rf_auc) * 100)
+auc_df_temp <- data.frame("algorithm_method" = c("rf"), "auc" = c(rf_auc) * 100, "accuracy" = c(rf_accuracy) * 100)
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("nn"), "auc" = c(nn_auc) * 100)
+auc_df_temp <- data.frame("algorithm_method" = c("nn"), "auc" = c(nn_auc) * 100, "accuracy" = c(nn_accuracy) * 100)
 auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df <- auc_df %>% 
+  arrange(desc(auc))
 
 auc_df
 ```
 
 ```{r plor_compare_auc}
-ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
-  geom_bar(colour="black", stat="identity", fill = "darkred") +
+auc_plot <- ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
+  geom_bar(colour="black", stat="identity", fill="tomato3") +
   ylab("Auc value") +
   xlab("Algorithm methods") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle =50, hjust=0.75))
+
+accuracy_plot <- ggplot(data=auc_df, aes(x=algorithm_method, y=accuracy)) +
+  geom_bar(colour="black", stat="identity", fill = "steelblue") +
+  ylab("Consusion matrix accuracy value") +
+  xlab("Algorithm methods") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))
+
+grid.arrange(auc_plot, accuracy_plot,ncol=2)
+
 ```
 
 
 
-```{r}
+```{r rows_columns_1}
 nrow(training_subset_ds_final)
 nrow(test_subset_ds_final)
 ncol(training_subset_ds_final)
 colnames(training_subset_ds_final)
 ```
-
 
 
 
