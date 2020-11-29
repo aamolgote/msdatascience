@@ -1,0 +1,1871 @@
+---
+title: "Capstone Project - Week1-8"
+author: "Amol Gote"
+date: "12/18/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library_setup, MESSAGE = FALSE, warning=FALSE}
+set.seed(123)
+library(tidyverse)
+library(caret)
+library(corrplot)
+library(tidyverse)
+library(ROCR)
+library(gbm)
+library(ROSE)
+library(gridExtra)
+library(parallel) 
+library(tree)
+library(rpart)
+library(rpart.plot)
+```
+
+
+```{r load_data, MESSAGE = FALSE, warning=FALSE}
+fundamentals_ds <- read.csv("./data/Fundamentals_DS.csv", na.strings=c(""," "))
+nrow(fundamentals_ds)
+```
+
+```{r load_data_for_specific_sector, MESSAGE = FALSE, warning=FALSE}
+fundamentals_ds_sjm <- fundamentals_ds %>%
+  filter(tic == 'SJM')
+gsector_sjm <- head(fundamentals_ds_sjm$gsector, 1)
+fundamentals_ds <- fundamentals_ds %>%
+  filter(gsector == gsector_sjm)
+nrow(fundamentals_ds)
+```
+
+```{r filter_data_datafmt, MESSAGE = FALSE, warning=FALSE}
+names(fundamentals_ds)[names(fundamentals_ds) == "ï..gvkey"] <- "gvkey"
+fundamentals_ds_filter <- fundamentals_ds %>%
+  filter(datafmt == 'STD') 
+nrow(fundamentals_ds_filter)
+```
+
+```{r remove_cols_with_high_na, MESSAGE = FALSE, warning=FALSE}
+fundamentals_ds_filter_1 <- fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.25 ]
+ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
+```
+
+```{r write_file, MESSAGE = FALSE, warning=FALSE}
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_1.csv", row.names=FALSE)
+```
+
+```{r write_filter_after_na_removal, MESSAGE = FALSE, warning=FALSE}
+#fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[ lapply( fundamentals_ds_filter_1, function(x) sum(is.na(x)) / length(x) ) < 0.25 ]
+ncol(fundamentals_ds_filter_1)
+fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(datadate,indfmt,curncd,consol,popsrc,conm,curcd,apdedate,fdate,add1,addzip,busdesc,
+                                                                         city,conml,weburl,phone,loc,final,fyr,acchg,fic,
+                                                                         xido,xidoc,naicsh,sich,au,auop,auopic,fyrc,ggroup,gind,gsector,gsubind,priusa))
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_2.csv", row.names=FALSE, na="")
+ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
+```
+
+```{r identify_near_zero_variance, MESSAGE = FALSE, warning=FALSE}
+nzv_ds <- nearZeroVar(fundamentals_ds_filter_1, saveMetrics = TRUE)
+nzv_ds <- nzv_ds[nzv_ds[,"nzv"] > 0, ]
+nzv_ds
+```
+
+
+
+```{r remove_near_zero_variance_columns, MESSAGE = FALSE, warning=FALSE}
+nzv_ds_cols <- nearZeroVar(fundamentals_ds_filter_1)
+fundamentals_ds_filter_1 <- fundamentals_ds_filter_1[, -nzv_ds_cols]
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_3.csv", row.names=FALSE, na="")
+```
+
+```{r, column_count_after_nzv_removal, MESSAGE = FALSE}
+ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
+```
+
+
+```{r remove_not_required_variables, MESSAGE = FALSE, warning=FALSE }
+fundamentals_ds_filter_1 <- subset(fundamentals_ds_filter_1, select = -c(acctstd,src,acodo,acox,
+                                                                          aox,capxv,ceql,cibegni,cicurr,cidergl,
+                                                                          cimii,cipen,cisecgl,citotal,cshfd,cshpri,dclo,dcpstk,
+                                                                          dltis,dlto,dltr,do,dp,dpvieb,drc,
+                                                                          dv,dvc,epsfx,epspx,exre,
+                                                                          fopox,ibadj,ibc,ibcom,ibmii,
+                                                                          invch,ivaco,ivao,lco,
+                                                                          lcox,lcoxdr,lct,loxdr,mibn,
+                                                                          mibt,mii,msa,niadj,np,oprepsx,pnca,ppent,ppeveb,
+                                                                          recco,rectr,sale,spced,spceeps,
+                                                                          tstkc,txbco,txbcof,txdb,
+                                                                          txdbca,txdi,
+                                                                          txditc,txndb,xopr,exchg,costat,
+                                                                          ceoso,cfoso,idbflag,naics,sic,stko))
+write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_4.csv", row.names=FALSE, na="")
+```
+
+```{r column_count_after_col_removal, MESSAGE = FALSE, warning=FALSE}
+ncol(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
+#fundamentals_ds_filter_1
+```
+
+
+
+```{r filter_data_re_stmt, MESSAGE = FALSE, warning=FALSE}
+fundamentals_restmt_ds_filter <- fundamentals_ds %>%
+  filter(datafmt == 'SUMM_STD' & gsector == gsector_sjm)
+  #filter(datafmt == 'SUMM_STD')
+  
+std_cols <- colnames(fundamentals_ds_filter_1)
+fundamentals_restmt_ds_filter <- subset(fundamentals_restmt_ds_filter, select = c(std_cols))
+fundamentals_restmt_ds_filter <- fundamentals_restmt_ds_filter[ lapply( fundamentals_restmt_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.1 ]
+summary(fundamentals_restmt_ds_filter)
+nrow(fundamentals_restmt_ds_filter)
+```
+
+
+```{r compare_restatement_rows, MESSAGE = FALSE, warning=FALSE}
+
+sample_restmt_ds_filter <- fundamentals_restmt_ds_filter #%>%
+  #filter(gvkey == 1076)
+sample_ds_filter <- fundamentals_ds_filter_1 #%>%
+  #filter(gvkey == 1076)
+#nrow(sample_restmt_ds_filter)
+#nrow(sample_ds_filter)
+#head(sample_restmt_ds_filter)
+#head(sample_ds_filter)
+
+fundamentals_ds_filter_1$restmt_at <- 0
+fundamentals_ds_filter_1$restmt_at_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_capx <- 0
+fundamentals_ds_filter_1$restmt_capx_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_cogs <- 0
+fundamentals_ds_filter_1$restmt_cogs_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_dltt <- 0
+fundamentals_ds_filter_1$restmt_dltt_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_epsfi <- 0
+fundamentals_ds_filter_1$restmt_epsfi_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_epspi <- 0
+fundamentals_ds_filter_1$restmt_epspi_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_ib <- 0
+fundamentals_ds_filter_1$restmt_ib_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_ni <- 0
+fundamentals_ds_filter_1$restmt_ni_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_nopi <- 0
+fundamentals_ds_filter_1$restmt_nopi_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_pi <- 0
+fundamentals_ds_filter_1$restmt_pi_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_reuna <- 0
+fundamentals_ds_filter_1$restmt_reuna_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_seq <- 0
+fundamentals_ds_filter_1$restmt_seq_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_teq <- 0
+fundamentals_ds_filter_1$restmt_teq_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_txt <- 0
+fundamentals_ds_filter_1$restmt_txt_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_wcap <- 0
+fundamentals_ds_filter_1$restmt_wcap_mag <- 0.0
+
+#fundamentals_ds_filter_1$restmt_ci <- 0
+#fundamentals_ds_filter_1$restmt_ci_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_xint <- 0
+fundamentals_ds_filter_1$restmt_xint_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_xsga <- 0
+fundamentals_ds_filter_1$restmt_xsga_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_dvpsp_f <- 0
+fundamentals_ds_filter_1$restmt_dvpsp_f_mag <- 0.0
+
+fundamentals_ds_filter_1$restmt_dvpsx_f <- 0
+fundamentals_ds_filter_1$restmt_dvpsx_f_mag <- 0.0
+
+for (row in 1:nrow(sample_restmt_ds_filter)){
+  restmt_item_gvkey  <- as.integer(sample_restmt_ds_filter[row, "gvkey"])
+  restmt_item_fyear  <- sample_restmt_ds_filter[row, "fyear"]
+  restmt_item_at  <- sample_restmt_ds_filter[row, "at"]
+  restmt_item_capx  <- sample_restmt_ds_filter[row, "capx"]
+  restmt_item_cogs  <- sample_restmt_ds_filter[row, "cogs"]
+  restmt_item_dltt  <- sample_restmt_ds_filter[row, "dltt"]
+  restmt_item_epsfi  <- sample_restmt_ds_filter[row, "epsfi"]
+  restmt_item_epspi  <- sample_restmt_ds_filter[row, "epspi"]
+  
+  restmt_item_ib  <- sample_restmt_ds_filter[row, "ib"]
+  restmt_item_ni  <- sample_restmt_ds_filter[row, "ni"]
+  restmt_item_nopi  <- sample_restmt_ds_filter[row, "nopi"]
+  restmt_item_pi  <- sample_restmt_ds_filter[row, "pi"]
+  restmt_item_reuna  <- sample_restmt_ds_filter[row, "reuna"]
+  restmt_item_seq  <- sample_restmt_ds_filter[row, "seq"]
+  restmt_item_teq  <- sample_restmt_ds_filter[row, "teq"]
+  restmt_item_txt  <- sample_restmt_ds_filter[row, "txt"]
+  restmt_item_wcap  <- sample_restmt_ds_filter[row, "wcap"]
+  
+  restmt_item_xint  <- sample_restmt_ds_filter[row, "xint"]
+  restmt_item_xsga  <- sample_restmt_ds_filter[row, "xsga"]
+  restmt_item_dvpsp_f  <- sample_restmt_ds_filter[row, "dvpsp_f"]
+  restmt_item_dvpsx_f  <- sample_restmt_ds_filter[row, "dvpsx_f"]
+
+  row_count <- as.integer(nrow(subset(fundamentals_ds_filter_1, gvkey == restmt_item_gvkey & fyear == restmt_item_fyear)))
+  
+  if (row_count > 0){
+    fundamental_stmt_row <- fundamentals_ds_filter_1 %>%
+       filter(gvkey == restmt_item_gvkey & fyear == restmt_item_fyear)
+
+    stmt_item_gvkey  <- fundamental_stmt_row["gvkey"]
+    stmt_item_fyear  <- fundamental_stmt_row["fyear"]
+    stmt_item_at  <- fundamental_stmt_row["at"]
+    stmt_item_capx  <- fundamental_stmt_row["capx"]
+    stmt_item_cogs  <- fundamental_stmt_row["cogs"]
+    stmt_item_dltt  <- fundamental_stmt_row["dltt"]
+    stmt_item_epsfi  <- fundamental_stmt_row["epsfi"]
+    stmt_item_epspi  <- fundamental_stmt_row["epspi"]
+    stmt_item_ib  <- fundamental_stmt_row["ib"]
+    stmt_item_ni  <- fundamental_stmt_row["ni"]
+    stmt_item_nopi  <- fundamental_stmt_row["nopi"]
+    stmt_item_pi  <- fundamental_stmt_row["pi"]
+    stmt_item_reuna  <- fundamental_stmt_row["reuna"]
+    stmt_item_seq  <- fundamental_stmt_row["seq"]
+    stmt_item_teq  <- fundamental_stmt_row["teq"]
+    stmt_item_txt  <- fundamental_stmt_row["txt"]
+    stmt_item_wcap  <- fundamental_stmt_row["wcap"]
+    stmt_item_xint  <- fundamental_stmt_row["xint"]
+    stmt_item_xsga  <- fundamental_stmt_row["xsga"]
+    stmt_item_dvpsp_f  <- fundamental_stmt_row["dvpsp_f"]
+    stmt_item_dvpsx_f  <- fundamental_stmt_row["dvpsx_f"]
+
+    
+
+    if (!is.na(restmt_item_at) & !is.na(stmt_item_at) & stmt_item_at != 0 & restmt_item_at != stmt_item_at){
+      fundamentals_ds_filter_1$restmt_at[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_at - stmt_item_at)/stmt_item_at) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_at_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_capx) & !is.na(stmt_item_capx) & restmt_item_capx != stmt_item_capx){
+      fundamentals_ds_filter_1$restmt_capx[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      if (stmt_item_capx == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_capx - stmt_item_capx)/stmt_item_capx) * 100.0
+      }
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_capx_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_cogs) & !is.na(stmt_item_cogs) & restmt_item_cogs != stmt_item_cogs){
+      fundamentals_ds_filter_1$restmt_cogs[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      if (stmt_item_cogs == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_cogs - stmt_item_cogs)/stmt_item_cogs) * 100.0
+      }
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_cogs_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_dltt) & !is.na(stmt_item_dltt) & restmt_item_dltt != stmt_item_dltt){
+      fundamentals_ds_filter_1$restmt_dltt[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      if (stmt_item_dltt == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_dltt - stmt_item_dltt)/stmt_item_dltt) * 100.0
+      }
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_dltt_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_epsfi) & !is.na(stmt_item_epsfi) & restmt_item_epsfi != stmt_item_epsfi){
+      fundamentals_ds_filter_1$restmt_epsfi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      if (stmt_item_epsfi == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_epsfi - stmt_item_epsfi)/stmt_item_epsfi) * 100.0
+      }
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_epsfi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_epspi) & !is.na(stmt_item_epspi) & restmt_item_epspi != stmt_item_epspi){
+      fundamentals_ds_filter_1$restmt_epspi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      if (stmt_item_epspi == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_epspi - stmt_item_epspi)/stmt_item_epspi) * 100.0
+      }
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_epspi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+
+    if (!is.na(restmt_item_ib) & !is.na(stmt_item_ib) & restmt_item_ib != stmt_item_ib){
+      fundamentals_ds_filter_1$restmt_ib[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_ib - stmt_item_ib)/stmt_item_ib) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_ib_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_ni) & !is.na(stmt_item_ni) & restmt_item_ni != stmt_item_ni){
+      fundamentals_ds_filter_1$restmt_ni[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_ni - stmt_item_ni)/stmt_item_ni) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_ni_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_nopi) & !is.na(stmt_item_nopi) & restmt_item_nopi != stmt_item_nopi){
+      fundamentals_ds_filter_1$restmt_nopi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      if (stmt_item_nopi == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_nopi - stmt_item_nopi)/stmt_item_nopi) * 100.0
+      }
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_nopi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_pi) & !is.na(stmt_item_pi) & restmt_item_pi != stmt_item_pi){
+      fundamentals_ds_filter_1$restmt_pi[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_pi - stmt_item_pi)/stmt_item_pi) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_pi_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_reuna) & !is.na(stmt_item_reuna) & restmt_item_reuna != stmt_item_reuna){
+      fundamentals_ds_filter_1$restmt_reuna[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_reuna - stmt_item_reuna)/stmt_item_reuna) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_reuna_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_seq) & !is.na(stmt_item_seq) & restmt_item_seq != stmt_item_seq){
+      fundamentals_ds_filter_1$restmt_seq[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_seq - stmt_item_seq)/stmt_item_seq) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_seq_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_teq) & !is.na(stmt_item_teq) & restmt_item_teq != stmt_item_teq){
+      fundamentals_ds_filter_1$restmt_teq[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_teq - stmt_item_teq)/stmt_item_teq) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_teq_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_txt) & !is.na(stmt_item_txt) & restmt_item_txt != stmt_item_txt){
+      fundamentals_ds_filter_1$restmt_txt[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      if (stmt_item_txt == 0.0){
+        magnitude  <- 100.00
+      }
+      else{
+        magnitude  <- ((restmt_item_txt - stmt_item_txt)/stmt_item_txt) * 100.0
+      }
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_txt_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+
+    if (!is.na(restmt_item_wcap) & !is.na(stmt_item_wcap) & restmt_item_wcap != stmt_item_wcap){
+      fundamentals_ds_filter_1$restmt_wcap[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_wcap - stmt_item_wcap)/stmt_item_wcap) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_wcap_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+    
+    if (!is.na(restmt_item_xint) & !is.na(stmt_item_xint) & stmt_item_xint != 0 & restmt_item_xint != stmt_item_xint){
+      fundamentals_ds_filter_1$restmt_xint[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_xint - stmt_item_xint)/stmt_item_xint) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_xint_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+    
+    if (!is.na(restmt_item_xsga) & !is.na(stmt_item_xsga) & restmt_item_xsga != stmt_item_xsga){
+      fundamentals_ds_filter_1$restmt_xsga[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_xsga - stmt_item_xsga)/stmt_item_xsga) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_xsga_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+    
+    if (!is.na(restmt_item_dvpsp_f) & !is.na(stmt_item_dvpsp_f) & restmt_item_dvpsp_f != stmt_item_dvpsp_f){
+      fundamentals_ds_filter_1$restmt_dvpsp_f[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_dvpsp_f - stmt_item_dvpsp_f)/stmt_item_dvpsp_f) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_dvpsp_f_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+    
+    if (!is.na(restmt_item_dvpsx_f) & !is.na(stmt_item_dvpsx_f) & restmt_item_dvpsx_f != stmt_item_dvpsx_f){
+      fundamentals_ds_filter_1$restmt_dvpsx_f[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- 1
+      magnitude  <- ((restmt_item_dvpsx_f - stmt_item_dvpsx_f)/stmt_item_dvpsx_f) * 100.0
+      magnitude  <- as.double(round(magnitude, digits = 3))
+      fundamentals_ds_filter_1$restmt_dvpsx_f_mag[fundamentals_ds_filter_1$gvkey == restmt_item_gvkey & fundamentals_ds_filter_1$fyear == restmt_item_fyear] <- magnitude
+    }
+    
+  }
+}
+#head(fundamentals_ds_filter_1)
+nrow(fundamentals_ds_filter_1)
+```
+
+
+```{r summary_ds_with_restamt_flags, MESSAGE = FALSE, warning=FALSE}
+nrow(fundamentals_ds_filter_1)
+# Removing aco == NA as all those rows do not have any data
+fundamentals_ds_filter_2 <- subset(fundamentals_ds_filter_1, !is.na(aco))
+nrow(fundamentals_ds_filter_2)
+fundamentals_ds_filter_2[is.na(fundamentals_ds_filter_2)] <- 0
+#nrow(fundamentals_ds_filter_2)
+#head(fundamentals_ds_filter_2)
+summary(fundamentals_ds_filter_2)
+```
+
+```{r get_col_names}
+colnames(fundamentals_ds_filter_2)
+nrow(fundamentals_ds_filter_2)
+```
+
+
+
+
+
+```{r final_ds_preparation, MESSAGE = FALSE, warning=FALSE}
+final_ds_initial <- fundamentals_ds_filter_2 %>%
+  group_by(gvkey,tic) %>%
+  summarize(
+    aco = mean(aco),
+    acominc = mean(acominc),
+    act = mean(act),
+    ao = mean(ao),
+    aocidergl = mean(aocidergl),
+    aocipen = mean(aocipen),
+    aodo = mean(aodo),
+    aoloch = mean(aoloch),
+    ap = mean(ap),
+    aqc = mean(aqc),
+    at = mean(at),
+    bkvlps = mean(bkvlps),
+    caps = mean(caps),
+    capx = mean(capx),
+    ceq = mean(ceq),
+    ceqt = mean(ceqt),
+    ch = mean(ch),
+    che = mean(che),
+    chech = mean(chech),
+    ci = mean(ci),
+    cogs = mean(cogs),
+    cshi = mean(cshi),
+    csho = mean(csho),
+    cstk = mean(cstk),
+    cstkcv = mean(cstkcv),
+    dd1 = mean(dd1),
+    dilavx = mean(dilavx),
+    dlc = mean(dlc),
+    dltt = mean(dltt),
+    dm = mean(dm),
+    dn = mean(dn),
+    dpact = mean(dpact),
+    dpc = mean(dpc),
+    dvt = mean(dvt),
+    ebit = mean(ebit),
+    ebitda = mean(ebitda),
+    epsfi = mean(epsfi),
+    epspi = mean(epspi),
+    fiao = mean(fiao),
+    fincf = mean(fincf),
+    fopo = mean(fopo),
+    gdwl = mean(gdwl),
+    gp = mean(gp),
+    ib = mean(ib),
+    icapt = mean(icapt),
+    intan = mean(intan),
+    intano = mean(intano),
+    invt = mean(invt),
+    ivch = mean(ivch),
+    ivncf = mean(ivncf),
+    ivst = mean(ivst),
+    lo = mean(lo),
+    lse = mean(lse),
+    lt = mean(lt),
+    ni = mean(ni),
+    nopi = mean(nopi),
+    nopio = mean(nopio),
+    oancf = mean(oancf),
+    oiadp = mean(oiadp),
+    oibdp = mean(oibdp),
+    opeps = mean(opeps),
+    pi = mean(pi),
+    ppegt = mean(ppegt),
+    re = mean(re),
+    reajo = mean(reajo),
+    rect = mean(rect),
+    recta = mean(recta),
+    reuna = mean(reuna),
+    revt = mean(revt),
+    seq	 = 	mean(	seq	),
+    siv	 = 	mean(	siv	),
+    spce = mean(spce),
+    spi = mean(spi),
+    sppiv = mean(sppiv),
+    sstk = mean(sstk),
+    teq = mean(teq),
+    tstk = mean(tstk),
+    tstkn = mean(tstkn),
+    txp = mean(txp),
+    txr = mean(txr),
+    txt = mean(txt),
+    wcap = mean(wcap),
+    xint = mean(xint),
+    restmt_at = mean(restmt_at),
+    restmt_at_mag = mean(restmt_at_mag),
+    restmt_capx = mean(restmt_capx),
+    restmt_capx_mag = mean(restmt_capx_mag),
+    restmt_cogs = mean(restmt_cogs),
+    restmt_cogs_mag = mean(restmt_cogs_mag),
+    restmt_dltt = mean(restmt_dltt),
+    restmt_dltt_mag = mean(restmt_dltt_mag),
+    restmt_epsfi = mean(restmt_epsfi),
+    restmt_epsfi_mag = mean(restmt_epsfi_mag),
+    restmt_epspi = mean(restmt_epspi),
+    restmt_epspi_mag = mean(restmt_epspi_mag),
+    restmt_ib = mean(restmt_ib),
+    restmt_ib_mag = mean(restmt_ib_mag),
+    restmt_ni = mean(restmt_ni),
+    restmt_ni_mag = mean(restmt_ni_mag),
+    restmt_nopi = mean(restmt_nopi),
+    restmt_nopi_mag = mean(restmt_nopi_mag),
+    restmt_pi = mean(restmt_pi),
+    restmt_pi_mag = mean(restmt_pi_mag),
+    restmt_reuna = mean(restmt_reuna),
+    restmt_reuna_mag = mean(restmt_reuna_mag),
+    restmt_seq = mean(restmt_seq),
+    restmt_seq_mag = mean(restmt_seq_mag),
+    restmt_teq = mean(restmt_teq),
+    restmt_teq_mag = mean(restmt_teq_mag),
+    restmt_txt = mean(restmt_txt),
+    restmt_txt_mag = mean(restmt_txt_mag),
+    restmt_wcap = mean(restmt_wcap),
+    restmt_wcap_mag = mean(restmt_wcap_mag),
+    
+    restmt_xint = mean(restmt_xint),
+    restmt_xint_mag = mean(restmt_xint_mag),
+    
+    restmt_xsga = mean(restmt_xsga),
+    restmt_xsga_mag = mean(restmt_xsga_mag),
+    
+    restmt_dvpsp_f = mean(restmt_dvpsp_f),
+    restmt_dvpsp_f_mag = mean(restmt_dvpsp_f_mag),
+    
+    restmt_dvpsx_f = mean(restmt_dvpsx_f),
+    restmt_dvpsx_f_mag = mean(restmt_dvpsx_f_mag),
+    
+  )
+
+summary(final_ds_initial)
+nrow(final_ds_initial)
+```
+
+```{r adjust_restatement_flag, MESSAGE = FALSE, warning=FALSE}
+final_ds_initial_1 <- final_ds_initial 
+
+for (row in 1:nrow(final_ds_initial_1)){
+  row_item_gvkey  <- as.integer(final_ds_initial_1[row, "gvkey"])
+  
+  restmt_at <- final_ds_initial_1[row, "restmt_at"]
+  restmt_at_mag <- final_ds_initial_1[row, "restmt_at_mag"]
+  if (restmt_at >= 0.5){
+    restmt_at <- 1
+    restmt_at_mag <- as.double(restmt_at_mag)
+  }
+  else{
+    restmt_at <- 0
+    restmt_at_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_at[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_at
+  final_ds_initial_1$restmt_at_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_at_mag
+  
+  restmt_capx <- final_ds_initial_1[row, "restmt_capx"]
+  restmt_capx_mag <- final_ds_initial_1[row, "restmt_capx_mag"]
+  if (restmt_capx >= 0.5){
+    restmt_capx <- 1
+    restmt_capx_mag <- as.double(restmt_capx_mag)
+  }
+  else{
+    restmt_capx <- 0
+    restmt_capx_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_capx[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_capx
+  final_ds_initial_1$restmt_capx_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_capx_mag
+  
+  restmt_cogs <- final_ds_initial_1[row, "restmt_cogs"]
+  restmt_cogs_mag <- final_ds_initial_1[row, "restmt_cogs_mag"]
+  if (restmt_cogs >= 0.5){
+    restmt_cogs <- 1
+    restmt_cogs_mag <- as.double(restmt_cogs_mag)
+  }
+  else{
+    restmt_cogs <- 0
+    restmt_cogs_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_cogs[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_cogs
+  final_ds_initial_1$restmt_cogs_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_cogs_mag
+  
+  restmt_dltt <- final_ds_initial_1[row, "restmt_dltt"]
+  restmt_dltt_mag <- final_ds_initial_1[row, "restmt_dltt_mag"]
+  if (restmt_dltt >= 0.5){
+    restmt_dltt <- 1
+    restmt_dltt_mag <- as.double(restmt_dltt_mag)
+  }
+  else{
+    restmt_dltt <- 0
+    restmt_dltt_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_dltt[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dltt
+  final_ds_initial_1$restmt_dltt_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dltt_mag
+  
+  
+  restmt_epsfi <- final_ds_initial_1[row, "restmt_epsfi"]
+  restmt_epsfi_mag <- final_ds_initial_1[row, "restmt_epsfi_mag"]
+  if (restmt_epsfi >= 0.5){
+    restmt_epsfi <- 1
+    restmt_epsfi_mag <- as.double(restmt_epsfi_mag)
+  }
+  else{
+    restmt_epsfi <- 0
+    restmt_epsfi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_epsfi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epsfi
+  final_ds_initial_1$restmt_epsfi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epsfi_mag
+  
+  
+  restmt_epspi <- final_ds_initial_1[row, "restmt_epspi"]
+  restmt_epspi_mag <- final_ds_initial_1[row, "restmt_epspi_mag"]
+  if (restmt_epspi >= 0.5){
+    restmt_epspi <- 1
+    restmt_epspi_mag <- as.double(restmt_epspi_mag)
+  }
+  else{
+    restmt_epspi <- 0
+    restmt_epspi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_epspi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epspi
+  final_ds_initial_1$restmt_epspi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_epspi_mag
+  
+  restmt_ib <- final_ds_initial_1[row, "restmt_ib"]
+  restmt_ib_mag <- final_ds_initial_1[row, "restmt_ib_mag"]
+  if (restmt_ib >= 0.5){
+    restmt_ib <- 1
+    restmt_ib_mag <- as.double(restmt_ib_mag)
+  }
+  else{
+    restmt_ib <- 0
+    restmt_ib_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_ib[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ib
+  final_ds_initial_1$restmt_ib_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ib_mag
+  
+  restmt_ni <- final_ds_initial_1[row, "restmt_ni"]
+  restmt_ni_mag <- final_ds_initial_1[row, "restmt_ni_mag"]
+  if (restmt_ni >= 0.5){
+    restmt_ni <- 1
+    restmt_ni_mag <- as.double(restmt_ni_mag)
+  }
+  else{
+    restmt_ni <- 0
+    restmt_ni_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_ni[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ni
+  final_ds_initial_1$restmt_ni_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_ni_mag
+  
+  restmt_nopi <- final_ds_initial_1[row, "restmt_nopi"]
+  restmt_nopi_mag <- final_ds_initial_1[row, "restmt_nopi_mag"]
+  if (restmt_nopi >= 0.5){
+    restmt_nopi <- 1
+    restmt_nopi_mag <- as.double(restmt_nopi_mag)
+  }
+  else{
+    restmt_nopi <- 0
+    restmt_nopi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_nopi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_nopi
+  final_ds_initial_1$restmt_nopi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_nopi_mag
+  
+  restmt_pi <- final_ds_initial_1[row, "restmt_pi"]
+  restmt_pi_mag <- final_ds_initial_1[row, "restmt_pi_mag"]
+  if (restmt_pi >= 0.5){
+    restmt_pi <- 1
+    restmt_pi_mag <- as.double(restmt_pi_mag)
+  }
+  else{
+    restmt_pi <- 0
+    restmt_pi_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_pi[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_pi
+  final_ds_initial_1$restmt_pi_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_pi_mag
+  
+  restmt_reuna <- final_ds_initial_1[row, "restmt_reuna"]
+  restmt_reuna_mag <- final_ds_initial_1[row, "restmt_reuna_mag"]
+  if (restmt_reuna >= 0.5){
+    restmt_reuna <- 1
+    restmt_reuna_mag <- as.double(restmt_reuna_mag)
+  }
+  else{
+    restmt_reuna <- 0
+    restmt_reuna_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_reuna[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_reuna
+  final_ds_initial_1$restmt_reuna_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_reuna_mag
+  
+  restmt_seq <- final_ds_initial_1[row, "restmt_seq"]
+  restmt_seq_mag <- final_ds_initial_1[row, "restmt_seq_mag"]
+  if (restmt_seq >= 0.5){
+    restmt_seq <- 1
+    restmt_seq_mag <- as.double(restmt_seq_mag)
+  }
+  else{
+    restmt_seq <- 0
+    restmt_seq_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_seq[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_seq
+  final_ds_initial_1$restmt_seq_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_seq_mag
+  
+  restmt_teq <- final_ds_initial_1[row, "restmt_teq"]
+  restmt_teq_mag <- final_ds_initial_1[row, "restmt_teq_mag"]
+  if (restmt_teq >= 0.5){
+    restmt_teq <- 1
+    restmt_teq_mag <- as.double(restmt_teq_mag)
+  }
+  else{
+    restmt_teq <- 0
+    restmt_teq_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_teq[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_teq
+  final_ds_initial_1$restmt_teq_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_teq_mag
+  
+  restmt_txt <- final_ds_initial_1[row, "restmt_txt"]
+  restmt_txt_mag <- final_ds_initial_1[row, "restmt_txt_mag"]
+  if (restmt_txt >= 0.5){
+    restmt_txt <- 1
+    restmt_txt_mag <- as.double(restmt_txt_mag)
+  }
+  else{
+    restmt_txt <- 0
+    restmt_txt_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_txt[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_txt
+  final_ds_initial_1$restmt_txt_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_txt_mag
+  
+  restmt_wcap <- final_ds_initial_1[row, "restmt_wcap"]
+  restmt_wcap_mag <- final_ds_initial_1[row, "restmt_wcap_mag"]
+  if (restmt_wcap >= 0.5){
+    restmt_wcap <- 1
+    restmt_wcap_mag <- as.double(restmt_wcap_mag)
+  }
+  else{
+    restmt_wcap <- 0
+    restmt_wcap_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_wcap[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_wcap
+  final_ds_initial_1$restmt_wcap_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_wcap_mag
+  
+  restmt_xint <- final_ds_initial_1[row, "restmt_xint"]
+  restmt_xint_mag <- final_ds_initial_1[row, "restmt_xint_mag"]
+  if (restmt_xint >= 0.5){
+    restmt_xint <- 1
+    restmt_xint_mag <- as.double(restmt_xint_mag)
+  }
+  else{
+    restmt_xint <- 0
+    restmt_xint_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_xint[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_xint
+  final_ds_initial_1$restmt_xint_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_xint_mag
+  
+  restmt_xsga <- final_ds_initial_1[row, "restmt_xsga"]
+  restmt_xsga_mag <- final_ds_initial_1[row, "restmt_xsga_mag"]
+  if (restmt_xsga >= 0.5){
+    restmt_xsga <- 1
+    restmt_xsga_mag <- as.double(restmt_xsga_mag)
+  }
+  else{
+    restmt_xsga <- 0
+    restmt_xsga_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_xsga[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_xsga
+  final_ds_initial_1$restmt_xsga_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_xsga_mag
+  
+  restmt_dvpsp_f <- final_ds_initial_1[row, "restmt_dvpsp_f"]
+  restmt_dvpsp_f_mag <- final_ds_initial_1[row, "restmt_dvpsp_f_mag"]
+  if (restmt_dvpsp_f >= 0.5){
+    restmt_dvpsp_f <- 1
+    restmt_dvpsp_f_mag <- as.double(restmt_dvpsp_f_mag)
+  }
+  else{
+    restmt_dvpsp_f <- 0
+    restmt_dvpsp_f_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_dvpsp_f[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dvpsp_f
+  final_ds_initial_1$restmt_dvpsp_f_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dvpsp_f_mag
+  
+  restmt_dvpsx_f <- final_ds_initial_1[row, "restmt_dvpsx_f"]
+  restmt_dvpsx_f_mag <- final_ds_initial_1[row, "restmt_dvpsx_f_mag"]
+  if (restmt_dvpsx_f >= 0.5){
+    restmt_dvpsx_f <- 1
+    restmt_dvpsx_f_mag <- as.double(restmt_dvpsx_f_mag)
+  }
+  else{
+    restmt_dvpsx_f <- 0
+    restmt_dvpsx_f_mag <- 0.0
+  }
+  final_ds_initial_1$restmt_dvpsx_f[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dvpsx_f
+  final_ds_initial_1$restmt_dvpsx_f_mag[final_ds_initial_1$gvkey == row_item_gvkey] <- restmt_dvpsx_f_mag
+}
+
+restmt_var_ds <- subset(final_ds_initial_1, select = c(gvkey,
+                                                     restmt_at,restmt_at_mag,
+                                                      restmt_capx,restmt_capx_mag,
+                                                      restmt_cogs, restmt_cogs_mag,
+                                                      restmt_dltt, restmt_dltt_mag,
+                                                      restmt_epsfi, restmt_epsfi_mag,
+                                                      restmt_epspi, restmt_epspi_mag,
+                                                      restmt_ib, restmt_ib_mag,
+                                                      restmt_ni, restmt_ni_mag,
+                                                      restmt_nopi, restmt_nopi_mag,
+                                                      restmt_pi, restmt_pi_mag,
+                                                      restmt_reuna, restmt_reuna_mag,
+                                                      restmt_seq, restmt_seq_mag,
+                                                      restmt_teq, restmt_teq_mag,
+                                                      restmt_txt, restmt_txt_mag,
+                                                      restmt_wcap, restmt_wcap_mag,
+                                                     
+                                                     restmt_xint, restmt_xint_mag,
+                                                     restmt_xsga, restmt_xsga_mag,
+                                                     restmt_dvpsp_f, restmt_dvpsp_f_mag,
+                                                     restmt_dvpsx_f, restmt_dvpsx_f_mag
+                                                     ))
+
+summary(restmt_var_ds)
+```
+
+```{r final_dataset, MESSAGE = FALSE, warning=FALSE}
+final_ds_initial_2 <- final_ds_initial_1
+summary(final_ds_initial_2)
+nrow(final_ds_initial_2)
+write.csv(final_ds_initial_2, file = "data/final_ds_initial_2.csv", row.names=FALSE, na="")
+```
+
+
+```{r identify_correlation, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(final_ds_initial_2, select = -c(gvkey,tic, aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
+                                              ib,pi,
+                                              oiadp,oibdp,gdwl))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number()==1)
+#corrplot(cor_matrix, method = "ellipse")
+
+#ncol(cor_matrix_ds)
+```
+
+```{r fundamentals_final_ds, MESSAGE = FALSE, warning=FALSE}
+fundamentals_final_ds <- subset(final_ds_initial_2, select = -c(aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
+                                              ib,pi,
+                                              oiadp,oibdp,gdwl))
+summary(fundamentals_final_ds)
+nrow(fundamentals_final_ds)
+```
+
+```{r load_stocks_data, MESSAGE = FALSE, warning=FALSE}
+stocks_init_ds <- read.csv("./data/Stocks_DS.csv", na.strings=c(""," "))
+nrow(stocks_init_ds)
+```
+
+
+```{r stocks_data_filter, warning=FALSE}
+names(stocks_init_ds)[names(stocks_init_ds) == "ï..gvkey"] <- "gvkey"
+stocks_init_limited_cols <- subset(stocks_init_ds, select = c(gvkey,cshtrd,prccd,prchd,prcld,prcod,trfd))
+stocks_init_limited_cols <- stocks_init_limited_cols[!is.na(stocks_init_limited_cols$cshtrd)&!is.na(stocks_init_limited_cols$prccd)
+                                                     &!is.na(stocks_init_limited_cols$prchd)&!is.na(stocks_init_limited_cols$prcld)
+                                                     &!is.na(stocks_init_limited_cols$trfd),]
+stocks_init_limited_cols$prcod[is.na(stocks_init_limited_cols$prcod)] <- (stocks_init_limited_cols$prchd + stocks_init_limited_cols$prcld)/2
+
+stocks_grouped_data <- stocks_init_limited_cols %>%
+   group_by(gvkey) %>%
+   summarize(
+     cshtrd_m = mean(cshtrd),
+     prccd_m = mean(prccd),
+     prchd_m = mean(prchd),
+     prcld_m = mean(prcld),
+     prcod_m = mean(prcod),
+     trfd_m = mean(trfd)
+   )
+```
+
+```{r, merge_fundamental_stocks_data, warning=FALSE}
+
+#fundamental_stocks_data <- fundamentals_final_ds %>%
+#  inner_join(stocks_grouped_data, by = 'gvkey')
+#summary(fundamental_stocks_data)
+
+
+for (row in 1:nrow(fundamentals_final_ds)){
+  row_item_gvkey  <- as.integer(fundamentals_final_ds[row, "gvkey"])
+  
+  specific_stock <- stocks_grouped_data %>%
+    filter(gvkey == row_item_gvkey) 
+  
+  if (nrow(specific_stock) > 0){
+    specific_stock <- head(specific_stock, 1)
+    fundamentals_final_ds$cshtrd_m[final_ds_initial_1$gvkey == row_item_gvkey] <- specific_stock$cshtrd_m
+    fundamentals_final_ds$prccd_m[final_ds_initial_1$gvkey == row_item_gvkey] <- specific_stock$prccd_m
+    fundamentals_final_ds$prchd_m[final_ds_initial_1$gvkey == row_item_gvkey] <- specific_stock$prchd_m
+    fundamentals_final_ds$prcld_m[final_ds_initial_1$gvkey == row_item_gvkey] <- specific_stock$prcld_m
+    fundamentals_final_ds$prcod_m[final_ds_initial_1$gvkey == row_item_gvkey] <- specific_stock$prcod_m
+    fundamentals_final_ds$trfd_m[final_ds_initial_1$gvkey == row_item_gvkey] <- specific_stock$trfd_m
+  }
+}
+summary(fundamentals_final_ds)
+nrow(fundamentals_final_ds)
+
+fundamental_stocks_data <- fundamentals_final_ds[!is.na(fundamentals_final_ds$cshtrd_m) &!is.na(fundamentals_final_ds$prccd_m)
+                                                     &!is.na(fundamentals_final_ds$prchd_m) &!is.na(fundamentals_final_ds$prcld_m)
+                                                     &!is.na(fundamentals_final_ds$prcod_m) &!is.na(fundamentals_final_ds$trfd_m),]
+```
+
+```{r identify_correlation_1, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(fundamental_stocks_data, select = -c(gvkey,tic))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number()==1)
+```
+
+```{r drop_cols_based_on_above_correlations, warning=FALSE}
+fundamental_stocks_data_final <- fundamental_stocks_data
+#summary(fundamental_stocks_data_final)
+nrow(fundamental_stocks_data_final)
+```
+
+
+
+
+```{r load_securities_data, MESSAGE = FALSE, warning=FALSE}
+securities_init_ds <- read.csv("./data/Securities_DS.csv", na.strings=c(""," "))
+names(securities_init_ds)[names(securities_init_ds) == "ï..gvkey"] <- "gvkey"
+securities_init_ds_1 <- subset(securities_init_ds, select = -c(iid,isalrt,primiss,ajexm,
+                                                               spgim,spiim,spmim,cheqvm,curcddvm,dvpsxm,
+                                                               sphcusip,sphiid, sphmid,sphname,sphsec,sphtic,sphvg,sph100,
+                                                               cyear,mkvalincl,exchg,tpci,city,
+                                                               conml,costat,ggroup,gind, gsubind,loc,naics,sic,state, curcdm, 
+                                                               navm,adrrm,rawpm,rawxm,cshoq,csfsm,
+                                                               datadate,tic,conm,cmth
+                                                               ))
+
+
+#summary(securities_init_ds_1)
+```
+
+```{r merge_stock_data, warning=FALSE, message=FALSE}
+fund_stock_securities_ds <- fundamental_stocks_data_final 
+securities_init_ds_2 <- securities_init_ds_1 %>%
+  filter(!is.na(trfm) & !is.na(trt1m)) %>%
+  group_by(gvkey) %>%
+  summarise(
+    trfm_m = mean(trfm)
+    )
+
+fund_stock_securities_ds$trfm_m <- NA
+for (row in 1:nrow(fund_stock_securities_ds)){
+  row_item_gvkey  <- as.integer(fund_stock_securities_ds[row, "gvkey"])
+  specific_security <- securities_init_ds_2 %>%
+    filter(gvkey == row_item_gvkey) 
+  if (nrow(specific_security) > 0){
+    security_row <- head(specific_security, 1)
+    trfm_m <- as.numeric(security_row$trfm_m)  
+    fund_stock_securities_ds$trfm_m[fund_stock_securities_ds$gvkey == row_item_gvkey] <- trfm_m
+  }
+}
+
+
+
+securities_init_ds_3 <- securities_init_ds_1 %>%
+  filter(!is.na(dvrate)) %>%
+  group_by(gvkey) %>%
+  summarise(
+    dvrate_m = mean(dvrate)
+    )
+
+fund_stock_securities_ds$dvrate_m <- NA
+for (row in 1:nrow(fund_stock_securities_ds)){
+  row_item_gvkey  <- as.integer(fund_stock_securities_ds[row, "gvkey"])
+  specific_security <- securities_init_ds_3 %>%
+    filter(gvkey == row_item_gvkey) 
+  if (nrow(specific_security) > 0){
+    security_row <- head(specific_security, 1)
+    dvrate_m <- as.numeric(security_row$dvrate_m)  
+    fund_stock_securities_ds$dvrate_m[fund_stock_securities_ds$gvkey == row_item_gvkey] <- dvrate_m
+  }
+}
+
+
+#summary(fund_stock_securities_ds)
+```
+
+
+```{r load_ratings_data, MESSAGE = FALSE, warning=FALSE}
+ratings_init_ds <- read.csv("./data/Ratings_DS.csv", na.strings=c("", " "))
+names(ratings_init_ds)[names(ratings_init_ds) == "ï..gvkey"] <- "gvkey"
+ratings_init_ds$datadate <- as.Date(ratings_init_ds$datadate, "%m/%d/%Y")
+ratings_init_ds$splticrm = factor(ratings_init_ds$splticrm, levels=c(levels(ratings_init_ds$splticrm), "NR"))
+ratings_init_ds$splticrm[is.na(ratings_init_ds$splticrm)] = "NR"
+
+ratings_init_ds$splticrm_num_value <- 0
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "AAA"] <-  100
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "AA"] <-   90
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "AA-"] <-  85
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "A+"] <-   80
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "A"] <-    75
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "A-"] <-   70
+
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BBB+"] <-   65
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BBB"] <-    60
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BBB-"] <-   55
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BB+"] <-    50
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BB"] <-   45
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "BB-"] <-   40
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "B+"] <-   35
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "B"] <-   30
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "B-"] <-   25
+
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CCC+"] <-   20
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CCC"] <-   19
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CCC-"] <-   18
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "CC"] <-   17
+
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "D"] <-   10
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "SD"] <-   10
+ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "NR"] <-   0
+ratings_init_ds$splticrm_num_value <- factor(ratings_init_ds$splticrm_num_value)
+#levels(ratings_init_ds$splticrm)
+#str(ratings_init_ds)
+```
+
+
+```{r, consolidate_ds_fundamental_stock_rating, warning=FALSE, message=FALSE}
+fund_stock_securities_rating_ds <- fund_stock_securities_ds #%>%
+  #filter(gvkey == 1078)
+fund_stock_securities_rating_ds$sp_rating <- "NOTRATED" 
+rated_companies <- ratings_init_ds %>%
+  filter(splticrm != "NR")
+
+for (row in 1:nrow(fund_stock_securities_rating_ds)){
+  row_item_gvkey  <- as.integer(fund_stock_securities_rating_ds[row, "gvkey"])
+
+  specific_rating <- rated_companies %>%
+    filter(gvkey == row_item_gvkey) %>%
+    arrange(datadate)
+  if (nrow(specific_rating) > 0){
+    first_row <- head(specific_rating, 1)
+    last_row <- tail(specific_rating, 1)
+    start_value <- as.integer(first_row$splticrm_num_value)
+    end_value <- as.integer(last_row$splticrm_num_value)
+    if (start_value == end_value){
+      fund_stock_securities_rating_ds$sp_rating[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- "NoCHANGE"
+    }else if (start_value < end_value){
+      fund_stock_securities_rating_ds$sp_rating[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- "INCREASED"
+    }else if (start_value > end_value){
+      fund_stock_securities_rating_ds$sp_rating[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- "DECREASED"
+    }
+  }
+}
+fund_stock_securities_rating_ds$sp_rating <- factor(fund_stock_securities_rating_ds$sp_rating)
+#summary(fund_stock_securities_rating_ds)
+```
+
+
+```{r load_sca_filings_data, MESSAGE = FALSE, warning=FALSE}
+sca_fillings_ds <- read.csv("./data/SCA_Filings_and_Settlements.csv", na.strings=c(""," "))
+sca_fillings_ds$SettlementAmount = gsub("\\$", "", sca_fillings_ds$SettlementAmount)
+sca_fillings_ds$SettlementAmount = as.numeric(gsub("\\,", "", sca_fillings_ds$SettlementAmount))
+#summary(sca_fillings_ds)
+```
+
+```{r merge_sca_filings_data, MESSAGE = FALSE, warning=FALSE}
+fund_stock_securities_rating_ds$litigated <- 0
+fund_stock_securities_rating_ds$litigation_settlement <- NA
+fund_stock_securities_rating_ds_1 <- fund_stock_securities_rating_ds 
+
+for (row in 1:nrow(fund_stock_securities_rating_ds_1)){
+  row_item_tic  <- lapply(fund_stock_securities_rating_ds_1[row, "tic"], as.character)
+  row_item_gvkey  <- as.integer(fund_stock_securities_rating_ds[row, "gvkey"])
+  specific_sca_filings <- sca_fillings_ds %>%
+    filter(Ticker == row_item_tic) 
+  if (nrow(specific_sca_filings) > 0){
+    fund_stock_securities_rating_ds$litigated[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- 1
+    specific_sca_filings_max <- specific_sca_filings %>%
+    filter(!is.na(SettlementAmount)) %>%
+    arrange(SettlementAmount)
+    
+   if (nrow(specific_sca_filings_max) > 0){
+      last_row <- tail(specific_sca_filings_max, 1)
+      settlement_amount <- as.numeric(last_row$SettlementAmount)
+      fund_stock_securities_rating_ds$litigation_settlement[fund_stock_securities_rating_ds$gvkey == row_item_gvkey] <- settlement_amount
+   }
+  }
+}
+fund_stock_securities_rating_ds$litigated <- as.factor(fund_stock_securities_rating_ds$litigated)
+#summary(fund_stock_securities_rating_ds)
+```
+
+```{r final_ds_column_names, MESSAGE = FALSE, warning=FALSE}
+#colnames(fund_stock_securities_rating_ds)
+```
+
+
+```{r clean_up_not_required_columns, MESSAGE = FALSE, warning=FALSE}
+fund_stock_securities_rating_ds_final <- subset(fund_stock_securities_rating_ds, select = -c(aocidergl, aocipen, ceqt, cstkcv, dd1,
+                                                    dpc,icapt, intan, intano, ivncf, ivst,
+                                                    lo, lse, opeps, reajo, recta,
+                                                    spi, tstkn, txp, txr,
+                                                    restmt_epsfi_mag, restmt_epsfi,
+                                                    restmt_pi, restmt_pi_mag,
+                                                    restmt_seq, restmt_seq_mag,
+                                                    restmt_xsga, restmt_xsga_mag,
+                                                    restmt_dvpsp_f, restmt_dvpsp_f_mag, 
+                                                    restmt_dvpsx_f, restmt_dvpsx_f_mag
+                                                    ))
+#summary(fund_stock_securities_rating_ds_final)
+```
+
+```{r identify_correlation_2, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number() == 1)
+```
+
+# DE ==> Debt to equity ratio
+# wc ==> Working capital ratio
+# pe ==> Pricing to earning ratio
+# ROE ==> Return on Equity
+```{r add_financial_ratios, MESSAGE = FALSE, warning=FALSE}
+fund_stock_securities_rating_ds_final$epspi[fund_stock_securities_rating_ds_final$epspi == 0] <- 0.000001
+fund_stock_securities_rating_ds_final$lt[fund_stock_securities_rating_ds_final$lt == 0] <- 0.000001
+fund_stock_securities_rating_ds_final$teq[fund_stock_securities_rating_ds_final$teq == 0] <- 0.000001
+fund_stock_securities_rating_ds_final$pe_ratio <- fund_stock_securities_rating_ds_final$prccd_m/fund_stock_securities_rating_ds_final$epspi
+fund_stock_securities_rating_ds_final$wc_ratio <- fund_stock_securities_rating_ds_final$act/fund_stock_securities_rating_ds_final$lt
+fund_stock_securities_rating_ds_final$de_ratio <- fund_stock_securities_rating_ds_final$lt/fund_stock_securities_rating_ds_final$teq
+fund_stock_securities_rating_ds_final$roe_ratio <- fund_stock_securities_rating_ds_final$ni/fund_stock_securities_rating_ds_final$teq
+#temp <- subset(fund_stock_securities_rating_ds_final, select = c(gvkey,tic, epspi, prccd_m,pe_ratio, act, lt,wc_ratio, teq,de_ratio, ni, roe_ratio))
+#head(temp)
+trfm_median <- median(as.numeric(fund_stock_securities_rating_ds_final$trfm_m),na.rm=TRUE)
+fund_stock_securities_rating_ds_final$trfm_m[is.na(fund_stock_securities_rating_ds_final$trfm_m)] <- trfm_median
+```
+
+```{r identify_correlation_2, MESSAGE = FALSE, warning=FALSE}
+cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated, prchd_m, prcld_m, ni, restmt_ib_mag, ceq, oancf, cogs, ppegt,
+                                                                           lt, ci, restmt_dltt_mag, invt, che, ap, at, xint, gp, act, txt, capx))
+cor_matrix <- cor(cor_matrix_ds)
+cor_matrix %>%
+  as.data.frame() %>%
+  mutate(var1 = rownames(.)) %>%
+  gather(var2, value, -var1) %>%
+  arrange(desc(value)) %>%
+  group_by(value) %>%
+  filter(row_number() == 1)
+
+```
+
+
+
+
+
+```{r ds_final_rows_summary_analysis, MESSAGE = FALSE, warning=FALSE}
+
+fund_stock_securities_rating_ds_final_10 <- subset(fund_stock_securities_rating_ds_final, select = -c(prchd_m, prcld_m, ni, restmt_ib_mag, 
+                                                                                                      ceq, oancf, cogs, ppegt,
+                                                                                                      lt, ci, restmt_dltt_mag, invt, che, 
+                                                                                                      ap, at, xint, gp, act, txt, capx))
+#nrow(fund_stock_securities_rating_ds_final)
+#summary(fund_stock_securities_rating_ds_final)
+```
+
+```{r convert_categorical_to_factor, MESSAGE = FALSE, warning=FALSE}
+ds_final <- fund_stock_securities_rating_ds_final_10
+ds_final <- subset(ds_final, select = -c(dvrate_m, litigation_settlement))
+ds_final$restmt_at <- as.factor(ds_final$restmt_at)
+ds_final$restmt_capx <- as.factor(ds_final$restmt_capx)
+ds_final$restmt_cogs <- as.factor(ds_final$restmt_cogs)
+ds_final$restmt_dltt <- as.factor(ds_final$restmt_dltt)
+ds_final$restmt_epspi <- as.factor(ds_final$restmt_epspi)
+ds_final$restmt_ib <- as.factor(ds_final$restmt_ib)
+ds_final$restmt_ni <- as.factor(ds_final$restmt_ni)
+ds_final$restmt_nopi <- as.factor(ds_final$restmt_nopi)
+ds_final$restmt_reuna <- as.factor(ds_final$restmt_reuna)
+ds_final$restmt_teq <- as.factor(ds_final$restmt_teq)
+ds_final$restmt_txt <- as.factor(ds_final$restmt_txt)
+ds_final$restmt_wcap <- as.factor(ds_final$restmt_wcap)
+ds_final$restmt_xint <- as.factor(ds_final$restmt_xint)
+ds_final$sp_rating <- as.factor(ds_final$sp_rating)
+ds_final$litigated <- as.factor(ds_final$litigated)
+#summary(ds_final)
+```
+
+
+
+
+```{r encode_categorical_variables, MESSAGE = FALSE, warning=FALSE}
+# split the data into training and (held-out) test sets
+training_ind <- createDataPartition(ds_final$litigated,
+p = 0.75,
+list = FALSE,
+times = 1)
+training_set <- ds_final[training_ind, ]
+test_set <- ds_final[-training_ind, ]
+
+nrow(training_set)
+nrow(test_set)
+threshold <- 250
+#head(training_set$litigated)
+
+threshold <- 250
+target_enc_train <- function(variable, level) {
+  training_set$litigated <- as.numeric(as.vector(training_set$litigated))
+  train_avg_target <- colMeans(training_set[, "litigated"])
+  if (nrow(training_set[training_set[, variable]==level, ])==0) {
+    return(train_avg_target)
+  } else {
+    level_num_obs <- nrow(training_set[training_set[, variable]==level,])
+    level_avg_target <- colMeans(training_set[training_set[, variable]==level, "litigated"])
+    return((level_num_obs*level_avg_target+threshold*train_avg_target)/(level_num_obs+threshold))
+  }
+}
+
+sp_rating_target <- mapply(target_enc_train, variable = "sp_rating", level = levels(training_set$sp_rating), USE.NAMES = FALSE)
+names(sp_rating_target) <- levels(training_set$sp_rating)
+training_set$sp_rating_target <- 0
+for (level in levels(training_set$sp_rating)) {
+  training_set[training_set[, "sp_rating"]==level, "sp_rating_target"] <- sp_rating_target[level]
+}
+
+test_set$sp_rating_target <- 0
+for (level in levels(training_set$sp_rating)) {
+  test_set[test_set[, "sp_rating"]==level, "sp_rating_target"] <- sp_rating_target[level]
+}
+
+
+restmt_at_target <- mapply(target_enc_train, variable = "restmt_at", level = levels(training_set$restmt_at), USE.NAMES = FALSE)
+names(restmt_at_target) <- levels(training_set$restmt_at)
+training_set$restmt_at_target <- 0
+for (level in levels(training_set$restmt_at)) {
+  training_set[training_set[, "restmt_at"]==level, "restmt_at_target"] <- restmt_at_target[level]
+}
+
+test_set$restmt_at_target <- 0
+for (level in levels(training_set$restmt_at)) {
+  test_set[test_set[, "restmt_at"]==level, "restmt_at_target"] <- restmt_at_target[level]
+}
+
+restmt_capx_target <- mapply(target_enc_train, variable = "restmt_capx", level = levels(training_set$restmt_capx), USE.NAMES = FALSE)
+names(restmt_capx_target) <- levels(training_set$restmt_capx)
+training_set$restmt_capx_target <- 0
+for (level in levels(training_set$restmt_capx)) {
+  training_set[training_set[, "restmt_capx"]==level, "restmt_capx_target"] <- restmt_capx_target[level]
+}
+
+test_set$restmt_capx_target <- 0
+for (level in levels(training_set$restmt_capx)) {
+  test_set[test_set[, "restmt_capx"]==level, "restmt_capx_target"] <- restmt_capx_target[level]
+}
+
+restmt_cogs_target <- mapply(target_enc_train, variable = "restmt_cogs", level = levels(training_set$restmt_cogs), USE.NAMES = FALSE)
+names(restmt_cogs_target) <- levels(training_set$restmt_cogs)
+training_set$restmt_cogs_target <- 0
+for (level in levels(training_set$restmt_cogs)) {
+  training_set[training_set[, "restmt_cogs"]==level, "restmt_cogs_target"] <- restmt_cogs_target[level]
+}
+
+test_set$restmt_cogs_target <- 0
+for (level in levels(training_set$restmt_cogs)) {
+  test_set[test_set[, "restmt_cogs"]==level, "restmt_cogs_target"] <- restmt_cogs_target[level]
+}
+
+restmt_dltt_target <- mapply(target_enc_train, variable = "restmt_dltt", level = levels(training_set$restmt_dltt), USE.NAMES = FALSE)
+names(restmt_dltt_target) <- levels(training_set$restmt_dltt)
+training_set$restmt_dltt_target <- 0
+for (level in levels(training_set$restmt_dltt)) {
+  training_set[training_set[, "restmt_dltt"]==level, "restmt_dltt_target"] <- restmt_dltt_target[level]
+}
+
+test_set$restmt_dltt_target <- 0
+for (level in levels(training_set$restmt_dltt)) {
+  test_set[test_set[, "restmt_dltt"]==level, "restmt_dltt_target"] <- restmt_dltt_target[level]
+}
+
+restmt_epspi_target <- mapply(target_enc_train, variable = "restmt_epspi", level = levels(training_set$restmt_epspi), USE.NAMES = FALSE)
+names(restmt_epspi_target) <- levels(training_set$restmt_epspi)
+training_set$restmt_epspi_target <- 0
+for (level in levels(training_set$restmt_epspi)) {
+  training_set[training_set[, "restmt_epspi"]==level, "restmt_epspi_target"] <- restmt_epspi_target[level]
+}
+
+test_set$restmt_epspi_target <- 0
+for (level in levels(training_set$restmt_epspi)) {
+  test_set[test_set[, "restmt_epspi"]==level, "restmt_epspi_target"] <- restmt_epspi_target[level]
+}
+
+restmt_ib_target <- mapply(target_enc_train, variable = "restmt_ib", level = levels(training_set$restmt_ib), USE.NAMES = FALSE)
+names(restmt_ib_target) <- levels(training_set$restmt_ib)
+training_set$restmt_ib_target <- 0
+for (level in levels(training_set$restmt_ib)) {
+  training_set[training_set[, "restmt_ib"]==level, "restmt_ib_target"] <- restmt_ib_target[level]
+}
+
+test_set$restmt_ib_target <- 0
+for (level in levels(training_set$restmt_ib)) {
+  test_set[test_set[, "restmt_ib"]==level, "restmt_ib_target"] <- restmt_ib_target[level]
+}
+
+
+restmt_ni_target <- mapply(target_enc_train, variable = "restmt_ni", level = levels(training_set$restmt_ni), USE.NAMES = FALSE)
+names(restmt_ni_target) <- levels(training_set$restmt_ni)
+training_set$restmt_ni_target <- 0
+for (level in levels(training_set$restmt_ni)) {
+  training_set[training_set[, "restmt_ni"]==level, "restmt_ni_target"] <- restmt_ni_target[level]
+}
+
+test_set$restmt_ni_target <- 0
+for (level in levels(training_set$restmt_ni)) {
+  test_set[test_set[, "restmt_ni"]==level, "restmt_ni_target"] <- restmt_ni_target[level]
+}
+
+restmt_nopi_target <- mapply(target_enc_train, variable = "restmt_nopi", level = levels(training_set$restmt_nopi), USE.NAMES = FALSE)
+names(restmt_nopi_target) <- levels(training_set$restmt_nopi)
+training_set$restmt_nopi_target <- 0
+for (level in levels(training_set$restmt_nopi)) {
+  training_set[training_set[, "restmt_nopi"]==level, "restmt_nopi_target"] <- restmt_nopi_target[level]
+}
+
+test_set$restmt_nopi_target <- 0
+for (level in levels(training_set$restmt_nopi)) {
+  test_set[test_set[, "restmt_nopi"]==level, "restmt_nopi_target"] <- restmt_nopi_target[level]
+}
+
+
+restmt_reuna_target <- mapply(target_enc_train, variable = "restmt_reuna", level = levels(training_set$restmt_reuna), USE.NAMES = FALSE)
+names(restmt_reuna_target) <- levels(training_set$restmt_reuna)
+training_set$restmt_reuna_target <- 0
+for (level in levels(training_set$restmt_reuna)) {
+  training_set[training_set[, "restmt_reuna"]==level, "restmt_reuna_target"] <- restmt_reuna_target[level]
+}
+
+test_set$restmt_reuna_target <- 0
+for (level in levels(training_set$restmt_reuna)) {
+  test_set[test_set[, "restmt_reuna"]==level, "restmt_reuna_target"] <- restmt_reuna_target[level]
+}
+
+restmt_teq_target <- mapply(target_enc_train, variable = "restmt_teq", level = levels(training_set$restmt_teq), USE.NAMES = FALSE)
+names(restmt_teq_target) <- levels(training_set$restmt_teq)
+training_set$restmt_teq_target <- 0
+for (level in levels(training_set$restmt_teq)) {
+  training_set[training_set[, "restmt_teq"]==level, "restmt_teq_target"] <- restmt_teq_target[level]
+}
+
+test_set$restmt_teq_target <- 0
+for (level in levels(training_set$restmt_teq)) {
+  test_set[test_set[, "restmt_teq"]==level, "restmt_teq_target"] <- restmt_teq_target[level]
+}
+
+restmt_txt_target <- mapply(target_enc_train, variable = "restmt_txt", level = levels(training_set$restmt_txt), USE.NAMES = FALSE)
+names(restmt_txt_target) <- levels(training_set$restmt_txt)
+training_set$restmt_txt_target <- 0
+for (level in levels(training_set$restmt_txt)) {
+  training_set[training_set[, "restmt_txt"]==level, "restmt_txt_target"] <- restmt_txt_target[level]
+}
+
+test_set$restmt_txt_target <- 0
+for (level in levels(training_set$restmt_txt)) {
+  test_set[test_set[, "restmt_txt"]==level, "restmt_txt_target"] <- restmt_txt_target[level]
+}
+
+restmt_wcap_target <- mapply(target_enc_train, variable = "restmt_wcap", level = levels(training_set$restmt_wcap), USE.NAMES = FALSE)
+names(restmt_wcap_target) <- levels(training_set$restmt_wcap)
+training_set$restmt_wcap_target <- 0
+for (level in levels(training_set$restmt_wcap)) {
+  training_set[training_set[, "restmt_wcap"]==level, "restmt_wcap_target"] <- restmt_wcap_target[level]
+}
+
+test_set$restmt_wcap_target <- 0
+for (level in levels(training_set$restmt_wcap)) {
+  test_set[test_set[, "restmt_wcap"]==level, "restmt_wcap_target"] <- restmt_wcap_target[level]
+}
+
+restmt_xint_target <- mapply(target_enc_train, variable = "restmt_xint", level = levels(training_set$restmt_xint), USE.NAMES = FALSE)
+names(restmt_xint_target) <- levels(training_set$restmt_xint)
+training_set$restmt_xint_target <- 0
+for (level in levels(training_set$restmt_xint)) {
+  training_set[training_set[, "restmt_xint"]==level, "restmt_xint_target"] <- restmt_xint_target[level]
+}
+
+test_set$restmt_xint_target <- 0
+for (level in levels(training_set$restmt_xint)) {
+  test_set[test_set[, "restmt_xint"]==level, "restmt_xint_target"] <- restmt_xint_target[level]
+}
+```
+
+```{r keep_encoded_required_variables, MESSAGE = FALSE, warning=FALSE}
+training_subset_ds_final_1 <- subset(training_set, select = -c(gvkey,tic, sp_rating,
+                                                              restmt_at,
+                                                              restmt_capx,
+                                                              restmt_cogs,
+                                                              restmt_dltt,
+                                                              restmt_epspi,
+                                                              restmt_ib,
+                                                              restmt_ni,
+                                                              restmt_nopi,
+                                                              restmt_reuna,
+                                                              restmt_teq,
+                                                              restmt_txt,
+                                                              restmt_wcap,
+                                                              restmt_xint))
+
+
+test_subset_ds_final_1 <- subset(test_set, select = -c(gvkey,tic, sp_rating,
+                                                              restmt_at,
+                                                              restmt_capx,
+                                                              restmt_cogs,
+                                                              restmt_dltt,
+                                                              restmt_epspi,
+                                                              restmt_ib,
+                                                              restmt_ni,
+                                                              restmt_nopi,
+                                                              restmt_reuna,
+                                                              restmt_teq,
+                                                              restmt_txt,
+                                                              restmt_wcap,
+                                                              restmt_xint))
+
+
+
+
+
+training_subset_ds_final_1 <- training_subset_ds_final_1 %>%
+  relocate(litigated, .after = last_col())
+
+test_subset_ds_final_1 <- test_subset_ds_final_1 %>%
+  relocate(litigated, .after = last_col())
+
+
+
+training_subset_ds_final <- training_subset_ds_final_1
+test_subset_ds_final <- test_subset_ds_final_1
+
+
+ncol(training_subset_ds_final)
+summary(training_subset_ds_final)
+```
+
+
+
+
+
+```{r, SCALE_VARIABLES, MESSAGE = FALSE, warning=FALSE}
+num_var_start_index <- 1
+num_var_end_index <- ncol(training_subset_ds_final) - 1
+target_var_index <- ncol(training_subset_ds_final)
+
+num_var_start_index
+num_var_end_index
+target_var_index
+test_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(test_subset_ds_final[, num_var_start_index:num_var_end_index], 
+                                       center = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, mean), 
+                                       scale = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, sd))
+training_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(training_subset_ds_final[, num_var_start_index:num_var_end_index])
+levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 1] <- "Yes"
+levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 0] <- "No"
+summary(training_subset_ds_final)
+```
+
+```{r over_sampling_data_class_imbalance_1}
+training_subset_ds_final_orig <- training_subset_ds_final
+```
+
+```{r over_sampling_data_class_imbalance}
+training_subset_ds_final <- training_subset_ds_final_orig
+table(training_subset_ds_final$litigated)
+training_subset_ds_final_no <- training_subset_ds_final %>%
+  filter(litigated == 'No')
+no_count <- nrow(training_subset_ds_final_no)
+training_subset_ds_final_yes <- training_subset_ds_final %>%
+  filter(litigated == 'Yes')
+yes_count <- nrow(training_subset_ds_final_yes)
+#no_count
+#yes_count
+training_subset_ds_final <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "both", N = no_count + yes_count,
+                                             p = 0.35, seed = 222)$data
+
+#training_subset_ds_final <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "over", N = no_count*2)$data
+#training_subset_ds_final  <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "under", N = yes_count*2)$data
+
+table(training_subset_ds_final$litigated)
+```
+
+
+```{r  logisitic_regression_glm_1, MESSAGE = FALSE, warning=FALSE}
+glm_control <- trainControl(
+  method = "cv",
+  number = 10,
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE 
+)
+
+glm_model <- train(litigated ~
+                      .
+                      , 
+                      data = training_subset_ds_final, method = "glm", family = "binomial", trControl = glm_control)
+class_probabilities <- predict(glm_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
+```
+
+```{r logistic_regression_glm_roc_curve, MESSAGE = FALSE, warning=FALSE}
+ glm_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+ glm_rocr_roc <- performance(glm_rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(glm_rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_glm_auc_r, MESSAGE = FALSE, warning=FALSE}
+ glm_rocr_auc <- performance(glm_rocr_pred, measure = "auc")
+ glm_auc <- glm_rocr_auc@y.values[[1]]
+ glm_auc
+```
+
+```{r  glmnet_1, MESSAGE = FALSE, warning=FALSE}
+glmnet_control <- trainControl(
+  method = "cv",
+  number = 10,
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE 
+)
+
+glmnet_model <- train(litigated ~ ., data = training_subset_ds_final, method = "glmnet", family = "binomial", trControl = glmnet_control)
+class_probabilities <- predict(glmnet_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
+```
+
+```{r logistic_regression_glmnet_roc_curve, MESSAGE = FALSE, warning=FALSE}
+ glmnet_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+ glmnet_rocr_roc <- performance(glmnet_rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(glmnet_rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_glmnet_auc_r, MESSAGE = FALSE, warning=FALSE}
+ glmnet_rocr_auc <- performance(glmnet_rocr_pred, measure = "auc")
+ glmnet_auc <- glmnet_rocr_auc@y.values[[1]]
+ glmnet_auc
+```
+
+```{r  logisitic_regression_lda_1, MESSAGE = FALSE, warning=FALSE}
+lda_control <- trainControl(
+  method = "cv",
+  number = 10
+)
+
+lda_model <- train(litigated ~
+                      ., 
+                      data = training_subset_ds_final, method = "lda", family = "binomial", trControl = lda_control)
+class_probabilities <- predict(lda_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+```
+
+```{r logistic_regression_lda_roc_curve, MESSAGE = FALSE, warning=FALSE}
+ lda_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$litigated)
+ lda_rocr_roc <- performance(lda_rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(lda_rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_lda_auc_r, MESSAGE = FALSE, warning=FALSE}
+ lda_rocr_auc <- performance(lda_rocr_pred, measure = "auc")
+ lda_auc <- lda_rocr_auc@y.values[[1]]
+ lda_auc
+```
+
+
+```{r logistic_regression_qda_roc_curve, MESSAGE = FALSE, warning=FALSE}
+ qda_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$litigated)
+ qda_rocr_roc <- performance(qda_rocr_pred, measure = "tpr", x.measure = "fpr")
+ plot(qda_rocr_roc,
+ colorize = TRUE,
+ print.cutoffs.at = seq(0, 1, by = 0.1),
+ text.adj = c(-0.5, 1),
+ lwd = 2)
+ abline(a = 0, b = 1)
+```
+```{r logistic_regression_qda_auc_r, MESSAGE = FALSE, warning=FALSE}
+ qda_rocr_auc <- performance(qda_rocr_pred, measure = "auc")
+ qda_auc <- qda_rocr_auc@y.values[[1]]
+ qda_auc
+```
+
+```{r gbm_1, MESSAGE = FALSE, warning=FALSE}
+gbm_control <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
+gbm_model <- train(litigated~., 
+                  data=training_subset_ds_final, 
+                  method = "gbm",
+                  trControl = gbm_control,
+                  verbose = FALSE)
+```
+
+```{r gbm_2, MESSAGE = FALSE, warning=FALSE}
+class_probabilities <- predict(gbm_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+#class_probabilities
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
+#test_subset_ds_final$class_probabilities_litigated
+#class_probabilities
+#test_subset_ds_final$class_probabilities_litigated 
+#test_subset_ds_final$litigated
+```
+
+```{r gbm_roc, MESSAGE = FALSE, warning=FALSE}
+gbm_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+gbm_rocr_roc <- performance(gbm_rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(gbm_rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+```
+
+```{r gbm_auc, MESSAGE = FALSE, warning=FALSE}
+gbm_rocr_auc <- performance(gbm_rocr_pred, measure = "auc")
+gbm_auc <- gbm_rocr_auc@y.values[[1]]
+gbm_auc
+```
+
+```{r feature_importance_random_forest, MESSAGE = FALSE, warning=FALSE}
+gbm_varImp <- varImp(gbm_model, type = 2)
+plot(gbm_varImp, top = 25)
+```
+
+
+```{r tree_1, MESSAGE = FALSE, warning=FALSE}
+tree_model <- rpart(litigated ~ ., data = training_subset_ds_final, method = "class")
+class_probabilities <- predict(tree_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- 1 - class_probabilities[1: nrow(test_subset_ds_final)]
+tree_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+tree_rocr_roc <- performance(tree_rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(tree_rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+```
+
+```{r tree_1_auc, MESSAGE = FALSE, warning=FALSE}
+tree_rocr_auc <- performance(tree_rocr_pred, measure = "auc")
+tree_auc <- tree_rocr_auc@y.values[[1]]
+tree_auc
+```
+
+```{r plot_tree}
+rpart.plot(tree_model)
+```
+
+
+```{r random_forest, MESSAGE = FALSE, warning=FALSE}
+rf_x <- training_subset_ds_final[,num_var_start_index:num_var_end_index]
+rf_y <- training_subset_ds_final[,target_var_index]
+recommended_mtry <- sqrt(ncol(rf_x))
+rfGrid <- expand.grid(mtry=recommended_mtry)
+```
+
+```{r random_forest_1, MESSAGE = FALSE, warning=FALSE}
+rfControl <- trainControl(method='repeatedcv', number=10, repeats=3)
+rf_model <- train(litigated~., 
+                      data=training_subset_ds_final, 
+                      method='rf', 
+                      metric='Accuracy', 
+                      tuneGrid=rfGrid, 
+                      trControl=rfControl)
+
+```
+
+```{r prediction_random_forest, MESSAGE = FALSE, warning=FALSE}
+class_probabilities <- predict(rf_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
+```
+
+
+
+
+```{r evaluate_random_forest, MESSAGE = FALSE, warning=FALSE}
+rf_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+rf_rocr_roc <- performance(rf_rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(rf_rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+
+```
+```{r auc_value_rando_forest, MESSAGE = FALSE, warning=FALSE}
+rf_rocr_auc <- performance(rf_rocr_pred, measure = "auc")
+rf_auc <- rf_rocr_auc@y.values[[1]]
+rf_auc
+```
+
+
+```{r calibration_curve_random_forest, MESSAGE = FALSE, warning=FALSE}
+calibration_curve <- calibration(litigated ~ class_probabilities_litigated,
+                                 data = test_subset_ds_final,
+                                 class = 1)
+plot(calibration_curve)
+```
+
+```{r feature_importance_random_forest, MESSAGE = FALSE, warning=FALSE}
+rf_varImp <- varImp(rf_model, type = 2)
+plot(rf_varImp, top = 25)
+```
+```{r list_important_features_random_forest}
+rf_varImp
+```
+
+```{r nueral_network_1}
+nnGrid <- expand.grid(size = 8:10, decay = 0.2)
+nnControl <- trainControl(method = "repeatedcv",
+              repeats = 5,
+              number=10,
+              classProbs = TRUE)
+
+nn_model <- train(litigated~., 
+                          data=training_subset_ds_final,
+                          method = "nnet",
+                          tuneGrid = nnGrid,
+                          trControl = nnControl,
+                          importance = TRUE,
+                          trace = FALSE,
+                          MaxNWts = 1500)
+
+class_probabilities <- predict(nn_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
+
+nn_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
+nn_rocr_roc <- performance(nn_rocr_pred, measure = "tpr", x.measure = "fpr")
+plot(nn_rocr_roc,
+colorize = TRUE,
+print.cutoffs.at = seq(0, 1, by = 0.1),
+text.adj = c(-0.5, 1),
+lwd = 2)
+abline(a = 0, b = 1)
+
+
+```
+```{r nueral_network_auc}
+
+nn_rocr_auc <- performance(nn_rocr_pred, measure = "auc")
+nn_auc <- nn_rocr_auc@y.values[[1]]
+nn_auc
+
+```
+
+```{r, build_data_frame_auc}
+auc_df <- data.frame("algorithm_method" = c("glm"), "auc" = c(glm_auc) * 100)
+
+auc_df_temp <- data.frame("algorithm_method" = c("glmnet"), "auc" = c(glmnet_auc)  * 100)
+auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("lda"), "auc" = c(lda_auc) * 100)
+auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("gbm"), "auc" = c(gbm_auc) * 100)
+auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("tree"), "auc" = c(tree_auc) * 100)
+auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("rf"), "auc" = c(rf_auc) * 100)
+auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("nn"), "auc" = c(nn_auc) * 100)
+auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df
+```
+
+```{r plor_compare_auc}
+ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
+  geom_bar(colour="black", stat="identity", fill = "darkred") +
+  ylab("Auc value") +
+  xlab("Algorithm methods") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle =50, hjust=0.75))
+```
+
+
+
+```{r}
+nrow(training_subset_ds_final)
+nrow(test_subset_ds_final)
+```
+
+
+
+
+
+
+
+
+
+
+
