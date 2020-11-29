@@ -1201,7 +1201,8 @@ fund_stock_securities_rating_ds_final$trfm_m[is.na(fund_stock_securities_rating_
 
 ```{r identify_correlation_3, MESSAGE = FALSE, warning=FALSE}
 cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated, prchd_m, prcld_m, ni, restmt_ib_mag, ceq, oancf, cogs, ppegt,
-                                                                           lt, ci, restmt_dltt_mag, invt, che, ap, at, xint, gp, act, txt, capx))
+                                                                           lt, ci, restmt_dltt_mag, invt, che, ap, at, xint, gp, act, txt, capx,
+                                                                           dm, dn, dpact,fiao,fincf,sppiv,fopo)) #latest removed variables
 cor_matrix <- cor(cor_matrix_ds)
 cor_matrix %>%
   as.data.frame() %>%
@@ -1222,7 +1223,8 @@ cor_matrix %>%
 fund_stock_securities_rating_ds_final_10 <- subset(fund_stock_securities_rating_ds_final, select = -c(prchd_m, prcld_m, ni, restmt_ib_mag, 
                                                                                                       ceq, oancf, cogs, ppegt,
                                                                                                       lt, ci, restmt_dltt_mag, invt, che, 
-                                                                                                      ap, at, xint, gp, act, txt, capx))
+                                                                                                      ap, at, xint, gp, act, txt, capx,
+                                                                                                      dm, dn, dpact,fiao,fincf,sppiv,fopo))  #latest removed variables
 #nrow(fund_stock_securities_rating_ds_final)
 #summary(fund_stock_securities_rating_ds_final)
 ```
@@ -1536,12 +1538,13 @@ no_count <- nrow(training_subset_ds_final_no)
 training_subset_ds_final_yes <- training_subset_ds_final %>%
   filter(litigated == 'Yes')
 yes_count <- nrow(training_subset_ds_final_yes)
-#no_count
-#yes_count
+# Sampling both (Over and under combination)
 training_subset_ds_final <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "both", N = no_count + yes_count,
                                              p = 0.35, seed = 222)$data
-
+##### Sampling both (Over)
 #training_subset_ds_final <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "over", N = no_count*2)$data
+
+##### Sampling both (Under)
 #training_subset_ds_final  <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "under", N = yes_count*2)$data
 
 table(training_subset_ds_final$litigated)
@@ -1638,9 +1641,6 @@ test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
  lda_auc
 ```
 
-
-
-
 ```{r gbm_1, MESSAGE = FALSE, warning=FALSE}
 gbm_control <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
 set.seed(123)
@@ -1653,12 +1653,7 @@ gbm_model <- train(litigated~.,
 
 ```{r gbm_2, MESSAGE = FALSE, warning=FALSE}
 class_probabilities <- predict(gbm_model, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
-#class_probabilities
 test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
-#test_subset_ds_final$class_probabilities_litigated
-#class_probabilities
-#test_subset_ds_final$class_probabilities_litigated 
-#test_subset_ds_final$litigated
 ```
 
 ```{r gbm_roc, MESSAGE = FALSE, warning=FALSE}
@@ -1846,6 +1841,8 @@ ggplot(data=auc_df, aes(x=algorithm_method, y=auc)) +
 ```{r}
 nrow(training_subset_ds_final)
 nrow(test_subset_ds_final)
+ncol(training_subset_ds_final)
+colnames(training_subset_ds_final)
 ```
 
 
