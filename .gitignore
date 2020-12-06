@@ -1258,3 +1258,5 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 /Machine-Learning/Week-5/data/data.csv
 /Machine-Learning/Week-8/data
 *.Rhistory
+/CapsStone/Week-4/data
+/CapsStone/Week-5/data
