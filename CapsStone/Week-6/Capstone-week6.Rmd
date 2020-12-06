@@ -1564,9 +1564,6 @@ target_company_row_1 <- subset(target_company_row, select = -c(gvkey,tic, sp_rat
                                                               restmt_xint))
 
 
-
-
-
 training_subset_ds_final_1 <- training_subset_ds_final_1 %>%
   relocate(litigated, .after = last_col())
 
@@ -1576,14 +1573,12 @@ test_subset_ds_final_1 <- test_subset_ds_final_1 %>%
 target_company_row_final <- target_company_row_1 %>%
   relocate(litigated, .after = last_col())
 
-
-
 training_subset_ds_final <- training_subset_ds_final_1
 test_subset_ds_final <- test_subset_ds_final_1
 
-
 ncol(training_subset_ds_final)
-summary(training_subset_ds_final)
+#summary(training_subset_ds_final)
+target_company_row_final
 ```
 
 
@@ -1600,8 +1595,9 @@ target_var_index
 test_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(test_subset_ds_final[, num_var_start_index:num_var_end_index], 
                                        center = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, mean), 
                                        scale = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, sd))
+
 training_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(training_subset_ds_final[, num_var_start_index:num_var_end_index])
-target_company_row_final[, num_var_start_index:num_var_end_index] <- scale(target_company_row_final[, num_var_start_index:num_var_end_index])
+
 levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 1] <- "Yes"
 levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 0] <- "No"
 summary(training_subset_ds_final)
@@ -1920,7 +1916,7 @@ tree_auc
 ```
 
 ```{r plot_tree}
-rpart.plot(tree_model)
+rpart.plot(tree_model_1)
 ```
 
 
@@ -2139,7 +2135,7 @@ rf_model_4 <- train(litigated ~
                       metric='Accuracy', 
                       tuneGrid=rfGrid, 
                       trControl=rfControl, 
-                      ntree = 600)
+                      ntree = 500)
 
 class_probabilities <- predict(rf_model_4, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
@@ -2180,7 +2176,7 @@ auc_df_temp <- data.frame("algorithm_method" = c("glm_3"), "auc" = c(glm_auc_3) 
                           "notes" = c("Second set of signigficant variables variables"))
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("glmnet_1"), "auc" = c(glmnet_auc)  * 100, "accuracy" = c(glmnet_accuracy) * 100,"notes" = c("Default"))
+auc_df_temp <- data.frame("algorithm_method" = c("glmnet_1"), "auc" = c(glmnet_auc)  * 100, "accuracy" = c(glmnet_accuracy_1) * 100,"notes" = c("Default"))
 auc_df <- rbind(auc_df,auc_df_temp)
  
 auc_df_temp <- data.frame("algorithm_method" = c("lda_1"), "auc" = c(lda_auc_1) * 100, "accuracy" = c(lda_accuracy_1) * 100,"notes" = c("Default"))
@@ -2201,11 +2197,45 @@ auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("rf_3"), "auc" = c(rf_auc_3) * 100, "accuracy" = c(rf_accuracy_3) * 100,"notes" = c("Trees = 500"))
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("rf_4"), "auc" = c(rf_auc_4) * 100, "accuracy" = c(rf_accuracy_4) * 100,"notes" = c("Trees = 100 and Only important variables"))
+auc_df_temp <- data.frame("algorithm_method" = c("rf_4"), "auc" = c(rf_auc_4) * 100, "accuracy" = c(rf_accuracy_4) * 100,"notes" = c("Trees = 500 and Only important variables"))
 auc_df <- rbind(auc_df,auc_df_temp)
 
 auc_df <- auc_df %>% 
   arrange(desc(auc))
 
 auc_df
+```
+
+```{r target_company_row}
+target_company_row_final
+```
+
+```{r run_against_target_company_rf}
+class_probabilities_prediction <- predict(rf_model_4, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+litigated_probablity <- class_probabilities_prediction$Yes
+rf_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
+rf_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
+rf_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
+rf_litigated
+rf_actual_litigated
+```
+
+```{r run_against_target_company_gbm}
+class_probabilities_prediction <- predict(gbm_model_1, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+litigated_probablity <- class_probabilities_prediction$Yes
+gbm_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
+gbm_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
+gbm_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
+gbm_litigated
+gbm_actual_litigated
+```
+
+```{r run_against_target_company_glm}
+class_probabilities_prediction <- predict(glm_model_3, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+litigated_probablity <- class_probabilities_prediction$Yes
+glm_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
+glm_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
+glm_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
+glm_litigated
+glm_actual_litigated
 ```
