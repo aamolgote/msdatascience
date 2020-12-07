@@ -1260,3 +1260,4 @@ Added ignore for workspace files (*.code-workspace). They can be added in any di
 *.Rhistory
 /CapsStone/Week-4/data
 /CapsStone/Week-5/data
+/CapsStone/Week-6/data
