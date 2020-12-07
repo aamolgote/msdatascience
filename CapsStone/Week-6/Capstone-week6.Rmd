@@ -39,7 +39,9 @@ gsector_sjm <- head(fundamentals_ds_sjm$gsector, 1)
 fundamentals_ds <- fundamentals_ds %>%
   filter(gsector == gsector_sjm)
 nrow(fundamentals_ds)
+gsector_sjm
 ```
+
 ### Filter the data to restrict the dataset to contain all annually reported statements, and exclude restatements.
 ```{r filter_data_datafmt, MESSAGE = FALSE, warning=FALSE}
 names(fundamentals_ds)[names(fundamentals_ds) == "ï..gvkey"] <- "gvkey"
@@ -51,6 +53,7 @@ target_company <- fundamentals_ds_filter %>%
   filter(tic == 'SJM')
 target_company_gv_key <- head(target_company$gvkey, 1)
 target_company_gv_key
+ncol(fundamentals_ds_filter)
 ```
 
 ### Remove all the columns which contain 25% or greater NA or null values 
@@ -918,6 +921,7 @@ nrow(stocks_init_ds)
 ### prcld	==> Price - Low - Daily
 ### prcod	==> Price - Open - Daily
 ### trfd	==> Daily Total Return Factor
+### cshtrd ==> Trading Volume - Daily
 ```{r stocks_data_filter, warning=FALSE}
 names(stocks_init_ds)[names(stocks_init_ds) == "ï..gvkey"] <- "gvkey"
 stocks_init_limited_cols <- subset(stocks_init_ds, select = c(gvkey,cshtrd,prccd,prchd,prcld,prcod,trfd))
@@ -936,6 +940,7 @@ stocks_grouped_data <- stocks_init_limited_cols %>%
      prcod_m = mean(prcod),
      trfd_m = mean(trfd)
    )
+ncol(stocks_init_ds)
 ```
 
 
@@ -995,6 +1000,7 @@ nrow(fundamental_stocks_data_final)
 ```{r load_securities_data, MESSAGE = FALSE, warning=FALSE}
 securities_init_ds <- read.csv("./data/Securities_DS.csv", na.strings=c(""," "))
 names(securities_init_ds)[names(securities_init_ds) == "ï..gvkey"] <- "gvkey"
+ncol(securities_init_ds)
 securities_init_ds_1 <- subset(securities_init_ds, select = -c(iid,isalrt,primiss,ajexm,
                                                                spgim,spiim,spmim,cheqvm,curcddvm,dvpsxm,
                                                                sphcusip,sphiid, sphmid,sphname,sphsec,sphtic,sphvg,sph100,
@@ -1144,6 +1150,7 @@ sca_fillings_ds <- read.csv("./data/SCA_Filings_and_Settlements.csv", na.strings
 sca_fillings_ds$SettlementAmount = gsub("\\$", "", sca_fillings_ds$SettlementAmount)
 sca_fillings_ds$SettlementAmount = as.numeric(gsub("\\,", "", sca_fillings_ds$SettlementAmount))
 #summary(sca_fillings_ds)
+ncol(sca_fillings_ds)
 ```
 
 ### Add the target variable litigated to the dataset under analysis.
@@ -1274,7 +1281,7 @@ fund_stock_securities_rating_ds_final_10 <- subset(fund_stock_securities_rating_
 ### Convert all categorical variables to factor
 ```{r convert_categorical_to_factor, MESSAGE = FALSE, warning=FALSE}
 ds_final <- fund_stock_securities_rating_ds_final_10
-ds_final <- subset(ds_final, select = -c(dvrate_m, litigation_settlement))
+ds_final <- subset(ds_final, select = -c(dvrate_m)) #, litigation_settlement))
 ds_final$restmt_at <- as.factor(ds_final$restmt_at)
 ds_final$restmt_capx <- as.factor(ds_final$restmt_capx)
 ds_final$restmt_cogs <- as.factor(ds_final$restmt_cogs)
@@ -1290,7 +1297,6 @@ ds_final$restmt_wcap <- as.factor(ds_final$restmt_wcap)
 ds_final$restmt_xint <- as.factor(ds_final$restmt_xint)
 ds_final$sp_rating <- as.factor(ds_final$sp_rating)
 ds_final$litigated <- as.factor(ds_final$litigated)
-#summary(ds_final)
 ```
 
 
@@ -1517,7 +1523,7 @@ target_company_row
 
 ### Remove the restatement variables which have near zero variance
 ```{r keep_encoded_required_variables, MESSAGE = FALSE, warning=FALSE}
-training_subset_ds_final_1 <- subset(training_set, select = -c(gvkey,tic, sp_rating,
+training_subset_ds_final_1 <- subset(training_set, select = -c(sp_rating,
                                                               restmt_at,
                                                               restmt_capx,
                                                               restmt_cogs,
@@ -1533,7 +1539,7 @@ training_subset_ds_final_1 <- subset(training_set, select = -c(gvkey,tic, sp_rat
                                                               restmt_xint))
 
 
-test_subset_ds_final_1 <- subset(test_set, select = -c(gvkey,tic, sp_rating,
+test_subset_ds_final_1 <- subset(test_set, select = -c(sp_rating,
                                                               restmt_at,
                                                               restmt_capx,
                                                               restmt_cogs,
@@ -1548,7 +1554,7 @@ test_subset_ds_final_1 <- subset(test_set, select = -c(gvkey,tic, sp_rating,
                                                               restmt_wcap,
                                                               restmt_xint))
 
-target_company_row_1 <- subset(target_company_row, select = -c(gvkey,tic, sp_rating,
+target_company_row_1 <- subset(target_company_row, select = -c(sp_rating,
                                                               restmt_at,
                                                               restmt_capx,
                                                               restmt_cogs,
@@ -1573,11 +1579,21 @@ test_subset_ds_final_1 <- test_subset_ds_final_1 %>%
 target_company_row_final <- target_company_row_1 %>%
   relocate(litigated, .after = last_col())
 
+
+training_subset_ds_final_1 <- training_subset_ds_final_1 %>%
+  relocate(litigation_settlement , .after = last_col())
+
+test_subset_ds_final_1 <- test_subset_ds_final_1 %>%
+  relocate(litigation_settlement, .after = last_col())
+
+target_company_row_final <- target_company_row_final %>%
+  relocate(litigation_settlement, .after = last_col())
+
 training_subset_ds_final <- training_subset_ds_final_1
 test_subset_ds_final <- test_subset_ds_final_1
 
 ncol(training_subset_ds_final)
-#summary(training_subset_ds_final)
+summary(training_subset_ds_final)
 target_company_row_final
 ```
 
@@ -1585,9 +1601,9 @@ target_company_row_final
 
 ### Scale the variables. 
 ```{r, SCALE_VARIABLES, MESSAGE = FALSE, warning=FALSE}
-num_var_start_index <- 1
-num_var_end_index <- ncol(training_subset_ds_final) - 1
-target_var_index <- ncol(training_subset_ds_final)
+num_var_start_index <- 3
+num_var_end_index <- ncol(training_subset_ds_final) - 2
+target_var_index <- ncol(training_subset_ds_final) - 1
 
 num_var_start_index
 num_var_end_index
@@ -1596,15 +1612,26 @@ test_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(test_subs
                                        center = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, mean), 
                                        scale = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, sd))
 
+#target_company_row_final
+target_company_row_final[, num_var_start_index:num_var_end_index] = scale(target_company_row_final[, num_var_start_index:num_var_end_index], 
+                                       center = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, mean), 
+                                       scale = apply(training_subset_ds_final[, num_var_start_index:num_var_end_index], 2, sd))
+
 training_subset_ds_final[, num_var_start_index:num_var_end_index] <- scale(training_subset_ds_final[, num_var_start_index:num_var_end_index])
 
 levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 1] <- "Yes"
 levels(training_subset_ds_final$litigated)[levels(training_subset_ds_final$litigated) == 0] <- "No"
+
+target_company_row_final
 summary(training_subset_ds_final)
 ```
 
 ```{r over_sampling_data_class_imbalance_1}
 training_subset_ds_final_orig <- training_subset_ds_final
+```
+
+```{r list_all_columns}
+colnames(training_subset_ds_final)
 ```
 
 ```{r over_sampling_data_class_imbalance}
@@ -1616,16 +1643,41 @@ no_count <- nrow(training_subset_ds_final_no)
 training_subset_ds_final_yes <- training_subset_ds_final %>%
   filter(litigated == 'Yes')
 yes_count <- nrow(training_subset_ds_final_yes)
+#training_subset_ds_final %>%
+#  arrange(gvkey)
+
+table(training_subset_ds_final$litigated)
+
 # Sampling both (Over and under combination)
-training_subset_ds_final <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "both", N = no_count + yes_count,
-                                             p = 0.35, seed = 222)$data
+training_subset_ds_final <- ovun.sample(litigated ~ 
+                                                    ., 
+                                        data = training_subset_ds_final, method = "both", N = no_count + yes_count, p = 0.35, seed = 222, na.action = na.pass)$data
+
 ##### Sampling both (Over)
 #training_subset_ds_final <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "over", N = no_count*2)$data
 
 ##### Sampling both (Under)
 #training_subset_ds_final  <- ovun.sample(litigated ~., data = training_subset_ds_final, method = "under", N = yes_count*2)$data
 
+##### Manual sample adjustment
+# litigated_no <- training_subset_ds_final %>% 
+#   filter(litigated == 'No')
+# 
+# litigated_yes <- training_subset_ds_final %>% 
+#   filter(litigated == 'Yes')
+# 
+# litigated_no_sample_index <- sample(nrow(litigated_no), 97)
+# litigated_no_sample <- litigated_no[litigated_no_sample_index, ]
+# #litigated_no_sample
+# 
+# training_subset_ds_final <- bind_rows(litigated_yes, litigated_no_sample) 
+# 
+# rows <- sample(nrow(training_subset_ds_final))
+# training_subset_ds_final <- training_subset_ds_final[rows, ]
+
 table(training_subset_ds_final$litigated)
+#summary(training_subset_ds_final)
+training_subset_ds_final
 ```
 
 
@@ -1727,22 +1779,15 @@ summary(glm_model_2)
 ```{r  logisitic_regression_glm_3, MESSAGE = FALSE, warning=FALSE}
 set.seed(123)
 glm_model_3 <- train(litigated ~
-                      bkvlps + 
-                      dlc + 
                       dvt + 
                       nopi + 
-                      rect + 
                       revt + 
                       tstk + 
-                      wcap + 
-                      prccd_m +  
-                      prcod_m + 
+                      prccd_m + 
+                      trfm_m +  
                       pe_ratio + 
                       wc_ratio + 
-                      sp_rating_target + 
-                      restmt_at_target + 
-                      restmt_capx_target + 
-                      restmt_nopi_target
+                      sp_rating_target
                       , 
                       data = training_subset_ds_final, method = "glm", family = "binomial", trControl = glm_control)
 class_probabilities <- predict(glm_model_3, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
@@ -1774,7 +1819,21 @@ glmnet_control <- trainControl(
 )
 set.seed(123)
 glmnet_model_1 <- train(litigated ~ 
-                        ., 
+                        aco + acominc + ao + aoloch + aqc +
+                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        dltt + dvt + ebit + epspi + nopi + re + rect +
+                        revt + siv + sstk + teq + tstk + wcap + 
+                        cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
+                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
+                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + 
+                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
+                        restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
+                        restmt_xint_target, 
                       data = training_subset_ds_final, method = "glmnet", family = "binomial", trControl = glmnet_control)
 class_probabilities <- predict(glmnet_model_1, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
@@ -1861,7 +1920,22 @@ glmnet_auc
 ```{r gbm_1, MESSAGE = FALSE, warning=FALSE}
 gbm_control <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
 set.seed(123)
-gbm_model_1 <- train(litigated~., 
+gbm_model_1 <- train(litigated~
+                        aco + acominc + ao + aoloch + aqc +
+                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        dltt + dvt + ebit + epspi + nopi + re + rect +
+                        revt + siv + sstk + teq + tstk + wcap + 
+                        cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
+                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
+                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + 
+                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
+                        restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
+                        restmt_xint_target, 
                   data=training_subset_ds_final, 
                   method = "gbm",
                   trControl = gbm_control,
@@ -1890,7 +1964,23 @@ summary(gbm_model_1)
 
 ```{r tree_1, MESSAGE = FALSE, warning=FALSE}
 set.seed(123)
-tree_model_1 <- rpart(litigated ~ ., data = training_subset_ds_final, method = "class")
+tree_model_1 <- rpart(litigated ~ 
+                        aco + acominc + ao + aoloch + aqc +
+                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        dltt + dvt + ebit + epspi + nopi + re + rect +
+                        revt + siv + sstk + teq + tstk + wcap + 
+                        cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
+                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
+                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + 
+                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
+                        restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
+                        restmt_xint_target, 
+                      data = training_subset_ds_final, method = "class")
 class_probabilities <- predict(tree_model_1, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_litigated <- 1 - class_probabilities[1: nrow(test_subset_ds_final)]
 tree_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
@@ -1928,7 +2018,21 @@ lda_control <- trainControl(
 )
 set.seed(123)
 lda_model_1 <- train(litigated ~
-                      ., 
+                        aco + acominc + ao + aoloch + aqc +
+                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        dltt + dvt + ebit + epspi + nopi + re + rect +
+                        revt + siv + sstk + teq + tstk + wcap + 
+                        cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
+                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
+                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + 
+                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
+                        restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
+                        restmt_xint_target, 
                       data = training_subset_ds_final, method = "lda", family = "binomial", trControl = lda_control)
 class_probabilities <- predict(lda_model_1, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
@@ -1956,6 +2060,7 @@ lda_auc_1
 
 
 ```{r random_forest, MESSAGE = FALSE, warning=FALSE}
+
 rf_x <- training_subset_ds_final[,num_var_start_index:num_var_end_index]
 rf_y <- training_subset_ds_final[,target_var_index]
 recommended_mtry <- sqrt(ncol(rf_x))
@@ -1965,7 +2070,22 @@ rfGrid <- expand.grid(mtry=recommended_mtry)
 ```{r random_forest_1, MESSAGE = FALSE, warning=FALSE}
 rfControl <- trainControl(method='repeatedcv', number=10, repeats=3)
 set.seed(123)
-rf_model_1 <- train(litigated~., 
+rf_model_1 <- train(litigated~
+                        aco + acominc + ao + aoloch + aqc +
+                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        dltt + dvt + ebit + epspi + nopi + re + rect +
+                        revt + siv + sstk + teq + tstk + wcap + 
+                        cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
+                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
+                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + 
+                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
+                        restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
+                        restmt_xint_target, 
                       data=training_subset_ds_final, 
                       method='rf', 
                       metric='Accuracy', 
@@ -2003,7 +2123,22 @@ plot(rf_model_1$finalModel)
 
 ```{r random_forest_2, MESSAGE = FALSE, warning=FALSE}
 set.seed(123)
-rf_model_2 <- train(litigated~., 
+rf_model_2 <- train(litigated~
+                        aco + acominc + ao + aoloch + aqc +
+                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        dltt + dvt + ebit + epspi + nopi + re + rect +
+                        revt + siv + sstk + teq + tstk + wcap + 
+                        cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
+                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
+                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + 
+                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
+                        restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
+                        restmt_xint_target, 
                       data=training_subset_ds_final, 
                       method='rf', 
                       metric='Accuracy', 
@@ -2040,7 +2175,22 @@ plot(rf_model_2$finalModel)
 
 ```{r random_forest_3, MESSAGE = FALSE, warning=FALSE}
 set.seed(123)
-rf_model_3 <- train(litigated~., 
+rf_model_3 <- train(litigated~
+                        aco + acominc + ao + aoloch + aqc +
+                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        dltt + dvt + ebit + epspi + nopi + re + rect +
+                        revt + siv + sstk + teq + tstk + wcap + 
+                        cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
+                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
+                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + 
+                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
+                        restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
+                        restmt_xint_target, 
                       data=training_subset_ds_final, 
                       method='rf', 
                       metric='Accuracy', 
@@ -2178,6 +2328,12 @@ auc_df <- rbind(auc_df,auc_df_temp)
 
 auc_df_temp <- data.frame("algorithm_method" = c("glmnet_1"), "auc" = c(glmnet_auc)  * 100, "accuracy" = c(glmnet_accuracy_1) * 100,"notes" = c("Default"))
 auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("glmnet_1"), "auc" = c(glmnet_auc)  * 100, "accuracy" = c(glmnet_accuracy_2) * 100,"notes" = c("Default"))
+auc_df <- rbind(auc_df,auc_df_temp)
+
+auc_df_temp <- data.frame("algorithm_method" = c("glmnet_1"), "auc" = c(glmnet_auc)  * 100, "accuracy" = c(glmnet_accuracy_3) * 100,"notes" = c("Default"))
+auc_df <- rbind(auc_df,auc_df_temp)
  
 auc_df_temp <- data.frame("algorithm_method" = c("lda_1"), "auc" = c(lda_auc_1) * 100, "accuracy" = c(lda_accuracy_1) * 100,"notes" = c("Default"))
 auc_df <- rbind(auc_df,auc_df_temp)
@@ -2185,7 +2341,7 @@ auc_df <- rbind(auc_df,auc_df_temp)
 auc_df_temp <- data.frame("algorithm_method" = c("gbm_1"), "auc" = c(gbm_auc_1) * 100, "accuracy" = c(gbm_accuracy_1) * 100,"notes" = c("Default"))
 auc_df <- rbind(auc_df,auc_df_temp)
 
-auc_df_temp <- data.frame("algorithm_method" = c("tree_1"), "auc" = c(tree_auc) * 100, "accuracy" = c(tree_accuracy) * 100,"notes" = c("Default"))
+auc_df_temp <- data.frame("algorithm_method" = c("tree_1"), "auc" = c(tree_auc) * 100, "accuracy" = c(tree_accuracy_1) * 100,"notes" = c("Default"))
 auc_df <- rbind(auc_df,auc_df_temp)
  
 auc_df_temp <- data.frame("algorithm_method" = c("rf_1"), "auc" = c(rf_auc_1) * 100, "accuracy" = c(rf_accuracy_1) * 100,"notes" = c("Trees = 100"))
@@ -2212,6 +2368,7 @@ target_company_row_final
 
 ```{r run_against_target_company_rf}
 class_probabilities_prediction <- predict(rf_model_4, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+class_probabilities_prediction
 litigated_probablity <- class_probabilities_prediction$Yes
 rf_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
 rf_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
@@ -2238,4 +2395,17 @@ glm_actual_litigated_num <- as.numeric(as.character(target_company_row_final$lit
 glm_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
 glm_litigated
 glm_actual_litigated
+```
+
+```{r final_col_names_training}
+nrow(training_subset_ds_final)
+#summary(training_subset_ds_final$litigation_settlement)
+#training_litigated <- training_subset_ds_final %>%
+#  filter(!is.na(litigation_settlement))
+#training_litigated  
+```
+
+```{r final_col_names_test}
+nrow(test_subset_ds_final)
+summary(test_subset_ds_final)
 ```
