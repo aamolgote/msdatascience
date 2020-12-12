@@ -56,11 +56,23 @@ target_company_gv_key
 ncol(fundamentals_ds_filter)
 ```
 
+```{r }
+#summary(fundamentals_ds_filter)
+```
+
+````{r}
+summary(fundamentals_ds_filter$mkvalt)
+```
+
 ### Remove all the columns which contain 25% or greater NA or null values 
 ```{r remove_cols_with_high_na, MESSAGE = FALSE, warning=FALSE}
 fundamentals_ds_filter_1 <- fundamentals_ds_filter[ lapply( fundamentals_ds_filter, function(x) sum(is.na(x)) / length(x) ) < 0.25 ]
 ncol(fundamentals_ds_filter_1)
 nrow(fundamentals_ds_filter_1)
+```
+
+````{r}
+colnames(fundamentals_ds_filter_1)
 ```
 
 ```{r write_file, MESSAGE = FALSE, warning=FALSE}
@@ -119,7 +131,7 @@ write.csv(fundamentals_ds_filter_1, file = "data/fundamentals_ds_filter_4.csv", 
 ```
 
 ```{r column_count_after_col_removal, MESSAGE = FALSE, warning=FALSE}
-ncol(fundamentals_ds_filter_1)
+colnames(fundamentals_ds_filter_1)
 nrow(fundamentals_ds_filter_1)
 #fundamentals_ds_filter_1
 ```
@@ -586,7 +598,7 @@ final_ds_initial <- fundamentals_ds_filter_2 %>%
     restmt_dvpsp_f_mag = mean(restmt_dvpsp_f_mag),
     
     restmt_dvpsx_f = mean(restmt_dvpsx_f),
-    restmt_dvpsx_f_mag = mean(restmt_dvpsx_f_mag),
+    restmt_dvpsx_f_mag = mean(restmt_dvpsx_f_mag)
     
   )
 
@@ -886,7 +898,7 @@ write.csv(final_ds_initial_2, file = "data/final_ds_initial_2.csv", row.names=FA
 
 ### This first step where all the correlated variables are idenfied and then removed. This will reduce the Collinearity. 
 ```{r identify_correlation, MESSAGE = FALSE, warning=FALSE}
-cor_matrix_ds <- subset(final_ds_initial_2, select = -c(gvkey,tic, aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
+cor_matrix_ds <- subset(final_ds_initial_2, select = -c(gvkey,tic, aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,cshi,epsfi, 
                                               ib,pi,
                                               oiadp,oibdp,gdwl))
 cor_matrix <- cor(cor_matrix_ds)
@@ -902,7 +914,7 @@ cor_matrix %>%
 ```
 
 ```{r fundamentals_final_ds, MESSAGE = FALSE, warning=FALSE}
-fundamentals_final_ds <- subset(final_ds_initial_2, select = -c(aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,csho,epsfi, 
+fundamentals_final_ds <- subset(final_ds_initial_2, select = -c(aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,cshi,epsfi, 
                                               ib,pi,
                                               oiadp,oibdp,gdwl))
 summary(fundamentals_final_ds)
@@ -1595,6 +1607,8 @@ test_subset_ds_final <- test_subset_ds_final_1
 ncol(training_subset_ds_final)
 summary(training_subset_ds_final)
 target_company_row_final
+training_subset_ds_final_settlement <- training_subset_ds_final
+test_subset_ds_final_settlement <- test_subset_ds_final
 ```
 
 
@@ -1691,7 +1705,7 @@ glm_control <- trainControl(
 set.seed(123)
 glm_model_1 <- train(litigated ~
                       aco + acominc + ao + aoloch + aqc + bkvlps + caps + 
-                      ch + chech + cshi + cstk + dlc + dltt + dvt +
+                      ch + chech + csho + cstk + dlc + dltt + dvt +
                       ebit + epspi + nopi + re + rect + revt + siv +
                       sstk + teq + tstk + wcap +
                       cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -1820,7 +1834,7 @@ glmnet_control <- trainControl(
 set.seed(123)
 glmnet_model_1 <- train(litigated ~ 
                         aco + acominc + ao + aoloch + aqc +
-                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        bkvlps + caps + ch + chech + csho + cstk + dlc +
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -1848,7 +1862,7 @@ glmnet_accuracy_1 <- glmnet_confusion_matrix$overall["Accuracy"]
 set.seed(123)
 glmnet_model_2 <- train(litigated ~ 
                         aco + acominc + ao + aoloch + aqc + bkvlps + caps + 
-                        ch + chech + cshi + cstk + dlc + dltt + dvt +
+                        ch + chech + csho + cstk + dlc + dltt + dvt +
                         ebit + epspi + nopi + re + rect + revt + siv +
                         sstk + teq + tstk + wcap +
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -1922,7 +1936,7 @@ gbm_control <- trainControl(method = "repeatedcv", number = 10, repeats = 10)
 set.seed(123)
 gbm_model_1 <- train(litigated~
                         aco + acominc + ao + aoloch + aqc +
-                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        bkvlps + caps + ch + chech + csho + cstk + dlc +
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -1966,7 +1980,7 @@ summary(gbm_model_1)
 set.seed(123)
 tree_model_1 <- rpart(litigated ~ 
                         aco + acominc + ao + aoloch + aqc +
-                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        bkvlps + caps + ch + chech + csho + cstk + dlc +
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -2019,7 +2033,7 @@ lda_control <- trainControl(
 set.seed(123)
 lda_model_1 <- train(litigated ~
                         aco + acominc + ao + aoloch + aqc +
-                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        bkvlps + caps + ch + chech + csho + cstk + dlc +
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -2072,7 +2086,7 @@ rfControl <- trainControl(method='repeatedcv', number=10, repeats=3)
 set.seed(123)
 rf_model_1 <- train(litigated~
                         aco + acominc + ao + aoloch + aqc +
-                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        bkvlps + caps + ch + chech + csho + cstk + dlc +
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -2125,7 +2139,7 @@ plot(rf_model_1$finalModel)
 set.seed(123)
 rf_model_2 <- train(litigated~
                         aco + acominc + ao + aoloch + aqc +
-                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        bkvlps + caps + ch + chech + csho + cstk + dlc +
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -2177,7 +2191,7 @@ plot(rf_model_2$finalModel)
 set.seed(123)
 rf_model_3 <- train(litigated~
                         aco + acominc + ao + aoloch + aqc +
-                        bkvlps + caps + ch + chech + cshi + cstk + dlc +
+                        bkvlps + caps + ch + chech + csho + cstk + dlc +
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
@@ -2260,7 +2274,7 @@ rf_model_4 <- train(litigated ~
                       rect + 
                       ebit + 
                       cstk + 
-                      cshi + 
+                      csho + 
                       teq + 
                       ao + 
                       acominc + 
@@ -2409,3 +2423,100 @@ nrow(training_subset_ds_final)
 nrow(test_subset_ds_final)
 summary(test_subset_ds_final)
 ```
+
+
+
+```{r final_col_names_test}
+library(Rmisc)
+settlement_training_ds <- training_subset_ds_final_settlement %>%
+  filter(!is.na(litigation_settlement))
+
+settlement_test_ds <- test_subset_ds_final_settlement %>%
+  filter(!is.na(litigation_settlement))
+
+settlement_ds <- rbind(settlement_training_ds,settlement_test_ds)
+settlement_ds
+
+settlement_ds_subset <- subset(settlement_ds, select = c(gvkey,tic, csho, prccd_m, prcod_m,litigated,litigation_settlement))
+settlement_ds_subset$stk_price_m <- (settlement_ds_subset$prccd_m + settlement_ds_subset$prcod_m)/2
+settlement_ds_subset$market_cap <- settlement_ds_subset$stk_price_m * settlement_ds_subset$csho * 1000000
+settlement_ds_subset$settlement_ratio <- as.numeric(settlement_ds_subset$litigation_settlement/settlement_ds_subset$market_cap)
+settlement_ds_subset
+
+#CI(settlement_ds_subset$litigation_settlement, ci=0.90)
+```
+
+```{r}
+settlement_gvkey <- settlement_ds_subset$gvkey
+settlement_gvkey
+
+fundamentals_ds_settlement <- fundamentals_ds_filter %>%
+  filter(gvkey %in% settlement_gvkey)
+
+fundamentals_ds_settlement_1 <- subset(fundamentals_ds_settlement, select = c(gvkey,tic, mkvalt))
+
+fundamentals_ds_settlement_2 <- fundamentals_ds_settlement_1 %>%
+  filter(!is.na(mkvalt)) 
+
+fundamentals_ds_settlement_3 <- fundamentals_ds_settlement_2 %>%
+   group_by(gvkey) %>%
+   dplyr::summarize(
+     market_value = mean(mkvalt)
+   )
+settlement_ds_subset$market_value <- 0
+for (row in 1:nrow(settlement_ds_subset)){
+  settlement_item_gvkey  <- as.integer(settlement_ds_subset[row, "gvkey"])
+  fundamental_settlement_row <- fundamentals_ds_settlement_3 %>%
+       filter(gvkey == settlement_item_gvkey)
+  market_value  <- as.numeric(fundamental_settlement_row["market_value"])
+  settlement_ds_subset$market_value[settlement_ds_subset$gvkey == settlement_item_gvkey] <- market_value * 1000000
+}
+
+settlement_ds_subset$market_value[settlement_ds_subset$tic == 'GRO'] <- as.numeric(72720449)
+
+settlement_ds_subset$settlement_ratio_2 <- as.numeric(settlement_ds_subset$litigation_settlement/settlement_ds_subset$market_value)
+
+settlement_ds_subset
+#CI(settlement_ds_subset$litigation_settlement, ci=0.95)
+settlement_ratio_mean <- mean(settlement_ds_subset$settlement_ratio_2)
+settlement_ratio_medain <- median(settlement_ds_subset$settlement_ratio_2)
+settlement_ratio_mean
+settlement_ratio_medain
+
+```
+
+
+
+```{r}
+target_company_ds_settlement <- fundamentals_ds_filter %>%
+  filter(tic == 'SJM')
+target_company_market_value <- mean(target_company_ds_settlement$mkvalt) * 1000000
+target_company_settlement_amt <- target_company_market_value * settlement_ratio_medain
+target_company_market_value
+settlement_ratio_medain
+target_company_settlement_amt
+```
+
+```{r}
+settlement_1 <- settlement_ds_subset$litigation_settlement
+#inference(settlement_1, est = "mean", type = "ci", method = "theoretical")
+std_error <- function(x) sd(x)/sqrt(length(x))
+std_error_settlement_amout <- std_error(settlement_1)
+std_error_settlement_amout
+settlement_amt_high <- target_company_settlement_amt + (1.96 * std_error_settlement_amout)
+settlement_amt_low <- target_company_settlement_amt - (1.96 * std_error_settlement_amout) 
+settlement_amt_high
+settlement_amt_low
+```
+
+```{r}
+settlement_1_sd = sd(settlement_1)
+settlement_1_mean = mean(settlement_1)
+settlement_1_sd
+settlement_1_mean
+z_value <- 1.96
+n <- 11
+#inference(settlement_1, est = "mean", type = "ci", method = "theoretical")
+#inference(settlement_1, est = "median", type = "ci", method = "simulation")
+```
+
