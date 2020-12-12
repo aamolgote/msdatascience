@@ -473,7 +473,7 @@ nrow(fundamentals_ds_filter_2)
 ```{r final_ds_preparation, MESSAGE = FALSE, warning=FALSE}
 final_ds_initial <- fundamentals_ds_filter_2 %>%
   group_by(gvkey,tic) %>%
-  summarize(
+  dplyr::summarize(
     aco = mean(aco),
     acominc = mean(acominc),
     act = mean(act),
@@ -944,7 +944,7 @@ stocks_init_limited_cols$prcod[is.na(stocks_init_limited_cols$prcod)] <- (stocks
 
 stocks_grouped_data <- stocks_init_limited_cols %>%
    group_by(gvkey) %>%
-   summarize(
+   dplyr::summarize(
      cshtrd_m = mean(cshtrd),
      prccd_m = mean(prccd),
      prchd_m = mean(prchd),
@@ -1034,7 +1034,7 @@ fund_stock_securities_ds <- fundamental_stocks_data_final
 securities_init_ds_2 <- securities_init_ds_1 %>%
   filter(!is.na(trfm) & !is.na(trt1m)) %>%
   group_by(gvkey) %>%
-  summarise(
+  dplyr::summarize(
     trfm_m = mean(trfm)
     )
 
@@ -1055,7 +1055,7 @@ for (row in 1:nrow(fund_stock_securities_ds)){
 securities_init_ds_3 <- securities_init_ds_1 %>%
   filter(!is.na(dvrate)) %>%
   group_by(gvkey) %>%
-  summarise(
+  dplyr::summarize(
     dvrate_m = mean(dvrate)
     )
 
@@ -2419,14 +2419,14 @@ nrow(training_subset_ds_final)
 #training_litigated  
 ```
 
-```{r final_col_names_test}
+```{r final_col_names_test_1}
 nrow(test_subset_ds_final)
 summary(test_subset_ds_final)
 ```
 
 
 
-```{r final_col_names_test}
+```{r final_col_names_test_2}
 library(Rmisc)
 settlement_training_ds <- training_subset_ds_final_settlement %>%
   filter(!is.na(litigation_settlement))
