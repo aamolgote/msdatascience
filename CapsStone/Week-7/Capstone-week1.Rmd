@@ -459,7 +459,7 @@ nrow(fundamentals_ds_filter_1)
 fundamentals_ds_filter_2 <- subset(fundamentals_ds_filter_1, !is.na(aco))
 nrow(fundamentals_ds_filter_2)
 fundamentals_ds_filter_2[is.na(fundamentals_ds_filter_2)] <- 0
-summary(fundamentals_ds_filter_2)
+#summary(fundamentals_ds_filter_2)
 ```
 
 ```{r get_col_names}
@@ -602,7 +602,7 @@ final_ds_initial <- fundamentals_ds_filter_2 %>%
     
   )
 
-summary(final_ds_initial)
+#summary(final_ds_initial)
 nrow(final_ds_initial)
 ```
 
@@ -886,12 +886,12 @@ restmt_var_ds <- subset(final_ds_initial_1, select = c(gvkey,
                                                      restmt_dvpsx_f, restmt_dvpsx_f_mag
                                                      ))
 
-summary(restmt_var_ds)
+#summary(restmt_var_ds)
 ```
 
 ```{r final_dataset, MESSAGE = FALSE, warning=FALSE}
 final_ds_initial_2 <- final_ds_initial_1
-summary(final_ds_initial_2)
+#summary(final_ds_initial_2)
 nrow(final_ds_initial_2)
 write.csv(final_ds_initial_2, file = "data/final_ds_initial_2.csv", row.names=FALSE, na="")
 ```
@@ -917,7 +917,7 @@ cor_matrix %>%
 fundamentals_final_ds <- subset(final_ds_initial_2, select = -c(aodo,seq,ivch,nopio,spce,reuna,dilavx,ebitda,cshi,epsfi, 
                                               ib,pi,
                                               oiadp,oibdp,gdwl))
-summary(fundamentals_final_ds)
+#summary(fundamentals_final_ds)
 nrow(fundamentals_final_ds)
 ```
 
@@ -980,7 +980,7 @@ for (row in 1:nrow(fundamentals_final_ds)){
     fundamentals_final_ds$trfd_m[final_ds_initial_1$gvkey == row_item_gvkey] <- specific_stock$trfd_m
   }
 }
-summary(fundamentals_final_ds)
+#summary(fundamentals_final_ds)
 nrow(fundamentals_final_ds)
 
 fundamental_stocks_data <- fundamentals_final_ds[!is.na(fundamentals_final_ds$cshtrd_m) &!is.na(fundamentals_final_ds$prccd_m)
@@ -2364,7 +2364,7 @@ target_company_row_final
 ```
 
 ```{r run_against_target_company_rf}
-class_probabilities_prediction <- predict(rf_model_4, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+class_probabilities_prediction <- predict(rf_model_1, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 class_probabilities_prediction
 litigated_probablity <- class_probabilities_prediction$Yes
 rf_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
@@ -2372,6 +2372,7 @@ rf_actual_litigated_num <- as.numeric(as.character(target_company_row_final$liti
 rf_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
 rf_litigated
 rf_actual_litigated
+litigated_probablity
 ```
 
 ```{r run_against_target_company_gbm}
@@ -2446,7 +2447,7 @@ fundamentals_ds_settlement_3 <- fundamentals_ds_settlement_2 %>%
    dplyr::summarize(
      market_value = mean(mkvalt)
    )
-settlement_ds_subset$market_value <- 0
+settlement_ds_subset$market_value <- NA
 for (row in 1:nrow(settlement_ds_subset)){
   settlement_item_gvkey  <- as.integer(settlement_ds_subset[row, "gvkey"])
   fundamental_settlement_row <- fundamentals_ds_settlement_3 %>%
@@ -2454,6 +2455,12 @@ for (row in 1:nrow(settlement_ds_subset)){
   market_value  <- as.numeric(fundamental_settlement_row["market_value"])
   settlement_ds_subset$market_value[settlement_ds_subset$gvkey == settlement_item_gvkey] <- market_value * 1000000
 }
+settlement_ds_subset_display <- subset(settlement_ds_subset, select = c(gvkey,tic, market_value))
+settlement_ds_subset_display
+```
+
+```{r}
+
 
 settlement_ds_subset$market_value[settlement_ds_subset$tic == 'GRO'] <- as.numeric(72720449)
 
@@ -2465,18 +2472,21 @@ settlement_ratio_mean <- mean(settlement_ds_subset$settlement_ratio_2)
 settlement_ratio_medain <- median(settlement_ds_subset$settlement_ratio_2)
 settlement_ratio_mean
 settlement_ratio_medain
-
 ```
 
+```{r}
+settlement_ds_subset_display <- subset(settlement_ds_subset, select = c(gvkey,tic, csho, prccd_m, market_value, litigation_settlement, settlement_ratio_2))
+settlement_ds_subset_display
+```
 
 
 ```{r}
 target_company_ds_settlement <- fundamentals_ds_filter %>%
   filter(tic == 'SJM')
 target_company_market_value <- mean(target_company_ds_settlement$mkvalt) * 1000000
-target_company_settlement_amt <- target_company_market_value * settlement_ratio_medain
+target_company_settlement_amt <- target_company_market_value * settlement_ratio_mean
 target_company_market_value
-settlement_ratio_medain
+settlement_ratio_mean
 target_company_settlement_amt
 ```
 
@@ -2501,5 +2511,92 @@ z_value <- 1.96
 n <- 11
 #inference(settlement_1, est = "mean", type = "ci", method = "theoretical")
 #inference(settlement_1, est = "median", type = "ci", method = "simulation")
+```
+
+```{r}
+head(ds_final)
+```
+
+
+```{r, box_plot_imp_feature_litigation}
+
+grouped_data <- ds_final %>%
+  group_by(litigated) %>%
+  dplyr::summarise(
+      mean_caps = mean(caps),
+      median_caps = median(caps),
+      mean_cshtrd_m = mean(cshtrd_m),
+      median_cshtrd_m = median(cshtrd_m),
+      mean_prccd_m = mean(prccd_m),
+      median_prccd_m = median(prccd_m),
+      mean_aco = mean(aco),
+      median_aco = median(aco),
+      mean_rect = mean(rect),
+      median_rect = median(rect),
+      mean_prcod_m = mean(prcod_m),
+      median_prcod_m = median(prcod_m),
+      mean_wcap = mean(wcap),
+      median_wcap = median(wcap),
+      mean_teq = mean(teq),
+      median_teq = median(teq),
+      mean_bkvlps = mean(bkvlps),
+      median_bkvlps = median(bkvlps),
+      mean_cstk = mean(cstk),
+      median_cstk = median(cstk),
+      mean_chech = mean(chech),
+      median_chech = median(chech),
+      mean_ebit = mean(ebit),
+      median_ebit = median(ebit),
+      mean_pe_ratio = mean(pe_ratio),
+      median_pe_ratio = median(pe_ratio),
+      mean_revt = mean(revt),
+      median_revt = median(revt),
+      mean_acominc = mean(acominc),
+      median_acominc = median(acominc),
+      mean_ao = mean(ao),
+      median_ao = median(ao),
+      mean_re = mean(re),
+      median_re = median(re),
+      mean_ch = mean(ch),
+      median_ch = median(ch),
+      mean_epspi = mean(epspi),
+      median_epspi = median(epspi)
+    )
+grouped_data
+
+# trading_volumn <- ggplot(data=ds_final, aes(x=litigated, y=ao), ) + 
+#   geom_boxplot() +
+#   xlab("Litigated") +
+#   ylab("Trading Volume - Daily") +
+#   theme_minimal()
+
+# num_medications <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=num_medications)) + 
+#   geom_boxplot() +
+#   xlab("Re-admitted") +
+#   ylab("Number of medications") +
+#   theme_minimal()
+# 
+# time_in_hospital <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=time_in_hospital)) + 
+#   geom_boxplot() +
+#   xlab("Re-admitted") +
+#   ylab("Time in hospital (# days)") +
+#   theme_minimal()
+# 
+# number_diagnoses <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=number_diagnoses)) + 
+#   geom_boxplot() +
+#   xlab("Re-admitted") +
+#   ylab("Number of diagnosis") +
+#   theme_minimal()
+
+#grid.arrange(trading_volumn, ncol=2)
+
+
+ggplot(data = ds_final)+
+   geom_bar(aes(x = sp_rating), fill = "#0073c2ff") +
+   xlab("age segments")  +
+   ylab("number of patients") +
+   facet_grid(litigated ~ .) +
+   theme_minimal()
+
 ```
 
