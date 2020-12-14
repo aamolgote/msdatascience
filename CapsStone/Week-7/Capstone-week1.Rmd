@@ -2316,7 +2316,7 @@ plot(calibration_curve)
 plot(rf_model_2$finalModel)
 ```
 
-```{r, build_data_frame_auc}
+```{r, build_data_frame_auc, MESSAGE = FALSE, warning=FALSE}
 auc_df <- data.frame("algorithm_method" = c("glm_1"), "auc" = c(glm_auc_1) * 100, "accuracy" = c(glm_accuracy_1) * 100,  "notes" = c("All variables"))
 
 auc_df_temp <- data.frame("algorithm_method" = c("glm_2"), "auc" = c(glm_auc_2)  * 100, "accuracy" = c(glm_accuracy_2) * 100,  
@@ -2363,11 +2363,11 @@ auc_df <- auc_df %>%
 auc_df
 ```
 
-```{r target_company_row}
+```{r target_company_row, MESSAGE = FALSE, warning=FALSE}
 target_company_row_final
 ```
 
-```{r run_against_target_company_rf}
+```{r run_against_target_company_rf, MESSAGE = FALSE, warning=FALSE}
 class_probabilities_prediction <- predict(rf_model_1, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 class_probabilities_prediction
 litigated_probablity <- class_probabilities_prediction$Yes
@@ -2379,7 +2379,7 @@ rf_actual_litigated
 litigated_probablity
 ```
 
-```{r run_against_target_company_gbm}
+```{r run_against_target_company_gbm, MESSAGE = FALSE, warning=FALSE}
 class_probabilities_prediction <- predict(gbm_model_1, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 litigated_probablity <- class_probabilities_prediction$Yes
 gbm_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
@@ -2389,7 +2389,7 @@ gbm_litigated
 gbm_actual_litigated
 ```
 
-```{r run_against_target_company_glm}
+```{r run_against_target_company_glm, MESSAGE = FALSE, warning=FALSE}
 class_probabilities_prediction <- predict(glm_model_3, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 litigated_probablity <- class_probabilities_prediction$Yes
 glm_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
@@ -2399,7 +2399,7 @@ glm_litigated
 glm_actual_litigated
 ```
 
-```{r final_col_names_training_1}
+```{r final_col_names_training_1, MESSAGE = FALSE, warning=FALSE}
 nrow(training_subset_ds_final)
 #summary(training_subset_ds_final$litigation_settlement)
 #training_litigated <- training_subset_ds_final %>%
@@ -2407,14 +2407,14 @@ nrow(training_subset_ds_final)
 #training_litigated  
 ```
 
-```{r final_col_names_test_1}
+```{r final_col_names_test_1, MESSAGE = FALSE, warning=FALSE}
 nrow(test_subset_ds_final)
 #summary(test_subset_ds_final)
 ```
 
 
 
-```{r  settlement_amount_1}
+```{r  settlement_amount_1, MESSAGE = FALSE, warning=FALSE}
 library(Rmisc)
 settlement_training_ds <- training_subset_ds_final_settlement %>%
   filter(!is.na(litigation_settlement))
@@ -2434,7 +2434,7 @@ settlement_ds_subset
 #CI(settlement_ds_subset$litigation_settlement, ci=0.90)
 ```
 
-```{r  settlement_amount_2}
+```{r  settlement_amount_2, MESSAGE = FALSE, warning=FALSE}
 settlement_gvkey <- settlement_ds_subset$gvkey
 settlement_gvkey
 
@@ -2463,7 +2463,7 @@ settlement_ds_subset_display <- subset(settlement_ds_subset, select = c(gvkey,ti
 settlement_ds_subset_display
 ```
 
-```{r settlement_amount_3}
+```{r settlement_amount_3, MESSAGE = FALSE, warning=FALSE}
 
 
 settlement_ds_subset$market_value[settlement_ds_subset$tic == 'GRO'] <- as.numeric(72720449)
@@ -2478,13 +2478,13 @@ settlement_ratio_mean
 settlement_ratio_medain
 ```
 
-```{r settlement_amount_4}
+```{r settlement_amount_4, MESSAGE = FALSE, warning=FALSE}
 settlement_ds_subset_display <- subset(settlement_ds_subset, select = c(gvkey,tic, csho, prccd_m, market_value, litigation_settlement, settlement_ratio_2))
 settlement_ds_subset_display
 ```
 
 
-```{r settlement_amount_5}
+```{r settlement_amount_5, MESSAGE = FALSE, warning=FALSE}
 target_company_ds_settlement <- fundamentals_ds_filter %>%
   filter(tic == 'SJM')
 target_company_market_value <- mean(target_company_ds_settlement$mkvalt) * 1000000
@@ -2494,7 +2494,7 @@ settlement_ratio_mean
 target_company_settlement_amt
 ```
 
-```{r settlement_amount_6}
+```{r settlement_amount_6, MESSAGE = FALSE, warning=FALSE}
 settlement_1 <- settlement_ds_subset$litigation_settlement
 #inference(settlement_1, est = "mean", type = "ci", method = "theoretical")
 std_error <- function(x) sd(x)/sqrt(length(x))
@@ -2506,7 +2506,7 @@ settlement_amt_high
 settlement_amt_low
 ```
 
-```{r}
+```{r settlement_amount_7, MESSAGE = FALSE, warning=FALSE}
 # settlement_1_sd = sd(settlement_1)
 # settlement_1_mean = mean(settlement_1)
 # settlement_1_sd
@@ -2517,12 +2517,9 @@ settlement_amt_low
 #inference(settlement_1, est = "median", type = "ci", method = "simulation")
 ```
 
-```{r}
-#head(ds_final)
-```
 
 
-```{r, data_analysisfor_detail_findings_for_litigation}
+```{r, data_analysisfor_detail_findings_for_litigation, MESSAGE = FALSE, warning=FALSE}
 grouped_data <- ds_final %>%
   group_by(litigated) %>%
   dplyr::summarise(
@@ -2604,7 +2601,7 @@ ggplot(data = ds_final)+
 ```
 
 
-```{r final_col_names_training_2}
+```{r settlement_amount_glm_1, MESSAGE = FALSE, warning=FALSE}
 # settlemeny_amt_model_ds <- training_subset_ds_final %>%
 #   filter(!is.na(litigation_settlement))
 # settlement_amt_model_ds <- distinct(settlemeny_amt_model_ds, gvkey, .keep_all = TRUE)
@@ -2616,7 +2613,7 @@ ggplot(data = ds_final)+
 # test_settlement_amt_mse <-  mean((settlement_amt_test_set$litigation_settlement - test_settlement_amt_mean)^2)
 ```
 
-```{r}
+```{r settlement_amount_glm_2, MESSAGE = FALSE, warning=FALSE}
 # set.seed(123)
 # 
 # glm_settlement_amount <- glm(litigation_settlement ~ 
