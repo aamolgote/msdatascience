@@ -1614,10 +1614,13 @@ training_subset_ds_final_settlement <- training_subset_ds_final
 test_subset_ds_final_settlement <- test_subset_ds_final
 ```
 
-
+```{r output_dataset, MESSAGE = FALSE, warning=FALSE}
+output_ds <- rbind(training_subset_ds_final, test_subset_ds_final)
+write.csv(output_ds, file = "data/litigation_classification_ds.csv", row.names=FALSE)
+```
 
 ### Scale the variables. 
-```{r, SCALE_VARIABLES, MESSAGE = FALSE, warning=FALSE}
+```{r SCALE_VARIABLES, MESSAGE = FALSE, warning=FALSE}
 num_var_start_index <- 3
 num_var_end_index <- ncol(training_subset_ds_final) - 2
 target_var_index <- ncol(training_subset_ds_final) - 1
@@ -2481,6 +2484,7 @@ settlement_ratio_medain
 ```{r settlement_amount_4, MESSAGE = FALSE, warning=FALSE}
 settlement_ds_subset_display <- subset(settlement_ds_subset, select = c(gvkey,tic, csho, prccd_m, market_value, litigation_settlement, settlement_ratio_2))
 settlement_ds_subset_display
+write.csv(settlement_ds_subset_display, file = "data/settlement_ds.csv", row.names=FALSE)
 ```
 
 
