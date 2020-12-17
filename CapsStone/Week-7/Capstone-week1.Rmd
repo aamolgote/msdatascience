@@ -23,6 +23,8 @@ library(parallel)
 library(tree)
 library(rpart)
 library(rpart.plot)
+library(ResourceSelection)
+library(generalhoslem)
 ```
 
 
@@ -158,10 +160,6 @@ sample_restmt_ds_filter <- fundamentals_restmt_ds_filter #%>%
   #filter(gvkey == 1076)
 sample_ds_filter <- fundamentals_ds_filter_1 #%>%
   #filter(gvkey == 1076)
-#nrow(sample_restmt_ds_filter)
-#nrow(sample_ds_filter)
-#head(sample_restmt_ds_filter)
-#head(sample_ds_filter)
 
 fundamentals_ds_filter_1$restmt_at <- 0
 fundamentals_ds_filter_1$restmt_at_mag <- 0.0
@@ -207,9 +205,6 @@ fundamentals_ds_filter_1$restmt_txt_mag <- 0.0
 
 fundamentals_ds_filter_1$restmt_wcap <- 0
 fundamentals_ds_filter_1$restmt_wcap_mag <- 0.0
-
-#fundamentals_ds_filter_1$restmt_ci <- 0
-#fundamentals_ds_filter_1$restmt_ci_mag <- 0.0
 
 fundamentals_ds_filter_1$restmt_xint <- 0
 fundamentals_ds_filter_1$restmt_xint_mag <- 0.0
@@ -449,7 +444,6 @@ for (row in 1:nrow(sample_restmt_ds_filter)){
     
   }
 }
-#head(fundamentals_ds_filter_1)
 nrow(fundamentals_ds_filter_1)
 ```
 
@@ -909,8 +903,6 @@ cor_matrix %>%
   arrange(desc(value)) %>%
   group_by(value) %>%
   filter(row_number()==1)
-#corrplot(cor_matrix, method = "ellipse")
-#ncol(cor_matrix_ds)
 ```
 
 ```{r fundamentals_final_ds, MESSAGE = FALSE, warning=FALSE}
@@ -958,12 +950,6 @@ ncol(stocks_init_ds)
 
 ### Merge the stocks dataset with final dataset.
 ```{r, merge_fundamental_stocks_data, warning=FALSE}
-
-#fundamental_stocks_data <- fundamentals_final_ds %>%
-#  inner_join(stocks_grouped_data, by = 'gvkey')
-#summary(fundamental_stocks_data)
-
-
 for (row in 1:nrow(fundamentals_final_ds)){
   row_item_gvkey  <- as.integer(fundamentals_final_ds[row, "gvkey"])
   
@@ -986,18 +972,6 @@ nrow(fundamentals_final_ds)
 fundamental_stocks_data <- fundamentals_final_ds[!is.na(fundamentals_final_ds$cshtrd_m) &!is.na(fundamentals_final_ds$prccd_m)
                                                      &!is.na(fundamentals_final_ds$prchd_m) &!is.na(fundamentals_final_ds$prcld_m)
                                                      &!is.na(fundamentals_final_ds$prcod_m) &!is.na(fundamentals_final_ds$trfd_m),]
-```
-
-```{r identify_correlation_1, MESSAGE = FALSE, warning=FALSE}
-# cor_matrix_ds <- subset(fundamental_stocks_data, select = -c(gvkey,tic))
-# cor_matrix <- cor(cor_matrix_ds)
-# cor_matrix %>%
-#   as.data.frame() %>%
-#   mutate(var1 = rownames(.)) %>%
-#   gather(var2, value, -var1) %>%
-#   arrange(desc(value)) %>%
-#   group_by(value) %>%
-#   filter(row_number()==1)
 ```
 
 ```{r drop_cols_based_on_above_correlations, warning=FALSE}
@@ -1116,8 +1090,6 @@ ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "D"] <-   10
 ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "SD"] <-   10
 ratings_init_ds$splticrm_num_value[ratings_init_ds$splticrm == "NR"] <-   0
 ratings_init_ds$splticrm_num_value <- factor(ratings_init_ds$splticrm_num_value)
-#levels(ratings_init_ds$splticrm)
-#str(ratings_init_ds)
 ```
 
 ### Merge the ratings dataset and fundamentals dataset, by assigning the rating from ratings dataset to each company using gvkey  
@@ -1195,13 +1167,6 @@ fund_stock_securities_rating_ds$litigated <- as.factor(fund_stock_securities_rat
 #summary(fund_stock_securities_rating_ds)
 ```
 
-```{r final_ds_column_names, MESSAGE = FALSE, warning=FALSE}
-#colnames(fund_stock_securities_rating_ds)
-#fund_stock_securities_rating_ds %>%
-  #filter(!is.na(litigation_settlement))
-```
-
-
 ### Based on manual review. idetify the columns that need to be removed from the final dataset.
 ```{r clean_up_not_required_columns, MESSAGE = FALSE, warning=FALSE}
 fund_stock_securities_rating_ds_final <- subset(fund_stock_securities_rating_ds, select = -c(aocidergl, aocipen, ceqt, cstkcv, dd1,
@@ -1219,18 +1184,6 @@ fund_stock_securities_rating_ds_final <- subset(fund_stock_securities_rating_ds,
 ncol(fund_stock_securities_rating_ds_final)
 ```
 
-```{r identify_correlation_2, MESSAGE = FALSE, warning=FALSE}
-# cor_matrix_ds <- subset(fund_stock_securities_rating_ds_final, select = -c(gvkey,tic, sp_rating, litigated))
-# cor_matrix <- cor(cor_matrix_ds)
-# cor_matrix %>%
-#   as.data.frame() %>%
-#   mutate(var1 = rownames(.)) %>%
-#   gather(var2, value, -var1) %>%
-#   arrange(desc(value)) %>%
-#   group_by(value) %>%
-#   filter(row_number() == 1)
-```
-
 # DE ==> Debt to equity ratio
 # wc ==> Working capital ratio
 # pe ==> Pricing to earning ratio
@@ -1243,8 +1196,7 @@ fund_stock_securities_rating_ds_final$pe_ratio <- fund_stock_securities_rating_d
 fund_stock_securities_rating_ds_final$wc_ratio <- fund_stock_securities_rating_ds_final$act/fund_stock_securities_rating_ds_final$lt
 fund_stock_securities_rating_ds_final$de_ratio <- fund_stock_securities_rating_ds_final$lt/fund_stock_securities_rating_ds_final$teq
 fund_stock_securities_rating_ds_final$roe_ratio <- fund_stock_securities_rating_ds_final$ni/fund_stock_securities_rating_ds_final$teq
-#temp <- subset(fund_stock_securities_rating_ds_final, select = c(gvkey,tic, epspi, prccd_m,pe_ratio, act, lt,wc_ratio, teq,de_ratio, ni, roe_ratio))
-#head(temp)
+
 trfm_median <- median(as.numeric(fund_stock_securities_rating_ds_final$trfm_m),na.rm=TRUE)
 fund_stock_securities_rating_ds_final$trfm_m[is.na(fund_stock_securities_rating_ds_final$trfm_m)] <- trfm_median
 ```
@@ -1289,8 +1241,6 @@ fund_stock_securities_rating_ds_final_10 <- subset(fund_stock_securities_rating_
                                                                                                       lt, ci, restmt_dltt_mag, invt, che, 
                                                                                                       ap, at, xint, gp, act, txt, capx,
                                                                                                       dm, dn, dpact,fiao,fincf,sppiv,fopo))  #latest removed variables
-#nrow(fund_stock_securities_rating_ds_final)
-#summary(fund_stock_securities_rating_ds_final)
 ```
 
 ### Convert all categorical variables to factor
@@ -1329,7 +1279,7 @@ test_set <- ds_final[-training_ind, ]
 nrow(training_set)
 nrow(test_set)
 threshold <- 250
-#head(training_set$litigated)
+
 
 threshold <- 250
 target_enc_train <- function(variable, level) {
@@ -1696,8 +1646,6 @@ training_subset_ds_final <- ovun.sample(litigated ~
 # training_subset_ds_final <- training_subset_ds_final[rows, ]
 
 table(training_subset_ds_final$litigated)
-#summary(training_subset_ds_final)
-#training_subset_ds_final
 ```
 
 
@@ -1746,7 +1694,9 @@ glm_auc_1
 summary(glm_model_1)
 ```
 
-
+```{r logisitic_regression_glm_1_goodness_of_fit, MESSAGE = FALSE, warning=FALSE}
+logitgof(training_subset_ds_final$litigated, fitted(glm_model_1), g = 10)
+```
 
 ```{r  logisitic_regression_glm_2, MESSAGE = FALSE, warning=FALSE}
 set.seed(123)
@@ -1797,6 +1747,10 @@ glm_auc_2
 summary(glm_model_2)
 ```
 
+```{r logisitic_regression_glm_2_goodness_of_fit, MESSAGE = FALSE, warning=FALSE}
+logitgof(training_subset_ds_final$litigated, fitted(glm_model_2), g = 10)
+```
+
 ```{r  logisitic_regression_glm_3, MESSAGE = FALSE, warning=FALSE}
 set.seed(123)
 glm_model_3 <- train(litigated ~
@@ -1831,6 +1785,12 @@ glm_auc_3 <- glm_rocr_auc@y.values[[1]]
 glm_auc_3
 summary(glm_model_3)
 ```
+
+```{r logisitic_regression_glm_3_goodness_of_fit, MESSAGE = FALSE, warning=FALSE}
+logitgof(training_subset_ds_final$litigated, fitted(glm_model_3), g = 10)
+```
+
+
 ```{r  glmnet_1, MESSAGE = FALSE, warning=FALSE}
 glmnet_control <- trainControl(
   method = "cv",
@@ -2402,21 +2362,6 @@ glm_litigated
 glm_actual_litigated
 ```
 
-```{r final_col_names_training_1, MESSAGE = FALSE, warning=FALSE}
-nrow(training_subset_ds_final)
-#summary(training_subset_ds_final$litigation_settlement)
-#training_litigated <- training_subset_ds_final %>%
-#  filter(!is.na(litigation_settlement))
-#training_litigated  
-```
-
-```{r final_col_names_test_1, MESSAGE = FALSE, warning=FALSE}
-nrow(test_subset_ds_final)
-#summary(test_subset_ds_final)
-```
-
-
-
 ```{r  settlement_amount_1, MESSAGE = FALSE, warning=FALSE}
 library(Rmisc)
 settlement_training_ds <- training_subset_ds_final_settlement %>%
@@ -2433,8 +2378,6 @@ settlement_ds_subset$stk_price_m <- (settlement_ds_subset$prccd_m + settlement_d
 settlement_ds_subset$market_cap <- settlement_ds_subset$stk_price_m * settlement_ds_subset$csho * 1000000
 settlement_ds_subset$settlement_ratio <- as.numeric(settlement_ds_subset$litigation_settlement/settlement_ds_subset$market_cap)
 settlement_ds_subset
-
-#CI(settlement_ds_subset$litigation_settlement, ci=0.90)
 ```
 
 ```{r  settlement_amount_2, MESSAGE = FALSE, warning=FALSE}
@@ -2474,7 +2417,6 @@ settlement_ds_subset$market_value[settlement_ds_subset$tic == 'GRO'] <- as.numer
 settlement_ds_subset$settlement_ratio_2 <- as.numeric(settlement_ds_subset$litigation_settlement/settlement_ds_subset$market_value)
 
 settlement_ds_subset
-#CI(settlement_ds_subset$litigation_settlement, ci=0.95)
 settlement_ratio_mean <- mean(settlement_ds_subset$settlement_ratio_2)
 settlement_ratio_medain <- median(settlement_ds_subset$settlement_ratio_2)
 settlement_ratio_mean
@@ -2509,18 +2451,6 @@ settlement_amt_low <- target_company_settlement_amt - (1.96 * std_error_settleme
 settlement_amt_high
 settlement_amt_low
 ```
-
-```{r settlement_amount_7, MESSAGE = FALSE, warning=FALSE}
-# settlement_1_sd = sd(settlement_1)
-# settlement_1_mean = mean(settlement_1)
-# settlement_1_sd
-# settlement_1_mean
-# z_value <- 1.96
-# n <- 11
-#inference(settlement_1, est = "mean", type = "ci", method = "theoretical")
-#inference(settlement_1, est = "median", type = "ci", method = "simulation")
-```
-
 
 
 ```{r, data_analysisfor_detail_findings_for_litigation, MESSAGE = FALSE, warning=FALSE}
@@ -2568,33 +2498,6 @@ grouped_data <- ds_final %>%
     )
 grouped_data
 
-# trading_volumn <- ggplot(data=ds_final, aes(x=litigated, y=ao), ) + 
-#   geom_boxplot() +
-#   xlab("Litigated") +
-#   ylab("Trading Volume - Daily") +
-#   theme_minimal()
-
-# num_medications <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=num_medications)) + 
-#   geom_boxplot() +
-#   xlab("Re-admitted") +
-#   ylab("Number of medications") +
-#   theme_minimal()
-# 
-# time_in_hospital <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=time_in_hospital)) + 
-#   geom_boxplot() +
-#   xlab("Re-admitted") +
-#   ylab("Time in hospital (# days)") +
-#   theme_minimal()
-# 
-# number_diagnoses <- ggplot(data=post_model_ds, aes(x=readmitted_flag, y=number_diagnoses)) + 
-#   geom_boxplot() +
-#   xlab("Re-admitted") +
-#   ylab("Number of diagnosis") +
-#   theme_minimal()
-
-#grid.arrange(trading_volumn, ncol=2)
-
-
 ggplot(data = ds_final)+
    geom_bar(aes(x = sp_rating), fill = "#0073c2ff") +
    xlab("age segments")  +
@@ -2603,38 +2506,3 @@ ggplot(data = ds_final)+
    theme_minimal()
 
 ```
-
-
-```{r settlement_amount_glm_1, MESSAGE = FALSE, warning=FALSE}
-# settlemeny_amt_model_ds <- training_subset_ds_final %>%
-#   filter(!is.na(litigation_settlement))
-# settlement_amt_model_ds <- distinct(settlemeny_amt_model_ds, gvkey, .keep_all = TRUE)
-# settlement_amt_training_set <- settlement_amt_model_ds[1:5,]
-# settlement_amt_test_set <- settlement_amt_model_ds[6:8,]
-# #settlement_amt_training_set
-# #settlement_amt_test_set
-# test_settlement_amt_mean <- mean(settlement_amt_test_set$litigation_settlement)
-# test_settlement_amt_mse <-  mean((settlement_amt_test_set$litigation_settlement - test_settlement_amt_mean)^2)
-```
-
-```{r settlement_amount_glm_2, MESSAGE = FALSE, warning=FALSE}
-# set.seed(123)
-# 
-# glm_settlement_amount <- glm(litigation_settlement ~ 
-#               aco + acominc + ao + aoloch + aqc + bkvlps + caps + 
-#               ch + chech + csho + cstk + dlc + dltt + dvt +
-#               ebit + epspi + nopi + re + rect + revt + siv +
-#               sstk + teq + tstk + wcap +
-#               cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
-#               wc_ratio + de_ratio + roe_ratio + sp_rating_target
-#               , 
-#               data = settlement_amt_training_set)
-# glm_settlement_predictions <- predict(glm_settlement_amount, settlement_amt_test_set)
-# glm_settlement_mse <- mean((glm_settlement_predictions - settlement_amt_test_set$litigation_settlement)^2)
-# glm_test_r2 <- (1 - (glm_settlement_mse/test_settlement_amt_mse))
-# test_settlement_amt_mse
-# glm_settlement_mse
-# glm_test_r2
-```
-
-
