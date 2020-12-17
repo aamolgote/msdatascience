@@ -2058,15 +2058,15 @@ rf_model_1 <- train(litigated~
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
                         wc_ratio + de_ratio + roe_ratio + sp_rating_target +
-                        restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
-                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + 
-                        restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
-                        restmt_wcap_mag + restmt_xint_mag + 
-                        restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+						restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag +
+						restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag +
+						restmt_at_target + restmt_capx_target + restmt_cogs_target + 
                         restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
                         restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
-                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + 
-                        restmt_xint_target, 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target +
+						restmt_xint_target, 
                       data=training_subset_ds_final, 
                       method='rf', 
                       metric='Accuracy', 
@@ -2099,6 +2099,15 @@ calibration_curve <- calibration(litigated ~ class_probabilities_litigated,
                                  class = 1)
 plot(calibration_curve)
 plot(rf_model_1$finalModel)
+rf_varImp <- varImp(rf_model_1, type = 2)
+plot(rf_varImp, top = 30)
+var_imp_ds <- rf_varImp$importance
+var_imp_ds <- var_imp_ds %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  arrange(desc(Overall))
+var_imp_ds
+write.csv(var_imp_ds, file = "data/var_imp_ds_1.csv", row.names=FALSE)
 ```
 
 
@@ -2152,6 +2161,15 @@ calibration_curve <- calibration(litigated ~ class_probabilities_litigated,
                                  class = 1)
 plot(calibration_curve)
 plot(rf_model_2$finalModel)
+rf_varImp <- varImp(rf_model_2, type = 2)
+plot(rf_varImp, top = 30)
+var_imp_ds <- rf_varImp$importance
+var_imp_ds <- var_imp_ds %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  arrange(desc(Overall))
+var_imp_ds
+write.csv(var_imp_ds, file = "data/var_imp_ds_2.csv", row.names=FALSE)
 ```
 
 ```{r random_forest_3, MESSAGE = FALSE, warning=FALSE}
@@ -2204,21 +2222,32 @@ calibration_curve <- calibration(litigated ~ class_probabilities_litigated,
                                  class = 1)
 plot(calibration_curve)
 plot(rf_model_3$finalModel)
-```
-
-```{r feature_importance_random_forest, MESSAGE = FALSE, warning=FALSE}
 rf_varImp <- varImp(rf_model_3, type = 2)
 plot(rf_varImp, top = 30)
-```
-```{r list_important_features_random_forest}
 var_imp_ds <- rf_varImp$importance
 var_imp_ds <- var_imp_ds %>% 
   as.data.frame() %>%
   rownames_to_column() %>%
   arrange(desc(Overall))
 var_imp_ds
-write.csv(var_imp_ds, file = "data/var_imp_ds.csv", row.names=FALSE)
+write.csv(var_imp_ds, file = "data/var_imp_ds_3.csv", row.names=FALSE)
 ```
+
+```{r feature_importance_random_forest, MESSAGE = FALSE, warning=FALSE}
+rf_varImp_1 <- varImp(rf_model_1, type = 2)
+plot(rf_varImp_1, top = 30)
+```
+
+```{r list_important_features_random_forest}
+var_imp_ds_1 <- rf_varImp_1$importance
+var_imp_ds_1 <- var_imp_ds_1 %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  arrange(desc(Overall))
+var_imp_ds
+write.csv(var_imp_ds_1, file = "data/var_imp_ds.csv", row.names=FALSE)
+```
+
 
 ```{r random_forest_4, MESSAGE = FALSE, warning=FALSE}
 set.seed(123)
@@ -2276,7 +2305,16 @@ calibration_curve <- calibration(litigated ~ class_probabilities_litigated,
                                  data = test_subset_ds_final,
                                  class = 1)
 plot(calibration_curve)
-plot(rf_model_2$finalModel)
+plot(rf_model_4$finalModel)
+rf_varImp <- varImp(rf_model_4, type = 2)
+plot(rf_varImp, top = 30)
+var_imp_ds <- rf_varImp$importance
+var_imp_ds <- var_imp_ds %>% 
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  arrange(desc(Overall))
+var_imp_ds
+write.csv(var_imp_ds, file = "data/var_imp_ds_4.csv", row.names=FALSE)
 ```
 
 ```{r, build_data_frame_auc, MESSAGE = FALSE, warning=FALSE}
@@ -2494,7 +2532,10 @@ grouped_data <- ds_final %>%
       mean_ch = mean(ch),
       median_ch = median(ch),
       mean_epspi = mean(epspi),
-      median_epspi = median(epspi)
+      median_epspi = median(epspi),
+      mean_restmt_nopi_mag = mean(restmt_nopi_mag),
+      median_restmt_nopi_mag = median(restmt_nopi_mag)
+      
     )
 grouped_data
 
