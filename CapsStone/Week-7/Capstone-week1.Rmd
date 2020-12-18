@@ -1784,6 +1784,8 @@ glm_rocr_auc <- performance(glm_rocr_pred, measure = "auc")
 glm_auc_3 <- glm_rocr_auc@y.values[[1]]
 glm_auc_3
 summary(glm_model_3)
+glm_final_model_test_ds <- test_subset_ds_final
+glm_final_model_train_ds <- training_subset_ds_final
 ```
 
 ```{r logisitic_regression_glm_3_goodness_of_fit, MESSAGE = FALSE, warning=FALSE}
@@ -2016,7 +2018,7 @@ lda_model_1 <- train(litigated ~
                         restmt_xint_target, 
                       data = training_subset_ds_final, method = "lda", family = "binomial", trControl = lda_control)
 class_probabilities <- predict(lda_model_1, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
-test_subset_ds_final$class_probabilities_onehot <- class_probabilities$Yes
+test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
 lda_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
 lda_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
 lda_confusion_matrix <- confusionMatrix(factor(lda_class_probabilities_litigated), factor(lda_litigated), positive = "Yes")
@@ -2024,7 +2026,7 @@ lda_confusion_matrix
 lda_accuracy_1 <- lda_confusion_matrix$overall["Accuracy"]
 lda_accuracy_1
 
-lda_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_onehot, test_subset_ds_final$litigated)
+lda_rocr_pred <- prediction(test_subset_ds_final$class_probabilities_litigated, test_subset_ds_final$litigated)
 lda_rocr_roc <- performance(lda_rocr_pred, measure = "tpr", x.measure = "fpr")
 plot(lda_rocr_roc,
 colorize = TRUE,
@@ -2057,16 +2059,12 @@ rf_model_1 <- train(litigated~
                         dltt + dvt + ebit + epspi + nopi + re + rect +
                         revt + siv + sstk + teq + tstk + wcap + 
                         cshtrd_m + prccd_m + prcod_m + trfd_m + trfm_m + pe_ratio +
-                        wc_ratio + de_ratio + roe_ratio + sp_rating_target +
-						restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
-                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag +
-						restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
-                        restmt_wcap_mag + restmt_xint_mag +
-						restmt_at_target + restmt_capx_target + restmt_cogs_target + 
+                        wc_ratio + de_ratio + roe_ratio + sp_rating_target + restmt_at_mag + restmt_capx_mag + restmt_cogs_mag + 
+                        restmt_epspi_mag + restmt_ni_mag + restmt_nopi_mag + restmt_reuna_mag + restmt_teq_mag + restmt_txt_mag + 
+                        restmt_wcap_mag + restmt_xint_mag + restmt_at_target + restmt_capx_target + restmt_cogs_target + 
                         restmt_dltt_target + restmt_epspi_target + restmt_ib_target + 
                         restmt_ni_target + restmt_nopi_target + restmt_reuna_target + 
-                        restmt_teq_target + restmt_txt_target + restmt_wcap_target +
-						restmt_xint_target, 
+                        restmt_teq_target + restmt_txt_target + restmt_wcap_target + restmt_xint_target, 
                       data=training_subset_ds_final, 
                       method='rf', 
                       metric='Accuracy', 
@@ -2074,10 +2072,8 @@ rf_model_1 <- train(litigated~
                       trControl=rfControl, 
                       ntree = 100
                       )
-
 class_probabilities <- predict(rf_model_1, newdata = test_subset_ds_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 test_subset_ds_final$class_probabilities_litigated <- class_probabilities$Yes
-
 rf_litigated <- ifelse(test_subset_ds_final$litigated == 1, "Yes", "No")
 rf_class_probabilities_litigated <- ifelse(test_subset_ds_final$class_probabilities_litigated > 0.50, "Yes", "No")
 rf_confusion_matrix <- confusionMatrix(factor(rf_class_probabilities_litigated), factor(rf_litigated), positive = "Yes")
@@ -2108,6 +2104,8 @@ var_imp_ds <- var_imp_ds %>%
   arrange(desc(Overall))
 var_imp_ds
 write.csv(var_imp_ds, file = "data/var_imp_ds_1.csv", row.names=FALSE)
+rf_final_model_test_ds <- test_subset_ds_final
+rf_final_model_train_ds <- training_subset_ds_final
 ```
 
 
@@ -2369,15 +2367,31 @@ target_company_row_final
 ```
 
 ```{r run_against_target_company_rf, MESSAGE = FALSE, warning=FALSE}
+rf_actual_litigated <-  ifelse(target_company_row_final$litigated == 1, "Yes", "No")
+glm_actual_litigated <- ifelse(target_company_row_final$litigated == 1, "Yes", "No")
 class_probabilities_prediction <- predict(rf_model_1, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
 class_probabilities_prediction
 litigated_probablity <- class_probabilities_prediction$Yes
+target_company_row_final$class_probabilities_litigated <- class_probabilities_prediction$Yes
 rf_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
-rf_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
-rf_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
+#rf_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
+
+
 rf_litigated
 rf_actual_litigated
 litigated_probablity
+
+
+target_company_row_final$litigated <- ifelse(target_company_row_final$class_probabilities_litigated > 0.50, "Yes", "No")
+class_probabilities_prediction <- predict(rf_model_1, newdata = rf_final_model_train_ds[, -1*c(target_var_index:target_var_index)], type = "prob")
+rf_final_model_train_ds$class_probabilities_litigated <- class_probabilities_prediction$Yes
+rf_final_model_train_ds$litigated <- ifelse(rf_final_model_train_ds$class_probabilities_litigated > 0.50, "Yes", "No")
+rf_final_model_test_ds$litigated <- ifelse(rf_final_model_test_ds$litigated == 1, "Yes", "No")
+```
+
+```{r}
+rf_final_model_ds <- dplyr::bind_rows(rf_final_model_train_ds, rf_final_model_test_ds, target_company_row_final)
+write.csv(rf_final_model_ds, file = "data/rf_final_model_ds.csv", row.names=FALSE)
 ```
 
 ```{r run_against_target_company_gbm, MESSAGE = FALSE, warning=FALSE}
@@ -2385,19 +2399,34 @@ class_probabilities_prediction <- predict(gbm_model_1, newdata = target_company_
 litigated_probablity <- class_probabilities_prediction$Yes
 gbm_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
 gbm_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
-gbm_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
+gbm_actual_litigated <- ifelse(gbm_actual_litigated_num == 1, "Yes", "No")
 gbm_litigated
-gbm_actual_litigated
+#gbm_actual_litigated
 ```
 
 ```{r run_against_target_company_glm, MESSAGE = FALSE, warning=FALSE}
 class_probabilities_prediction <- predict(glm_model_3, newdata = target_company_row_final[, -1*c(target_var_index:target_var_index)], type = "prob")
+class_probabilities_prediction
 litigated_probablity <- class_probabilities_prediction$Yes
+target_company_row_final$class_probabilities_litigated <- class_probabilities_prediction$Yes
+
 glm_litigated <- ifelse(litigated_probablity > 0.50, "Yes", "No")
-glm_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
-glm_actual_litigated <- ifelse(rf_actual_litigated_num == 1, "Yes", "No")
+#glm_actual_litigated_num <- as.numeric(as.character(target_company_row_final$litigated))
+
+
 glm_litigated
 glm_actual_litigated
+
+target_company_row_final$litigated <- ifelse(target_company_row_final$class_probabilities_litigated > 0.50, "Yes", "No")
+class_probabilities_prediction <- predict(glm_model_3, newdata = glm_final_model_train_ds[, -1*c(target_var_index:target_var_index)], type = "prob")
+glm_final_model_train_ds$class_probabilities_litigated <- class_probabilities_prediction$Yes
+glm_final_model_train_ds$litigated <- ifelse(glm_final_model_train_ds$class_probabilities_litigated > 0.50, "Yes", "No")
+glm_final_model_test_ds$litigated <- ifelse(glm_final_model_test_ds$litigated == 1, "Yes", "No")
+```
+
+```{r}
+glm_final_model_ds <- dplyr::bind_rows(glm_final_model_train_ds, glm_final_model_test_ds, target_company_row_final)
+write.csv(glm_final_model_ds, file = "data/glm_final_model_ds.csv", row.names=FALSE)
 ```
 
 ```{r  settlement_amount_1, MESSAGE = FALSE, warning=FALSE}
